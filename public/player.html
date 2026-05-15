@@ -11,10 +11,10 @@
     <a href="/" class="back-link">← Выйти из убежища</a>
 
     <header class="site-header">
-      <div class="site-header__badge">Личный терминал</div>
-      <h1>Досье выжившего</h1>
-      <p class="site-header__tagline">
-        Ваши характеристики засекречены. Раскрывайте карты, когда наступит ваш ход в обсуждении.
+      <div class="site-header__badge" id="playerBadge">Личный терминал</div>
+      <h1 id="playerTitle">Досье выжившего</h1>
+      <p class="site-header__tagline" id="playerTagline">
+        Зарегистрируйтесь и дождитесь, пока ведущий откроет ворота в игру.
       </p>
     </header>
 
@@ -22,13 +22,50 @@
       <p class="panel__title">Регистрация у ворот</p>
       <form class="join-form" id="joinForm">
         <input type="text" id="playerName" placeholder="Имя или позывной" maxlength="24" required autocomplete="nickname">
-        <button type="submit" class="btn btn--amber">Войти в сессию</button>
+        <button type="submit" class="btn btn--amber">Войти в зал ожидания</button>
       </form>
+      <p id="joinError" class="form-error hidden"></p>
+    </section>
+
+    <div id="waitingModal" class="waiting-modal hidden" role="dialog" aria-modal="true" aria-labelledby="waitingTitle">
+      <div class="waiting-modal__card">
+        <p class="waiting-modal__badge">Зал ожидания</p>
+        <h2 class="waiting-modal__title" id="waitingTitle">Ожидаем начала игры</h2>
+        <p class="waiting-modal__text" id="waitingCount">Подключено игроков: 0</p>
+        <p class="waiting-modal__name">Вы: <strong id="waitingName">—</strong></p>
+        <ul id="lobbyList" class="lobby-list waiting-modal__list"></ul>
+        <button type="button" id="leaveSessionBtn" class="btn btn--danger">Выйти из сессии</button>
+      </div>
+    </div>
+
+    <section id="backstorySection" class="panel hidden">
+      <p class="panel__title">Предыстория</p>
+      <h2 class="backstory-title" id="playerBackstoryTitle"></h2>
+      <p class="backstory-text" id="playerBackstoryText"></p>
+    </section>
+
+    <section id="votingSection" class="panel hidden">
+      <p class="panel__title">Голосование на исключение</p>
+      <p class="round-info" id="votingInfo"></p>
+      <div id="voteButtons" class="pass-turn-grid"></div>
+    </section>
+
+    <section id="endedSection" class="panel hidden">
+      <p class="panel__title">Игра окончена</p>
+      <p class="round-info" id="endedMessage"></p>
+    </section>
+
+    <section id="turnSection" class="panel turn-banner hidden">
+      <p class="panel__title">Ход</p>
+      <p class="turn-banner__name" id="turnMessage"></p>
     </section>
 
     <section id="gameSection" class="panel hidden">
-      <p class="panel__title">Ваши характеристики</p>
+      <p class="panel__title">Описание вашего персонажа</p>
+      <p class="panel__subtitle">Ваш герой состоит из следующих характеристик:</p>
       <p class="player-status" id="playerGreeting"></p>
+      <p id="excludedBadge" class="status-badge status-badge--excluded hidden">ИСКЛЮЧЕН</p>
+      <p class="round-info" id="roundInfo"></p>
       <div id="cardsGrid" class="cards-grid"></div>
     </section>
   </div>

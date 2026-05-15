@@ -11,16 +11,64 @@
     <a href="/" class="back-link">← Выйти из убежища</a>
 
     <header class="site-header">
-      <div class="site-header__badge">Общий зал</div>
+      <div class="site-header__badge" id="hostBadge">Зал ожидания</div>
       <h1>Пульт ведущего</h1>
-      <p class="site-header__tagline">
-        Табло для всех: кто в игре и какие характеристики уже раскрыты на столе.
+      <p class="site-header__tagline" id="hostTagline">
+        Настройте сессию и дождитесь игроков. Когда все готовы — начните игру.
       </p>
-      <p class="site-header__status" id="hostStatus">Ожидание подключений…</p>
+      <p class="site-header__status" id="hostStatus">Подключение…</p>
     </header>
 
+    <section id="lobbyPanel" class="panel">
+      <p class="panel__title">Настройки сессии</p>
+      <div class="settings-grid">
+        <label class="field">
+          <span class="field__label">Режим игры</span>
+          <select id="modeSelect" class="field__control"></select>
+        </label>
+        <label class="field field--checkbox">
+          <input type="checkbox" id="backstoryRandom">
+          <span>Случайная предыстория</span>
+        </label>
+        <label class="field" id="backstoryField">
+          <span class="field__label">Предыстория</span>
+          <select id="backstorySelect" class="field__control"></select>
+        </label>
+      </div>
+      <p class="host-hint" id="bunkerHint">Мест в бункере (по таблице): —</p>
+      <div class="host-actions">
+        <button type="button" id="startBtn" class="btn btn--amber" disabled>Начать игру</button>
+      </div>
+    </section>
+
+    <section id="backstoryPanel" class="panel hidden">
+      <p class="panel__title">Предыстория катастрофы</p>
+      <h2 class="backstory-title" id="backstoryTitle"></h2>
+      <p class="backstory-text" id="backstoryText"></p>
+    </section>
+
+    <section id="roundPanel" class="panel hidden">
+      <p class="panel__title">Раунд раскрытия</p>
+      <p class="round-info" id="hostRoundInfo"></p>
+    </section>
+
+    <section id="votingPanel" class="panel hidden">
+      <p class="panel__title">Голосование</p>
+      <p class="round-info" id="hostVotingInfo"></p>
+    </section>
+
+    <section id="endedPanel" class="panel hidden">
+      <p class="panel__title">Игра окончена</p>
+      <p class="round-info" id="hostEndedInfo"></p>
+    </section>
+
+    <section id="turnPanel" class="panel turn-banner hidden">
+      <p class="panel__title">Текущий ход</p>
+      <p class="turn-banner__name" id="currentTurnName">—</p>
+    </section>
+
     <section class="panel">
-      <p class="panel__title">Состав группы у ворот бункера</p>
+      <p class="panel__title" id="rosterTitle">Игроки в зале ожидания</p>
       <div id="roster" class="roster">
         <p class="roster-empty">Пока никого нет. Игроки заходят с личного терминала.</p>
       </div>

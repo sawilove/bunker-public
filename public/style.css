@@ -327,11 +327,63 @@ body::after {
 }
 
 /* —— Player cards —— */
+.panel__subtitle {
+  margin: -0.5rem 0 1rem;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 0.6rem;
   margin-top: 1rem;
+}
+
+.game-card--private {
+  aspect-ratio: auto;
+  min-height: 7.5rem;
+}
+
+.status-badge {
+  display: inline-block;
+  margin: 0.5rem 0 0;
+  padding: 0.35rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #f0b0a8;
+  background: var(--red-dim);
+  border: 1px solid var(--red);
+  border-radius: var(--radius);
+}
+
+.status-badge--excluded-inline {
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.55rem;
+  vertical-align: middle;
+}
+
+.player-row--excluded {
+  opacity: 0.75;
+  border-color: var(--red-dim);
+}
+
+.game-card__level {
+  display: block;
+  margin-top: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--amber);
+  letter-spacing: 0.05em;
+}
+
+.game-card--revealed-end {
+  border-color: var(--text-dim);
+  opacity: 0.95;
 }
 
 .game-card {
@@ -424,7 +476,8 @@ body::after {
 .player-row {
   display: grid;
   grid-template-columns: minmax(0, 10rem) 1fr;
-  gap: 1rem;
+  grid-template-rows: auto auto;
+  gap: 0.5rem 1rem;
   align-items: start;
   padding: 1rem;
   background: var(--bg-card);
@@ -446,6 +499,23 @@ body::after {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 601px) {
+  .player-row__cards {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .player-row__name {
+    grid-row: 1;
+  }
+
+  .player-row__meta {
+    grid-column: 1;
+    grid-row: 2;
+  }
 }
 
 .host-card {
@@ -518,6 +588,325 @@ body::after {
 
 .player .site-header h1 {
   color: var(--green);
+}
+
+/* —— Settings (host lobby) —— */
+.settings-grid {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field__label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.field__control {
+  padding: 0.6rem 0.75rem;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.field__control:focus {
+  outline: none;
+  border-color: var(--amber);
+}
+
+.field--checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.field--checkbox input {
+  accent-color: var(--amber);
+}
+
+.host-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.btn--danger {
+  background: var(--red-dim);
+  border-color: var(--red);
+  color: #f0b0a8;
+}
+
+.btn--danger:hover {
+  background: var(--red);
+  box-shadow: 0 0 12px rgba(196, 74, 58, 0.35);
+}
+
+.btn--small {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.form-error {
+  margin: 0.75rem 0 0;
+  color: var(--red);
+  font-size: 0.9rem;
+}
+
+/* —— Lobby list —— */
+.lobby-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  color: var(--text-dim);
+}
+
+.lobby-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.lobby-row__name {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+/* —— Backstory —— */
+.backstory-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--amber);
+  margin: 0 0 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.backstory-text {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* —— Turn —— */
+.turn-banner {
+  border-color: var(--border-bright);
+}
+
+.turn-banner--active {
+  border-color: var(--green);
+  box-shadow: 0 0 20px rgba(107, 158, 74, 0.2);
+}
+
+.turn-banner--active::before {
+  background: linear-gradient(90deg, var(--green-dim), var(--green), var(--green-dim));
+}
+
+.turn-banner__name {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  margin: 0;
+  color: var(--green);
+  text-align: center;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.turn-chip {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--green);
+  border: 1px solid var(--green);
+  padding: 0.15rem 0.4rem;
+  border-radius: var(--radius);
+  vertical-align: middle;
+}
+
+.player-row--turn {
+  border-color: var(--green);
+  box-shadow: 0 0 16px rgba(107, 158, 74, 0.15);
+}
+
+.host-card--type-visible {
+  background: rgba(232, 168, 56, 0.08);
+  border-color: rgba(232, 168, 56, 0.35);
+  min-width: 4.5rem;
+}
+
+.host-card__hidden-val {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+}
+
+.game-card--locked {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.pass-turn-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* —— Waiting modal (player lobby) —— */
+.waiting-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(5, 8, 5, 0.88);
+  backdrop-filter: blur(4px);
+}
+
+.waiting-modal__card {
+  width: 100%;
+  max-width: 22rem;
+  padding: 1.75rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow), 0 0 40px var(--amber-glow);
+  text-align: center;
+}
+
+.waiting-modal__badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin: 0 0 0.75rem;
+}
+
+.waiting-modal__title {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  margin: 0 0 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.waiting-modal__text {
+  margin: 0 0 0.5rem;
+  color: var(--green);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.waiting-modal__name {
+  margin: 0 0 1rem;
+  color: var(--text-dim);
+}
+
+.waiting-modal__name strong {
+  color: var(--text);
+}
+
+.waiting-modal__list {
+  text-align: left;
+  margin: 0 0 1.25rem;
+  max-height: 8rem;
+  overflow-y: auto;
+}
+
+.waiting-modal .btn {
+  width: 100%;
+}
+
+/* —— Private cards (player) —— */
+.game-card--private {
+  background: linear-gradient(145deg, #1e2a1a 0%, var(--bg-card) 100%);
+  border-color: var(--border-bright);
+  cursor: default;
+}
+
+.game-card--private .game-card__value {
+  color: var(--text);
+}
+
+.game-card--on-table {
+  border-color: var(--green);
+  box-shadow: 0 0 12px rgba(107, 158, 74, 0.2);
+}
+
+.game-card__table-badge {
+  margin-top: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--green);
+}
+
+.game-card__reveal-btn {
+  margin-top: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--amber);
+  background: rgba(232, 168, 56, 0.12);
+  border: 1px solid var(--amber);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.game-card__reveal-btn:hover {
+  background: rgba(232, 168, 56, 0.22);
+}
+
+.round-info,
+.host-hint {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin: 0 0 0.75rem;
+}
+
+.player-row__meta {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+@media (min-width: 601px) {
+  .player-row__meta {
+    grid-column: 2;
+  }
 }
 
 @media (max-width: 600px) {
