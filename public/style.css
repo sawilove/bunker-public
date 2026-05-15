@@ -1,0 +1,27 @@
+.index {
+  text-align: center;
+  padding-top: 80px;
+}
+
+.role-select {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 200px;
+  margin: 0 auto;
+}
+
+.role-btn {
+  display: block;
+  padding: 15px;
+  background: #222;
+  color: white;
+  text-decoration: none;
+  border-radius: 10px;
+  font-size: 20px;
+  border: 1px solid #444;
+}
+
+.role-btn:hover {
+  background: #333;
+}
