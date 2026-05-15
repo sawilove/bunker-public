@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Бункер — Ведущий</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="host">
+  <div class="page">
+    <a href="/" class="back-link">← Выйти из убежища</a>
+
+    <header class="site-header">
+      <div class="site-header__badge">Общий зал</div>
+      <h1>Пульт ведущего</h1>
+      <p class="site-header__tagline">
+        Табло для всех: кто в игре и какие характеристики уже раскрыты на столе.
+      </p>
+      <p class="site-header__status" id="hostStatus">Ожидание подключений…</p>
+    </header>
+
+    <section class="panel">
+      <p class="panel__title">Состав группы у ворот бункера</p>
+      <div id="roster" class="roster">
+        <p class="roster-empty">Пока никого нет. Игроки заходят с личного терминала.</p>
+      </div>
+    </section>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/host.js"></script>
+</body>
+</html>

@@ -2,17 +2,36 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Бункер — Выбор роли</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Бункер — Вход</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body class="index">
+  <div class="page">
+    <header class="site-header">
+      <div class="site-header__badge">Протокол выживания №7</div>
+      <h1>Бункер</h1>
+      <p class="site-header__tagline">
+        Катастрофа снаружи. Мест в убежище — мало. Раскрывайте характеристики, спорьте, решайте, кто останется.
+      </p>
+      <p class="site-header__status">Система убежища в режиме ожидания</p>
+    </header>
 
-  <h1>Выберите роль</h1>
+    <section class="panel">
+      <p class="panel__title">Выберите роль в сессии</p>
+      <div class="role-select">
+        <a href="/host" class="role-btn role-btn--host">
+          <span class="role-btn__label">Ведущий</span>
+          <span class="role-btn__hint">Экран для общего зала — видит всех игроков и открытые карты</span>
+        </a>
+        <a href="/player" class="role-btn role-btn--player">
+          <span class="role-btn__label">Игрок</span>
+          <span class="role-btn__hint">Личный терминал — ваши карты и раскрытие характеристик</span>
+        </a>
+      </div>
+    </section>
 
-  <div class="role-select">
-    <a href="/host" class="role-btn">Ведущий</a>
-    <a href="/player" class="role-btn">Игрок</a>
+    <p class="warning-strip">⚠ ВНИМАНИЕ: ложь и манипуляции допускаются. Доверяйте только фактам на столе.</p>
   </div>
-
 </body>
 </html>

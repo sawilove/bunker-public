@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Бункер — Игрок</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="player">
+  <div class="page">
+    <a href="/" class="back-link">← Выйти из убежища</a>
+
+    <header class="site-header">
+      <div class="site-header__badge">Личный терминал</div>
+      <h1>Досье выжившего</h1>
+      <p class="site-header__tagline">
+        Ваши характеристики засекречены. Раскрывайте карты, когда наступит ваш ход в обсуждении.
+      </p>
+    </header>
+
+    <section id="joinSection" class="panel">
+      <p class="panel__title">Регистрация у ворот</p>
+      <form class="join-form" id="joinForm">
+        <input type="text" id="playerName" placeholder="Имя или позывной" maxlength="24" required autocomplete="nickname">
+        <button type="submit" class="btn btn--amber">Войти в сессию</button>
+      </form>
+    </section>
+
+    <section id="gameSection" class="panel hidden">
+      <p class="panel__title">Ваши характеристики</p>
+      <p class="player-status" id="playerGreeting"></p>
+      <div id="cardsGrid" class="cards-grid"></div>
+    </section>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/player.js"></script>
+</body>
+</html>
