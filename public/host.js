@@ -74,7 +74,7 @@ function getLocalScenarioPreview() {
     return {
       isRandom: true,
       title: "Случайный сценарий",
-      text: "Катастрофа будет выбрана при старте. Игроки узнают сценарий после подключения к сессии.",
+      text: "Катастрофа будет выбрана при старте. Описание увидите здесь после выбора.",
     };
   }
   const story = backstoriesById[selectedBackstoryId];
@@ -83,7 +83,7 @@ function getLocalScenarioPreview() {
 
 function updateHostScenarioTheme(data, showSpots = false) {
   applyScenarioBackground(data);
-  renderScenarioHero(scenarioHero, data, { showSpots, hideText: true });
+  renderScenarioHero(scenarioHero, data, { showSpots });
 }
 
 function selectScenario(id, random) {
@@ -250,7 +250,7 @@ function applyState(state) {
   roundPanel.classList.toggle("hidden", !inPlaying);
   votingPanel.classList.toggle("hidden", !inVoting);
   endedPanel.classList.toggle("hidden", !inEnded);
-  turnPanel.classList.toggle("hidden", !inPlaying);
+  turnPanel.classList.toggle("hidden", !inPlaying && !inVoting);
 
   if (inSetup) {
     hostBadge.textContent = "Настройка";

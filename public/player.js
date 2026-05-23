@@ -65,7 +65,7 @@ function showJoinError(msg) {
 
 function updatePlayerScenarioTheme(data, showSpots = false) {
   applyScenarioBackground(data);
-  renderScenarioHero(scenarioHero, data, { showSpots });
+  renderScenarioHero(scenarioHero, data, { showSpots, hideText: true });
 }
 
 function clearPlayerScenarioTheme() {
@@ -244,7 +244,7 @@ function applyState(state) {
     playerBadge.textContent = "Зал ожидания";
     playerTagline.textContent = state.scenario?.isRandom
       ? "Сценарий откроется при старте игры."
-      : "Ознакомьтесь с катастрофой — скоро начнётся отбор.";
+      : "Дождитесь старта — детали катастрофы объявит ведущий.";
     waitingName.textContent = state.you.name;
     waitingCount.textContent = `Подключено игроков: ${state.playerCount}`;
     lobbyList.innerHTML = state.players

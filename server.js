@@ -284,6 +284,12 @@ function sanitizePlayerForHost(id, p) {
   };
 }
 
+function sanitizeScenarioForPlayer(data) {
+  if (!data) return null;
+  const { text, ...rest } = data;
+  return rest;
+}
+
 function buildRoundInfo() {
   const quota = roundQuota();
   return {
@@ -357,9 +363,9 @@ function buildPlayerState(socketId) {
     role: "player",
     phase: game.phase,
     backstory: ["playing", "voting", "ended"].includes(game.phase)
-      ? game.activeBackstory
+      ? sanitizeScenarioForPlayer(game.activeBackstory)
       : null,
-    scenario: game.phase === "lobby" ? getScenarioPreview(game.settings) : null,
+    scenario: game.phase === "lobby" ? sanitizeScenarioForPlayer(getScenarioPreview(game.settings)) : null,
     bunkerSpots: bunkerSpots(),
     survivorsCount: activeCount(),
     round:
