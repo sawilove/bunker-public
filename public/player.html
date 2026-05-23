@@ -2,11 +2,12 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Бункер — Игрок</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body class="player">
+  <div id="scenarioBg" class="scenario-bg" aria-hidden="true"></div>
   <div class="page">
     <a href="/" class="back-link">← Выйти из убежища</a>
 
@@ -18,8 +19,21 @@
       </p>
     </header>
 
-    <section id="joinSection" class="panel">
+    <section id="scenarioHero" class="scenario-hero hidden"></section>
+
+    <section id="codeSection" class="panel">
+      <p class="panel__title">Код сессии</p>
+      <p class="panel__subtitle">Введите 6-значный код с экрана ведущего</p>
+      <form class="join-form" id="codeForm">
+        <input type="text" id="sessionCodeInput" class="session-code-input" placeholder="ABC123" maxlength="6" required autocomplete="off" inputmode="text" autocapitalize="characters" spellcheck="false">
+        <button type="submit" class="btn btn--amber">Продолжить</button>
+      </form>
+      <p id="codeError" class="form-error hidden"></p>
+    </section>
+
+    <section id="joinSection" class="panel hidden">
       <p class="panel__title">Регистрация у ворот</p>
+      <p class="panel__subtitle">Сессия: <strong id="joinedSessionCode">—</strong></p>
       <form class="join-form" id="joinForm">
         <input type="text" id="playerName" placeholder="Имя или позывной" maxlength="24" required autocomplete="nickname">
         <button type="submit" class="btn btn--amber">Войти в зал ожидания</button>
@@ -37,12 +51,6 @@
         <button type="button" id="leaveSessionBtn" class="btn btn--danger">Выйти из сессии</button>
       </div>
     </div>
-
-    <section id="backstorySection" class="panel hidden">
-      <p class="panel__title">Предыстория</p>
-      <h2 class="backstory-title" id="playerBackstoryTitle"></h2>
-      <p class="backstory-text" id="playerBackstoryText"></p>
-    </section>
 
     <section id="votingSection" class="panel hidden">
       <p class="panel__title">Голосование на исключение</p>
@@ -71,6 +79,7 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/scenario-theme.js"></script>
   <script src="/player.js"></script>
 </body>
 </html>

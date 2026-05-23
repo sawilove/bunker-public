@@ -19,30 +19,93 @@ const MODES = [
 const BACKSTORIES = [
   {
     id: "nuclear",
+    scene: "scene0",
     title: "Ядерная зима",
     text: "Взрывы уничтожили города. Радиация и холод снаружи. Запасов хватит на полгода.",
+    yearsInBunker: 25,
   },
   {
     id: "pandemic",
+    scene: "scene1",
     title: "Пандемия",
     text: "Вирус мутировал. Снаружи — карантин и беспорядки. Фильтры воздуха изношены.",
+    yearsInBunker: 3,
   },
   {
     id: "flood",
-    title: "Глобальное наводнение",
+    scene: "scene2",
+    title: "Наводнение",
     text: "Уровень океана поднялся на десятки метров. Генератор бункера на исходе.",
-  },
-  {
-    id: "ai",
-    title: "Восстание машин",
-    text: "ИИ перехватил инфраструктуру. Дроны патрулируют поверхность.",
+    yearsInBunker: 5,
   },
   {
     id: "meteor",
-    title: "Метеорит",
+    scene: "scene3",
+    title: "Падение метеорита",
     text: "Удар вызвал «зиму» из пыли. Солнце не пробивается месяцами.",
+    yearsInBunker: 10,
+  },
+  {
+    id: "ai",
+    scene: "scene4",
+    title: "Восстание машин",
+    text: "ИИ перехватил инфраструктуру. Дроны патрулируют поверхность.",
+    yearsInBunker: 7,
+  },
+  {
+    id: "solar",
+    scene: "scene5",
+    title: "Солнечный гипершторм",
+    text: "Вспышка на Солнце вывела из строя электронику. Снаружи — жара и сбои сетей.",
+    yearsInBunker: 2,
+  },
+  {
+    id: "fungus",
+    scene: "scene6",
+    title: "Грибковая биоинвазия",
+    text: "Споры проникли везде. Фильтры и герметичность — единственная защита.",
+    yearsInBunker: 8,
+  },
+  {
+    id: "evolution",
+    scene: "scene7",
+    title: "Обратная эволюция",
+    text: "Неизвестный фактор меняет ДНК. Мир снаружи становится непредсказуемым.",
+    yearsInBunker: 12,
   },
 ];
+
+function formatYearsInBunker(years) {
+  const n = Math.abs(Math.floor(years));
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${n} год`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${n} года`;
+  return `${n} лет`;
+}
+
+function getScenarioPreview(settings) {
+  if (settings.backstoryRandom) {
+    return {
+      isRandom: true,
+      title: "Случайный сценарий",
+      text: "Катастрофа будет выбрана при старте. Готовьтесь к любому исходу.",
+      scene: null,
+      yearsInBunker: null,
+      yearsLabel: null,
+    };
+  }
+  const story = BACKSTORIES.find((b) => b.id === settings.backstoryId) || BACKSTORIES[0];
+  return {
+    isRandom: false,
+    id: story.id,
+    scene: story.scene,
+    title: story.title,
+    text: story.text,
+    yearsInBunker: story.yearsInBunker,
+    yearsLabel: formatYearsInBunker(story.yearsInBunker),
+  };
+}
 
 /** Порядок карт в досье персонажа */
 const CARD_TYPES = [
@@ -278,9 +341,13 @@ function buildActiveBackstory(settings, playerCount) {
   const spots = getBunkerSpots(playerCount);
   return {
     id: story.id,
+    scene: story.scene,
     title: story.title,
-    text: `${story.text} Мест в бункере: ${spots} (из ${playerCount} претендентов).`,
+    text: story.text,
+    yearsInBunker: story.yearsInBunker,
+    yearsLabel: formatYearsInBunker(story.yearsInBunker),
     bunkerSpots: spots,
+    spotsText: `Мест в бункере: ${spots} (из ${playerCount} претендентов).`,
   };
 }
 
@@ -303,6 +370,8 @@ module.exports = {
   getMaxRound,
   getBunkerSpots,
   buildActiveBackstory,
+  getScenarioPreview,
+  formatYearsInBunker,
   shuffleArray,
   PROFESSION_LEVELS,
 };

@@ -1,11 +1,16 @@
 const socket = io();
 
+const codeSection = document.getElementById("codeSection");
 const joinSection = document.getElementById("joinSection");
+const codeForm = document.getElementById("codeForm");
+const sessionCodeInput = document.getElementById("sessionCodeInput");
+const codeError = document.getElementById("codeError");
+const joinedSessionCode = document.getElementById("joinedSessionCode");
 const waitingModal = document.getElementById("waitingModal");
 const waitingCount = document.getElementById("waitingCount");
 const waitingName = document.getElementById("waitingName");
 const leaveSessionBtn = document.getElementById("leaveSessionBtn");
-const backstorySection = document.getElementById("backstorySection");
+const scenarioHero = document.getElementById("scenarioHero");
 const votingSection = document.getElementById("votingSection");
 const votingInfo = document.getElementById("votingInfo");
 const voteButtons = document.getElementById("voteButtons");
@@ -19,8 +24,6 @@ const joinError = document.getElementById("joinError");
 const lobbyList = document.getElementById("lobbyList");
 const playerBadge = document.getElementById("playerBadge");
 const playerTagline = document.getElementById("playerTagline");
-const playerBackstoryTitle = document.getElementById("playerBackstoryTitle");
-const playerBackstoryText = document.getElementById("playerBackstoryText");
 const turnMessage = document.getElementById("turnMessage");
 const cardsGrid = document.getElementById("cardsGrid");
 const playerGreeting = document.getElementById("playerGreeting");
@@ -28,6 +31,7 @@ const excludedBadge = document.getElementById("excludedBadge");
 const roundInfoEl = document.getElementById("roundInfo");
 
 let joined = false;
+let validatedCode = null;
 
 function escapeHtml(str) {
   const el = document.createElement("div");
@@ -42,33 +46,99 @@ function formatCardValue(c) {
   return c.value;
 }
 
-function showError(msg) {
+function normalizeCodeInput(value) {
+  return (value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+}
+
+function showCodeError(msg) {
+  codeError.textContent = msg;
+  codeError.classList.toggle("hidden", !msg);
+}
+
+function showJoinError(msg) {
   joinError.textContent = msg;
   joinError.classList.toggle("hidden", !msg);
 }
 
+function updatePlayerScenarioTheme(data, showSpots = false) {
+  applyScenarioBackground(data);
+  renderScenarioHero(scenarioHero, data, { showSpots });
+}
+
+function clearPlayerScenarioTheme() {
+  clearScenarioBackground();
+  renderScenarioHero(scenarioHero, null);
+}
+
+function showNameForm(code) {
+  validatedCode = code;
+  joinedSessionCode.textContent = code;
+  codeSection.classList.add("hidden");
+  joinSection.classList.remove("hidden");
+  playerNameInput.focus();
+}
+
+function requestCodeValidation(code) {
+  showCodeError("");
+  socket.emit("validateSessionCode", code);
+}
+
+codeForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const code = normalizeCodeInput(sessionCodeInput.value);
+  if (code.length !== 6) {
+    showCodeError("Введите 6-значный код.");
+    return;
+  }
+  requestCodeValidation(code);
+});
+
+sessionCodeInput.addEventListener("input", () => {
+  sessionCodeInput.value = normalizeCodeInput(sessionCodeInput.value);
+});
+
 joinForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const name = playerNameInput.value.trim();
-  if (!name) return;
-  showError("");
-  socket.emit("playerJoin", name);
+  if (!name || !validatedCode) return;
+  showJoinError("");
+  socket.emit("playerJoin", { name, code: validatedCode });
 });
 
 leaveSessionBtn.addEventListener("click", () => {
   socket.emit("leaveSession");
   joined = false;
+  validatedCode = null;
+  clearPlayerScenarioTheme();
+  document.body.classList.remove("player--lobby", "player--in-game");
   waitingModal.classList.add("hidden");
-  joinSection.classList.remove("hidden");
+  joinSection.classList.add("hidden");
+  codeSection.classList.remove("hidden");
   playerNameInput.value = "";
-  playerNameInput.focus();
+  sessionCodeInput.value = "";
+  sessionCodeInput.focus();
 });
 
-socket.on("joinError", (msg) => showError(msg));
+socket.on("sessionCodeResult", ({ valid, reason, code }) => {
+  if (valid) {
+    showNameForm(code);
+    return;
+  }
+  if (reason === "not_ready") {
+    showCodeError("Ведущий ещё не создал сессию. Подождите.");
+  } else if (reason === "started") {
+    showCodeError("Игра уже началась. Дождитесь новой сессии.");
+  } else {
+    showCodeError("Неверный код сессии.");
+  }
+});
+
+socket.on("joinError", (msg) => showJoinError(msg));
 socket.on("actionError", (msg) => alert(msg));
 
 socket.on("kicked", (msg) => {
   joined = false;
+  validatedCode = null;
   alert(msg);
   window.location.reload();
 });
@@ -138,6 +208,7 @@ function applyState(state) {
 
   if (!joined) {
     joined = true;
+    codeSection.classList.add("hidden");
     joinSection.classList.add("hidden");
   }
 
@@ -146,8 +217,10 @@ function applyState(state) {
   const inVoting = state.phase === "voting";
   const inEnded = state.phase === "ended";
 
+  document.body.classList.toggle("player--lobby", inLobby);
+  document.body.classList.toggle("player--in-game", inGame || inVoting || inEnded);
+
   waitingModal.classList.toggle("hidden", !inLobby);
-  backstorySection.classList.toggle("hidden", inLobby);
   votingSection.classList.toggle("hidden", !inVoting);
   endedSection.classList.toggle("hidden", !inEnded);
   turnSection.classList.toggle("hidden", !inGame || state.you.excluded);
@@ -155,9 +228,18 @@ function applyState(state) {
 
   excludedBadge.classList.toggle("hidden", !state.you.excluded);
 
+  const scenarioData = inLobby ? state.scenario : state.backstory;
+  if (scenarioData) {
+    updatePlayerScenarioTheme(scenarioData, !inLobby);
+  } else {
+    clearPlayerScenarioTheme();
+  }
+
   if (inLobby) {
     playerBadge.textContent = "Зал ожидания";
-    playerTagline.textContent = "Ведущий настраивает сессию.";
+    playerTagline.textContent = state.scenario?.isRandom
+      ? "Сценарий откроется при старте игры."
+      : "Ознакомьтесь с катастрофой — скоро начнётся отбор.";
     waitingName.textContent = state.you.name;
     waitingCount.textContent = `Подключено игроков: ${state.playerCount}`;
     lobbyList.innerHTML = state.players
@@ -168,11 +250,6 @@ function applyState(state) {
       })
       .join("");
     return;
-  }
-
-  if (state.backstory) {
-    playerBackstoryTitle.textContent = state.backstory.title;
-    playerBackstoryText.textContent = state.backstory.text;
   }
 
   playerGreeting.textContent = `${state.you.name} · в бункере мест: ${state.bunkerSpots} · выживших: ${state.survivorsCount}`;
@@ -229,3 +306,11 @@ function applyState(state) {
 }
 
 socket.on("gameState", applyState);
+
+const urlCode = normalizeCodeInput(new URLSearchParams(location.search).get("code"));
+if (urlCode.length === 6) {
+  sessionCodeInput.value = urlCode;
+  requestCodeValidation(urlCode);
+} else {
+  sessionCodeInput.focus();
+}

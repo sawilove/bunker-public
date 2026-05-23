@@ -3,8 +3,10 @@ const socket = io();
 const hostBadge = document.getElementById("hostBadge");
 const hostTagline = document.getElementById("hostTagline");
 const hostStatus = document.getElementById("hostStatus");
+const setupPanel = document.getElementById("setupPanel");
 const lobbyPanel = document.getElementById("lobbyPanel");
-const backstoryPanel = document.getElementById("backstoryPanel");
+const rosterPanel = document.getElementById("rosterPanel");
+const scenarioHero = document.getElementById("scenarioHero");
 const roundPanel = document.getElementById("roundPanel");
 const votingPanel = document.getElementById("votingPanel");
 const endedPanel = document.getElementById("endedPanel");
@@ -12,20 +14,25 @@ const turnPanel = document.getElementById("turnPanel");
 const rosterTitle = document.getElementById("rosterTitle");
 const rosterEl = document.getElementById("roster");
 const modeSelect = document.getElementById("modeSelect");
-const backstorySelect = document.getElementById("backstorySelect");
-const backstoryRandom = document.getElementById("backstoryRandom");
-const backstoryField = document.getElementById("backstoryField");
+const scenarioGrid = document.getElementById("scenarioGrid");
+const createSessionBtn = document.getElementById("createSessionBtn");
+const setupBunkerHint = document.getElementById("setupBunkerHint");
 const startBtn = document.getElementById("startBtn");
 const bunkerHint = document.getElementById("bunkerHint");
-const backstoryTitle = document.getElementById("backstoryTitle");
-const backstoryText = document.getElementById("backstoryText");
 const hostRoundInfo = document.getElementById("hostRoundInfo");
 const hostVotingInfo = document.getElementById("hostVotingInfo");
 const hostEndedInfo = document.getElementById("hostEndedInfo");
 const currentTurnName = document.getElementById("currentTurnName");
+const sessionCodeDisplay = document.getElementById("sessionCodeDisplay");
+const qrImg = document.getElementById("qrCode");
+const newSessionBtn = document.getElementById("newSessionBtn");
 
 let catalogReady = false;
+let lastQrUrl = "";
 let suppressSettingsEmit = false;
+let selectedBackstoryId = "nuclear";
+let backstoryRandom = false;
+const backstoriesById = {};
 
 socket.emit("hostJoin");
 
@@ -42,13 +49,85 @@ function formatCardValue(c) {
   return c.value;
 }
 
+function currentSettingsPayload() {
+  return {
+    mode: modeSelect.value,
+    backstoryId: selectedBackstoryId,
+    backstoryRandom,
+  };
+}
+
+function syncScenarioSelection() {
+  scenarioGrid.querySelectorAll(".scenario-card").forEach((card) => {
+    const isRandom = card.dataset.random === "true";
+    const selected = isRandom
+      ? backstoryRandom
+      : !backstoryRandom && card.dataset.id === selectedBackstoryId;
+    card.classList.toggle("scenario-card--selected", selected);
+    card.setAttribute("aria-selected", selected ? "true" : "false");
+  });
+}
+
+function getLocalScenarioPreview() {
+  if (backstoryRandom) {
+    return {
+      isRandom: true,
+      title: "Случайный сценарий",
+      text: "Катастрофа будет выбрана при старте. Игроки узнают сценарий после подключения к сессии.",
+    };
+  }
+  const story = backstoriesById[selectedBackstoryId];
+  return story ? enrichScenarioFromCatalog(story) : null;
+}
+
+function updateHostScenarioTheme(data, showSpots = false) {
+  applyScenarioBackground(data);
+  renderScenarioHero(scenarioHero, data, { showSpots });
+}
+
+function selectScenario(id, random) {
+  backstoryRandom = random;
+  if (!random) selectedBackstoryId = id;
+  syncScenarioSelection();
+  updateHostScenarioTheme(getLocalScenarioPreview());
+  emitSettings();
+}
+
+function buildScenarioGrid(backstories) {
+  const cards = backstories
+    .map(
+      (b) => `
+    <button type="button" class="scenario-card" data-id="${b.id}" aria-selected="false"
+      title="${escapeHtml(b.title)}">
+      <img class="scenario-card__img" src="/scenarios/${b.scene}.png" alt="${escapeHtml(b.title)}" loading="lazy">
+      <span class="scenario-card__label">${escapeHtml(b.title)}</span>
+    </button>`
+    )
+    .join("");
+
+  const randomCard = `
+    <button type="button" class="scenario-card scenario-card--random" data-random="true" aria-selected="false"
+      title="Случайный сценарий">
+      <span class="scenario-card__random-mark" aria-hidden="true">?</span>
+      <span class="scenario-card__label">Случайный</span>
+    </button>`;
+
+  scenarioGrid.innerHTML = cards + randomCard;
+
+  scenarioGrid.querySelectorAll(".scenario-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      if (card.dataset.random === "true") {
+        selectScenario(null, true);
+      } else {
+        selectScenario(card.dataset.id, false);
+      }
+    });
+  });
+}
+
 function emitSettings() {
   if (suppressSettingsEmit) return;
-  socket.emit("updateSettings", {
-    mode: modeSelect.value,
-    backstoryId: backstorySelect.value,
-    backstoryRandom: backstoryRandom.checked,
-  });
+  socket.emit("updateSettings", currentSettingsPayload());
 }
 
 function fillCatalog(catalog, settings) {
@@ -59,32 +138,43 @@ function fillCatalog(catalog, settings) {
           `<option value="${m.id}">${escapeHtml(m.name)} — ${escapeHtml(m.description)}</option>`
       )
       .join("");
-    backstorySelect.innerHTML = catalog.backstories
-      .map((b) => `<option value="${b.id}">${escapeHtml(b.title)}</option>`)
-      .join("");
+    catalog.backstories.forEach((b) => {
+      backstoriesById[b.id] = b;
+    });
+    buildScenarioGrid(catalog.backstories);
     catalogReady = true;
 
     modeSelect.addEventListener("change", emitSettings);
-    backstorySelect.addEventListener("change", emitSettings);
-    backstoryRandom.addEventListener("change", () => {
-      backstoryField.classList.toggle("hidden", backstoryRandom.checked);
-      emitSettings();
+    createSessionBtn.addEventListener("click", () => {
+      socket.emit("createSession", currentSettingsPayload());
     });
     startBtn.addEventListener("click", () => socket.emit("startGame"));
+    newSessionBtn.addEventListener("click", () => socket.emit("newSession"));
   }
 
   suppressSettingsEmit = true;
   modeSelect.value = settings.mode;
-  backstorySelect.value = settings.backstoryId;
-  backstoryRandom.checked = settings.backstoryRandom;
-  backstoryField.classList.toggle("hidden", settings.backstoryRandom);
+  selectedBackstoryId = settings.backstoryId;
+  backstoryRandom = settings.backstoryRandom;
+  syncScenarioSelection();
+  updateHostScenarioTheme(getLocalScenarioPreview());
   suppressSettingsEmit = false;
+}
+
+function updateInvitePanel(code) {
+  if (!code) return;
+  sessionCodeDisplay.textContent = code;
+  const url = `${location.origin}/player?code=${encodeURIComponent(code)}`;
+  if (url === lastQrUrl) return;
+  lastQrUrl = url;
+  qrImg.src = `/api/qr.png?data=${encodeURIComponent(url)}`;
+  qrImg.alt = "QR-код для входа игрока";
 }
 
 function renderLobbyRoster(players) {
   if (players.length === 0) {
     rosterEl.innerHTML =
-      '<p class="roster-empty">Пока никого нет. Игроки заходят с личного терминала.</p>';
+      '<p class="roster-empty">Пока никого нет. Игроки подключаются по QR-коду или коду сессии.</p>';
     return;
   }
 
@@ -149,29 +239,53 @@ function renderGameRoster(players, currentTurn, round, phase) {
 function applyState(state) {
   fillCatalog(state.catalog, state.settings);
 
+  const inSetup = state.phase === "setup";
   const inLobby = state.phase === "lobby";
   const inPlaying = state.phase === "playing";
   const inVoting = state.phase === "voting";
   const inEnded = state.phase === "ended";
+  const inGame = inPlaying || inVoting || inEnded;
   const n = state.players.length;
 
+  setupPanel.classList.toggle("hidden", !inSetup);
   lobbyPanel.classList.toggle("hidden", !inLobby);
-  backstoryPanel.classList.toggle("hidden", inLobby);
+  rosterPanel.classList.toggle("hidden", !inLobby && !inGame);
   roundPanel.classList.toggle("hidden", !inPlaying);
   votingPanel.classList.toggle("hidden", !inVoting);
   endedPanel.classList.toggle("hidden", !inEnded);
   turnPanel.classList.toggle("hidden", !inPlaying);
 
-  bunkerHint.textContent = `Мест в бункере: ${state.bunkerSpots} · выживших: ${state.survivorsCount}`;
+  if (inSetup) {
+    hostBadge.textContent = "Настройка";
+    hostTagline.textContent =
+      "Выберите режим и сценарий, затем создайте сессию.";
+    hostStatus.textContent = "Сессия ещё не создана";
+    setupBunkerHint.textContent = `Мест в бункере (при 6 игроках): ${state.bunkerSpots}`;
+    updateHostScenarioTheme(getLocalScenarioPreview());
+    return;
+  }
 
   if (inLobby) {
     hostBadge.textContent = "Зал ожидания";
     rosterTitle.textContent = "Игроки в зале ожидания";
+    const scenarioHint = state.scenario?.isRandom
+      ? "Случайный сценарий"
+      : state.scenario?.title || "Сценарий";
     hostTagline.textContent =
-      "Настройте сессию и дождитесь игроков. Рекомендуется 6–15 человек.";
+      `«${scenarioHint}». Дождитесь игроков — рекомендуется 6–15 человек.`;
     hostStatus.textContent =
       n === 0 ? "Ожидание подключений…" : `В зале: ${n} чел.`;
+    bunkerHint.textContent = state.scenario?.yearsLabel
+      ? `В бункере: ${state.scenario.yearsLabel} · мест по таблице: ${state.bunkerSpots}`
+      : `Мест в бункере: ${state.bunkerSpots}`;
     startBtn.disabled = !state.canStart;
+    updateHostScenarioTheme(state.scenario);
+    if (state.sessionCode) {
+      if (state.sessionCode !== sessionCodeDisplay.textContent) {
+        lastQrUrl = "";
+      }
+      updateInvitePanel(state.sessionCode);
+    }
     renderLobbyRoster(state.players);
     return;
   }
@@ -183,15 +297,13 @@ function applyState(state) {
       : `Раунд ${state.round?.number ?? 1}`;
   rosterTitle.textContent = "Игроки";
 
-  if (state.backstory) {
-    backstoryTitle.textContent = state.backstory.title;
-    backstoryText.textContent = state.backstory.text;
-  }
+  updateHostScenarioTheme(state.backstory, true);
 
   const modeName =
     state.catalog.modes.find((m) => m.id === state.settings.mode)?.name ||
     state.settings.mode;
   hostStatus.textContent = `${modeName} · в бункере мест: ${state.bunkerSpots} · выживших: ${state.survivorsCount}`;
+  bunkerHint.textContent = `Мест в бункере: ${state.bunkerSpots} · выживших: ${state.survivorsCount}`;
 
   if (inPlaying && state.round) {
     hostTagline.textContent =

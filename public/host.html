@@ -7,44 +7,57 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body class="host">
+  <div id="scenarioBg" class="scenario-bg" aria-hidden="true"></div>
   <div class="page">
     <a href="/" class="back-link">← Выйти из убежища</a>
 
     <header class="site-header">
-      <div class="site-header__badge" id="hostBadge">Зал ожидания</div>
+      <div class="site-header__badge" id="hostBadge">Настройка</div>
       <h1>Пульт ведущего</h1>
       <p class="site-header__tagline" id="hostTagline">
-        Настройте сессию и дождитесь игроков. Когда все готовы — начните игру.
+        Настройте параметры игры и создайте сессию для подключения игроков.
       </p>
       <p class="site-header__status" id="hostStatus">Подключение…</p>
     </header>
 
-    <section id="lobbyPanel" class="panel">
-      <p class="panel__title">Настройки сессии</p>
+    <section id="scenarioHero" class="scenario-hero hidden"></section>
+
+    <section id="setupPanel" class="panel">
+      <p class="panel__title">Настройки игры</p>
       <div class="settings-grid">
         <label class="field">
           <span class="field__label">Режим игры</span>
           <select id="modeSelect" class="field__control"></select>
         </label>
-        <label class="field field--checkbox">
-          <input type="checkbox" id="backstoryRandom">
-          <span>Случайная предыстория</span>
-        </label>
-        <label class="field" id="backstoryField">
-          <span class="field__label">Предыстория</span>
-          <select id="backstorySelect" class="field__control"></select>
-        </label>
+        <div class="field">
+          <span class="field__label">Сценарий катастрофы</span>
+          <div id="scenarioGrid" class="scenario-grid" role="listbox" aria-label="Выбор сценария"></div>
+        </div>
       </div>
-      <p class="host-hint" id="bunkerHint">Мест в бункере (по таблице): —</p>
+      <p class="host-hint" id="setupBunkerHint">Мест в бункере (при 6 игроках): —</p>
       <div class="host-actions">
-        <button type="button" id="startBtn" class="btn btn--amber" disabled>Начать игру</button>
+        <button type="button" id="createSessionBtn" class="btn btn--amber">Создать сессию</button>
       </div>
     </section>
 
-    <section id="backstoryPanel" class="panel hidden">
-      <p class="panel__title">Предыстория катастрофы</p>
-      <h2 class="backstory-title" id="backstoryTitle"></h2>
-      <p class="backstory-text" id="backstoryText"></p>
+    <section id="lobbyPanel" class="panel hidden">
+      <div class="lobby-layout">
+        <div class="lobby-layout__main">
+          <p class="panel__title">Зал ожидания</p>
+          <p class="host-hint" id="bunkerHint">Мест в бункере: —</p>
+          <div class="host-actions">
+            <button type="button" id="startBtn" class="btn btn--amber" disabled>Начать игру</button>
+          </div>
+        </div>
+        <aside class="lobby-invite">
+          <p class="panel__title">Подключение игроков</p>
+          <div class="lobby-invite__qr-wrap">
+            <img id="qrCode" class="lobby-invite__qr" width="180" height="180" alt="QR-код для входа игрока">
+          </div>
+          <p class="lobby-invite__code" id="sessionCodeDisplay">------</p>
+          <p class="lobby-invite__hint">Отсканируйте QR или введите код на странице «Игрок»</p>
+        </aside>
+      </div>
     </section>
 
     <section id="roundPanel" class="panel hidden">
@@ -60,6 +73,9 @@
     <section id="endedPanel" class="panel hidden">
       <p class="panel__title">Игра окончена</p>
       <p class="round-info" id="hostEndedInfo"></p>
+      <div class="host-actions">
+        <button type="button" id="newSessionBtn" class="btn btn--amber">Новая сессия</button>
+      </div>
     </section>
 
     <section id="turnPanel" class="panel turn-banner hidden">
@@ -67,15 +83,16 @@
       <p class="turn-banner__name" id="currentTurnName">—</p>
     </section>
 
-    <section class="panel">
+    <section id="rosterPanel" class="panel hidden">
       <p class="panel__title" id="rosterTitle">Игроки в зале ожидания</p>
       <div id="roster" class="roster">
-        <p class="roster-empty">Пока никого нет. Игроки заходят с личного терминала.</p>
+        <p class="roster-empty">Пока никого нет. Игроки подключаются по QR-коду или коду сессии.</p>
       </div>
     </section>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/scenario-theme.js"></script>
   <script src="/host.js"></script>
 </body>
 </html>

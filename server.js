@@ -1,5 +1,6 @@
 const express = require("express");
 const http = require("http");
+const QRCode = require("qrcode");
 const { Server } = require("socket.io");
 const {
   MODES,
@@ -9,6 +10,7 @@ const {
   getMaxRound,
   getBunkerSpots,
   buildActiveBackstory,
+  getScenarioPreview,
   shuffleArray,
   pickRandom,
 } = require("./game-data");
@@ -18,6 +20,27 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static("public"));
+app.use("/scenarios", express.static("resources/scenarios"));
+
+app.get("/api/qr.png", async (req, res) => {
+  const data = req.query.data;
+  if (!data || typeof data !== "string" || data.length > 512) {
+    res.status(400).end();
+    return;
+  }
+  try {
+    const png = await QRCode.toBuffer(data, {
+      type: "png",
+      width: 180,
+      margin: 2,
+      errorCorrectionLevel: "M",
+      color: { dark: "#000000", light: "#ffffff" },
+    });
+    res.type("png").send(png);
+  } catch {
+    res.status(500).end();
+  }
+});
 
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/public/index.html");
@@ -32,9 +55,24 @@ app.get("/player", (req, res) => {
 });
 
 let hostSocketId = null;
+let sessionCode = null;
+
+const SESSION_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function generateSessionCode() {
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += SESSION_CHARS[Math.floor(Math.random() * SESSION_CHARS.length)];
+  }
+  return code;
+}
+
+function normalizeCode(code) {
+  return (code || "").trim().toUpperCase().slice(0, 6);
+}
 
 const game = {
-  phase: "lobby",
+  phase: "setup",
   settings: {
     mode: "classic",
     backstoryId: BACKSTORIES[0].id,
@@ -252,17 +290,47 @@ function buildRoundInfo() {
   };
 }
 
+function resetToSetup() {
+  game.phase = "setup";
+  sessionCode = null;
+  game.players = {};
+  game.currentTurn = null;
+  game.activeBackstory = null;
+  game.initialPlayerCount = 0;
+  game.round = 1;
+  game.revealsThisRound = {};
+  game.turnOrder = [];
+  game.votes = {};
+  game.lastExcludedName = null;
+}
+
+function openLobby() {
+  game.phase = "lobby";
+  sessionCode = generateSessionCode();
+}
+
+function handleAllPlayersLeft() {
+  if (playerIds().length > 0) return;
+  if (game.phase === "ended") {
+    resetToSetup();
+  } else if (["playing", "voting"].includes(game.phase)) {
+    resetToLobby();
+  }
+}
+
 function buildHostState() {
   const n = playerIds().length;
   const active = activeCount();
   return {
     role: "host",
     phase: game.phase,
+    sessionCode,
     catalog: { modes: MODES, backstories: BACKSTORIES },
     settings: { ...game.settings },
     backstory: ["playing", "voting", "ended"].includes(game.phase)
       ? game.activeBackstory
       : null,
+    scenario: game.phase === "lobby" ? getScenarioPreview(game.settings) : null,
     bunkerSpots: bunkerSpots(),
     survivorsCount: active,
     round: ["playing", "voting"].includes(game.phase) ? buildRoundInfo() : null,
@@ -287,6 +355,7 @@ function buildPlayerState(socketId) {
     backstory: ["playing", "voting", "ended"].includes(game.phase)
       ? game.activeBackstory
       : null,
+    scenario: game.phase === "lobby" ? getScenarioPreview(game.settings) : null,
     bunkerSpots: bunkerSpots(),
     survivorsCount: activeCount(),
     round:
@@ -347,15 +416,65 @@ function resetToLobby() {
 }
 
 io.on("connection", (socket) => {
-  socket.on("hostJoin", () => {
+  socket.on("hostJoin", (payload) => {
+    if (payload?.newSession || game.phase === "ended") {
+      resetToSetup();
+    }
     hostSocketId = socket.id;
     socket.emit("gameState", buildHostState());
   });
 
-  socket.on("playerJoin", (name) => {
+  socket.on("newSession", () => {
+    if (socket.id !== hostSocketId) return;
+    resetToSetup();
+    broadcast();
+  });
+
+  socket.on("createSession", (payload) => {
+    if (socket.id !== hostSocketId || game.phase !== "setup") return;
+    if (payload?.mode && MODES.some((m) => m.id === payload.mode)) {
+      game.settings.mode = payload.mode;
+    }
+    if (typeof payload?.backstoryRandom === "boolean") {
+      game.settings.backstoryRandom = payload.backstoryRandom;
+    }
+    if (
+      payload?.backstoryId &&
+      BACKSTORIES.some((b) => b.id === payload.backstoryId)
+    ) {
+      game.settings.backstoryId = payload.backstoryId;
+    }
+    openLobby();
+    broadcast();
+  });
+
+  socket.on("validateSessionCode", (code) => {
+    const normalized = normalizeCode(code);
+    let reason = null;
+    if (game.phase === "setup") {
+      reason = "not_ready";
+    } else if (game.phase !== "lobby") {
+      reason = "started";
+    } else if (normalized !== sessionCode) {
+      reason = "invalid";
+    }
+    socket.emit("sessionCodeResult", {
+      valid: !reason,
+      reason,
+      code: sessionCode,
+    });
+  });
+
+  socket.on("playerJoin", (payload) => {
+    const name = typeof payload === "string" ? payload : payload?.name;
+    const code = typeof payload === "string" ? null : payload?.code;
     const trimmed = (name || "").trim().slice(0, 24);
     if (!trimmed) {
       socket.emit("joinError", "Введите имя.");
+      return;
+    }
+    if (normalizeCode(code) !== sessionCode) {
+      socket.emit("joinError", "Неверный код сессии.");
       return;
     }
     if (game.phase !== "lobby") {
@@ -380,10 +499,9 @@ io.on("connection", (socket) => {
     delete game.players[socket.id];
     delete game.revealsThisRound[socket.id];
     delete game.votes[socket.id];
-    if (["playing", "voting"].includes(game.phase)) {
-      if (playerIds().length === 0) {
-        resetToLobby();
-      } else if (game.currentTurn === socket.id) {
+    if (["playing", "voting", "ended"].includes(game.phase)) {
+      handleAllPlayersLeft();
+      if (playerIds().length > 0 && game.currentTurn === socket.id) {
         advanceTurn();
       }
       if (game.phase === "voting") {
@@ -400,7 +518,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("updateSettings", (payload) => {
-    if (socket.id !== hostSocketId || game.phase !== "lobby") return;
+    if (socket.id !== hostSocketId || game.phase !== "setup") return;
     if (payload.mode && MODES.some((m) => m.id === payload.mode)) {
       game.settings.mode = payload.mode;
     }
@@ -505,10 +623,9 @@ io.on("connection", (socket) => {
     delete game.revealsThisRound[socket.id];
     delete game.votes[socket.id];
 
-    if (["playing", "voting"].includes(game.phase)) {
-      if (playerIds().length === 0) {
-        resetToLobby();
-      } else {
+    if (["playing", "voting", "ended"].includes(game.phase)) {
+      handleAllPlayersLeft();
+      if (playerIds().length > 0) {
         if (wasTurn || (game.currentTurn && !game.players[game.currentTurn])) {
           advanceTurn();
         }
