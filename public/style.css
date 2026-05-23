@@ -478,11 +478,6 @@ body.has-scenario-bg .waiting-modal__card {
   vertical-align: middle;
 }
 
-.player-row--excluded {
-  opacity: 0.75;
-  border-color: var(--red-dim);
-}
-
 .game-card__level {
   display: block;
   margin-top: 0.25rem;
@@ -570,10 +565,11 @@ body.has-scenario-bg .waiting-modal__card {
   color: var(--green);
 }
 
-/* —— Host: player roster —— */
+/* —— Host: player roster (TV-optimised) —— */
 .roster {
   display: grid;
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 0.75rem;
 }
 
 .roster-empty {
@@ -585,15 +581,61 @@ body.has-scenario-bg .waiting-modal__card {
 }
 
 .player-row {
-  display: grid;
-  grid-template-columns: minmax(0, 10rem) 1fr;
-  grid-template-rows: auto auto;
-  gap: 0.5rem 1rem;
-  align-items: start;
-  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.player-row__header,
+.player-row__body {
+  position: relative;
+  z-index: 2;
+}
+
+.player-row__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.65rem 0.3rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+}
+
+.player-row__body {
+  padding: 0.3rem 0.65rem 0.5rem;
+}
+
+.player-row--excluded {
+  border-color: var(--red-dim);
+}
+
+.player-row--excluded::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 10px,
+    rgba(196, 74, 58, 0.18) 10px,
+    rgba(196, 74, 58, 0.18) 12px
+  );
+  pointer-events: none;
+  border-radius: var(--radius);
+  z-index: 1;
+}
+
+.player-row--turn {
+  border-color: var(--green);
+  box-shadow: 0 0 16px rgba(107, 158, 74, 0.15);
 }
 
 .player-row__name {
@@ -603,65 +645,94 @@ body.has-scenario-bg .waiting-modal__card {
   text-transform: uppercase;
   color: var(--amber);
   margin: 0;
-  padding-top: 0.25rem;
+  line-height: 1.3;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.player-row__meta {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  white-space: nowrap;
 }
 
 .player-row__cards {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  grid-column: 1 / -1;
+  gap: 0.3rem;
 }
 
-@media (min-width: 601px) {
-  .player-row__cards {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-  }
-
-  .player-row__name {
-    grid-row: 1;
-  }
-
-  .player-row__meta {
-    grid-column: 1;
-    grid-row: 2;
-  }
-}
-
+/* —— Host cards: bunker-style tags —— */
 .host-card {
-  min-width: 5.5rem;
-  padding: 0.5rem 0.65rem;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  border-radius: 3px;
+  border-style: solid;
+  border-width: 1px;
   font-size: 0.75rem;
   text-align: center;
+  line-height: 1.2;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  flex: 0 1 auto;
+  max-width: 100%;
+  min-width: 3.5rem;
+  overflow: hidden;
 }
 
 .host-card--sealed {
-  background: var(--concrete);
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--concrete),
+    var(--concrete) 3px,
+    #2e342e 3px,
+    #2e342e 4px
+  );
   color: var(--text-dim);
   font-family: var(--font-mono);
   letter-spacing: 0.05em;
+  border-color: #3a3f38;
+  min-width: 2.8rem;
+  flex: 0 0 auto;
+  padding: 0.5rem 0.4rem;
 }
 
 .host-card--revealed {
-  background: rgba(107, 158, 74, 0.15);
-  border-color: var(--green);
+  background: var(--bg-deep);
+  border-color: rgba(107, 158, 74, 0.4);
+  min-width: 4.5rem;
 }
 
-.host-card__type {
+.host-card__header {
   display: block;
+  width: 100%;
+  padding: 0.2rem 0.4rem;
   font-family: var(--font-mono);
-  font-size: 0.55rem;
+  font-size: 0.6rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-dim);
-  margin-bottom: 0.2rem;
+  border-bottom: 1px solid rgba(107, 158, 74, 0.2);
+  background: rgba(107, 158, 74, 0.08);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.host-card__type--revealed {
-  color: var(--green);
+.host-card__value {
+  display: block;
+  padding: 0.3rem 0.4rem 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+  width: 100%;
 }
 
 /* —— Layout helpers —— */
@@ -701,21 +772,11 @@ body.has-scenario-bg .waiting-modal__card {
   color: var(--green);
 }
 
-/* —— Host lobby layout —— */
-.lobby-layout {
-  display: grid;
-  gap: 1.5rem;
-}
-
-@media (min-width: 720px) {
-  .lobby-layout {
-    grid-template-columns: 1fr minmax(200px, 240px);
-    align-items: start;
-  }
-}
-
+/* —— Host lobby — QR & code focus —— */
 .lobby-invite {
-  padding: 1.25rem;
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
   background: var(--bg-card);
   border: 1px solid var(--border-bright);
   border-radius: var(--radius);
@@ -726,35 +787,50 @@ body.has-scenario-bg .waiting-modal__card {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 0.75rem 0;
-  padding: 0.75rem;
+  margin: 1rem auto;
+  padding: 1rem;
   background: #ffffff;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  min-height: 196px;
+  width: -moz-fit-content;
+  width: fit-content;
+  min-height: 240px;
 }
 
 .lobby-invite__qr {
   display: block;
-  width: 180px;
-  height: 180px;
+  width: 240px;
+  height: 240px;
   object-fit: contain;
 }
 
 .lobby-invite__code {
-  margin: 0;
+  margin: 0.5rem 0 0;
   font-family: var(--font-mono);
-  font-size: 2rem;
-  letter-spacing: 0.35em;
+  font-size: 3.5rem;
+  font-weight: 700;
+  letter-spacing: 0.4em;
   color: var(--amber);
-  text-indent: 0.35em;
+  text-indent: 0.4em;
+  line-height: 1.2;
+  text-shadow: 0 0 32px var(--amber-glow);
 }
 
 .lobby-invite__hint {
   margin: 0.75rem 0 0;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--text-dim);
   line-height: 1.4;
+}
+
+.host-actions--centered {
+  justify-content: center;
+  margin-top: 1.25rem;
+}
+
+.btn--large {
+  padding: 0.85rem 2rem;
+  font-size: 1.1rem;
 }
 
 .session-code-input {
@@ -1089,38 +1165,35 @@ body.has-scenario-bg .waiting-modal__card {
   text-transform: uppercase;
 }
 
+.turn-banner__name--voting {
+  color: var(--red);
+  animation: pulseGlow 1.6s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    text-shadow: 0 0 8px rgba(196, 74, 58, 0.3);
+    opacity: 0.85;
+  }
+  50% {
+    text-shadow: 0 0 28px rgba(196, 74, 58, 0.7), 0 0 60px rgba(196, 74, 58, 0.25);
+    opacity: 1;
+  }
+}
+
 .turn-chip {
   display: inline-block;
-  margin-left: 0.5rem;
   font-family: var(--font-mono);
   font-size: 0.55rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--green);
   border: 1px solid var(--green);
-  padding: 0.15rem 0.4rem;
+  padding: 0.1rem 0.35rem;
   border-radius: var(--radius);
-  vertical-align: middle;
+  line-height: 1.2;
 }
 
-.player-row--turn {
-  border-color: var(--green);
-  box-shadow: 0 0 16px rgba(107, 158, 74, 0.15);
-}
-
-.host-card--type-visible {
-  background: rgba(232, 168, 56, 0.08);
-  border-color: rgba(232, 168, 56, 0.35);
-  min-width: 4.5rem;
-}
-
-.host-card__hidden-val {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: var(--text-dim);
-  letter-spacing: 0.15em;
-}
 
 .game-card--locked {
   cursor: not-allowed;
@@ -1253,25 +1326,10 @@ body.has-scenario-bg .waiting-modal__card {
   margin: 0 0 0.75rem;
 }
 
-.player-row__meta {
-  grid-column: 1 / -1;
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: var(--text-dim);
-}
-
 @media (min-width: 601px) {
-  .player-row__meta {
-    grid-column: 2;
-  }
 }
 
 @media (max-width: 600px) {
-  .player-row {
-    grid-template-columns: 1fr;
-  }
-
   .join-form {
     flex-direction: column;
   }
@@ -1462,6 +1520,27 @@ body.has-scenario-bg .waiting-modal__card {
   .player.player--lobby .waiting-modal .btn {
     min-height: 3rem;
   }
+}
+
+/* —— Authors footer —— */
+.authors-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  margin-top: 4rem;
+  padding-top: 2rem;
+}
+
+.authors-footer__logo {
+  height: 200px;
+  width: auto;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.authors-footer__logo:hover {
+  opacity: 1;
 }
 
 @media (max-width: 380px) {

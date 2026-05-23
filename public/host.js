@@ -13,7 +13,6 @@ const endedPanel = document.getElementById("endedPanel");
 const turnPanel = document.getElementById("turnPanel");
 const rosterTitle = document.getElementById("rosterTitle");
 const rosterEl = document.getElementById("roster");
-const modeSelect = document.getElementById("modeSelect");
 const scenarioGrid = document.getElementById("scenarioGrid");
 const createSessionBtn = document.getElementById("createSessionBtn");
 const setupBunkerHint = document.getElementById("setupBunkerHint");
@@ -46,12 +45,14 @@ function formatCardValue(c) {
   if (c.type === "profession" && c.professionLevel) {
     return `${c.profession || c.value} — ${c.professionLevel}`;
   }
+  if (c.type === "health" && c.condition) {
+    return `${c.condition} — ${c.conditionLevel}`;
+  }
   return c.value;
 }
 
 function currentSettingsPayload() {
   return {
-    mode: modeSelect.value,
     backstoryId: selectedBackstoryId,
     backstoryRandom,
   };
@@ -82,7 +83,7 @@ function getLocalScenarioPreview() {
 
 function updateHostScenarioTheme(data, showSpots = false) {
   applyScenarioBackground(data);
-  renderScenarioHero(scenarioHero, data, { showSpots });
+  renderScenarioHero(scenarioHero, data, { showSpots, hideText: true });
 }
 
 function selectScenario(id, random) {
@@ -99,7 +100,7 @@ function buildScenarioGrid(backstories) {
       (b) => `
     <button type="button" class="scenario-card" data-id="${b.id}" aria-selected="false"
       title="${escapeHtml(b.title)}">
-      <img class="scenario-card__img" src="/scenarios/${b.scene}.png" alt="${escapeHtml(b.title)}" loading="lazy">
+      ${b.scene ? `<img class="scenario-card__img" src="/scenarios/${b.scene}.png" alt="${escapeHtml(b.title)}" loading="lazy">` : `<span class="scenario-card__random-mark" aria-hidden="true">18+</span>`}
       <span class="scenario-card__label">${escapeHtml(b.title)}</span>
     </button>`
     )
@@ -132,19 +133,12 @@ function emitSettings() {
 
 function fillCatalog(catalog, settings) {
   if (!catalogReady) {
-    modeSelect.innerHTML = catalog.modes
-      .map(
-        (m) =>
-          `<option value="${m.id}">${escapeHtml(m.name)} — ${escapeHtml(m.description)}</option>`
-      )
-      .join("");
     catalog.backstories.forEach((b) => {
       backstoriesById[b.id] = b;
     });
     buildScenarioGrid(catalog.backstories);
     catalogReady = true;
 
-    modeSelect.addEventListener("change", emitSettings);
     createSessionBtn.addEventListener("click", () => {
       socket.emit("createSession", currentSettingsPayload());
     });
@@ -153,7 +147,6 @@ function fillCatalog(catalog, settings) {
   }
 
   suppressSettingsEmit = true;
-  modeSelect.value = settings.mode;
   selectedBackstoryId = settings.backstoryId;
   backstoryRandom = settings.backstoryRandom;
   syncScenarioSelection();
@@ -212,24 +205,28 @@ function renderGameRoster(players, currentTurn, round, phase) {
           if (c.opened && c.value) {
             return `
               <span class="host-card host-card--revealed">
-                <span class="host-card__type host-card__type--revealed">${escapeHtml(c.label)}</span>
-                ${escapeHtml(formatCardValue(c))}
+                <span class="host-card__header">${escapeHtml(c.label)}</span>
+                <span class="host-card__value">${escapeHtml(formatCardValue(c))}</span>
               </span>`;
           }
           if (revealAll) return "";
-          return `<span class="host-card host-card--sealed">██ ${idx + 1}</span>`;
+          return `<span class="host-card host-card--sealed">${idx + 1}</span>`;
         })
         .join("");
 
       return `
         <article class="player-row ${isTurn ? "player-row--turn" : ""} ${p.excluded ? "player-row--excluded" : ""}" data-player-id="${p.id}">
-          <h2 class="player-row__name">
-            ${escapeHtml(p.name)}
-            ${excludedTag}
-            ${isTurn ? '<span class="turn-chip">ход</span>' : ""}
-          </h2>
-          <p class="player-row__meta">Раскрыто в раунде: ${p.revealsThisRound ?? 0} / ${quota}</p>
-          <div class="player-row__cards">${cardsHtml || '<span class="host-card host-card--sealed">—</span>'}</div>
+          <div class="player-row__header">
+            <h2 class="player-row__name">
+              ${escapeHtml(p.name)}
+              ${excludedTag}
+              ${isTurn ? '<span class="turn-chip">ход</span>' : ""}
+            </h2>
+            <span class="player-row__meta">${p.revealsThisRound ?? 0}/${quota}</span>
+          </div>
+          <div class="player-row__body">
+            <div class="player-row__cards">${cardsHtml || '<span class="host-card host-card--sealed">—</span>'}</div>
+          </div>
         </article>
       `;
     })
@@ -258,7 +255,7 @@ function applyState(state) {
   if (inSetup) {
     hostBadge.textContent = "Настройка";
     hostTagline.textContent =
-      "Выберите режим и сценарий, затем создайте сессию.";
+      "Выберите сценарий катастрофы, затем создайте сессию.";
     hostStatus.textContent = "Сессия ещё не создана";
     setupBunkerHint.textContent = `Мест в бункере (при 6 игроках): ${state.bunkerSpots}`;
     updateHostScenarioTheme(getLocalScenarioPreview());
@@ -275,8 +272,9 @@ function applyState(state) {
       `«${scenarioHint}». Дождитесь игроков — рекомендуется 6–15 человек.`;
     hostStatus.textContent =
       n === 0 ? "Ожидание подключений…" : `В зале: ${n} чел.`;
+    const loc = state.scenario?.locationLabel || "В бункере";
     bunkerHint.textContent = state.scenario?.yearsLabel
-      ? `В бункере: ${state.scenario.yearsLabel} · мест по таблице: ${state.bunkerSpots}`
+      ? `${loc}: ${state.scenario.yearsLabel} · мест по таблице: ${state.bunkerSpots}`
       : `Мест в бункере: ${state.bunkerSpots}`;
     startBtn.disabled = !state.canStart;
     updateHostScenarioTheme(state.scenario);
@@ -299,24 +297,28 @@ function applyState(state) {
 
   updateHostScenarioTheme(state.backstory, true);
 
-  const modeName =
-    state.catalog.modes.find((m) => m.id === state.settings.mode)?.name ||
-    state.settings.mode;
-  hostStatus.textContent = `${modeName} · в бункере мест: ${state.bunkerSpots} · выживших: ${state.survivorsCount}`;
+  hostStatus.textContent = `В бункере мест: ${state.bunkerSpots} · выживших: ${state.survivorsCount}`;
   bunkerHint.textContent = `Мест в бункере: ${state.bunkerSpots} · выживших: ${state.survivorsCount}`;
 
   if (inPlaying && state.round) {
     hostTagline.textContent =
       "Карты скрыты до раскрытия. В 1-м раунде первой — «Профессия». После квоты — голосование.";
     hostRoundInfo.textContent = `Раунд ${state.round.number} из ${state.round.max}. Каждый активный игрок открывает ${state.round.revealQuota} карт.${state.round.number === 1 ? " Первая — «Профессия»." : ""}`;
-    const turnPlayer = state.players.find((p) => p.id === state.currentTurn);
-    currentTurnName.textContent = turnPlayer ? turnPlayer.name : "—";
+    if (state.round.allMetQuota) {
+      currentTurnName.textContent = "ГОЛОСОВАНИЕ";
+      currentTurnName.className = "turn-banner__name turn-banner__name--voting";
+    } else {
+      const turnPlayer = state.players.find((p) => p.id === state.currentTurn);
+      currentTurnName.textContent = turnPlayer ? turnPlayer.name : "—";
+      currentTurnName.className = "turn-banner__name";
+    }
   }
 
   if (inVoting && state.voting) {
     hostTagline.textContent = "Игроки голосуют, кого исключить.";
     hostVotingInfo.textContent = `Голосов: ${state.voting.votesCast} / ${state.voting.votersNeeded}.${state.voting.lastExcludedName ? ` Последний исключённый: ${state.voting.lastExcludedName}.` : ""}`;
-    currentTurnName.textContent = "—";
+    currentTurnName.textContent = "ГОЛОСОВАНИЕ";
+    currentTurnName.className = "turn-banner__name turn-banner__name--voting";
   }
 
   if (inEnded) {

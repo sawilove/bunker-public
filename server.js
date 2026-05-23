@@ -161,6 +161,10 @@ function mapCardForClient(card, revealAll = false) {
     base.profession = card.profession;
     base.professionLevel = card.professionLevel;
   }
+  if (card.type === "health" && card.condition) {
+    base.condition = card.condition;
+    base.conditionLevel = card.conditionLevel;
+  }
   return base;
 }
 
@@ -552,8 +556,9 @@ io.on("connection", (socket) => {
     game.activeBackstory = buildActiveBackstory(game.settings, n);
     game.round = 1;
 
+    const scenarioId = game.activeBackstory.id;
     for (const id of playerIds()) {
-      game.players[id].cards = dealPlayerCards();
+      game.players[id].cards = dealPlayerCards(scenarioId);
       game.players[id].excluded = false;
     }
     initRevealsThisRound();

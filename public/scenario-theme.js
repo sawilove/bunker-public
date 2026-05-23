@@ -1,4 +1,5 @@
 function formatYearsLabel(years) {
+  if (typeof years === "string") return years;
   const n = Math.abs(Math.floor(years));
   const mod10 = n % 10;
   const mod100 = n % 100;
@@ -44,7 +45,7 @@ function renderScenarioHero(heroEl, data, options = {}) {
     heroEl.innerHTML = `
       <p class="scenario-hero__badge">Сценарий</p>
       <h2 class="scenario-hero__title">${scenarioEscape(data.title || "Случайный сценарий")}</h2>
-      <p class="scenario-hero__text">${scenarioEscape(data.text || "Катастрофа будет выбрана при старте игры.")}</p>`;
+      ${options.hideText ? "" : `<p class="scenario-hero__text">${scenarioEscape(data.text || "Катастрофа будет выбрана при старте игры.")}</p>`}`;
     return;
   }
 
@@ -53,20 +54,22 @@ function renderScenarioHero(heroEl, data, options = {}) {
     : data.yearsInBunker
       ? formatYearsLabel(data.yearsInBunker)
       : null;
+  const loc = data.locationLabel || "В бункере";
   const yearsLine = years
-    ? `<p class="scenario-hero__years">В бункере: <strong>${scenarioEscape(years)}</strong></p>`
+    ? `<p class="scenario-hero__years">${scenarioEscape(loc)}: <strong>${scenarioEscape(years)}</strong></p>`
     : "";
   const spotsLine =
     options.showSpots && data.spotsText
       ? `<p class="scenario-hero__spots">${scenarioEscape(data.spotsText)}</p>`
       : "";
+  const badge = data.badge || "Сценарий катастрофы";
 
   heroEl.classList.remove("hidden");
   heroEl.innerHTML = `
-    <p class="scenario-hero__badge">Сценарий катастрофы</p>
+    <p class="scenario-hero__badge">${scenarioEscape(badge)}</p>
     <h2 class="scenario-hero__title">${scenarioEscape(data.title)}</h2>
     ${yearsLine}
-    <p class="scenario-hero__text">${scenarioEscape(data.text)}</p>
+    ${options.hideText ? "" : `<p class="scenario-hero__text">${scenarioEscape(data.text)}</p>`}
     ${spotsLine}`;
 }
 
@@ -75,5 +78,7 @@ function enrichScenarioFromCatalog(story) {
   return {
     ...story,
     yearsLabel: story.yearsLabel || formatYearsLabel(story.yearsInBunker),
+    badge: story.badge,
+    locationLabel: story.locationLabel,
   };
 }

@@ -43,6 +43,9 @@ function formatCardValue(c) {
   if (c.type === "profession" && c.professionLevel) {
     return `${c.profession || c.value} — ${c.professionLevel}`;
   }
+  if (c.type === "health" && c.condition) {
+    return `${c.condition} — ${c.conditionLevel}`;
+  }
   return c.value;
 }
 
@@ -159,7 +162,9 @@ function renderCards(cards, isYourTurn, round, phase, excluded) {
       const levelLine =
         c.type === "profession" && c.professionLevel
           ? `<span class="game-card__level">Уровень: ${escapeHtml(c.professionLevel)}</span>`
-          : "";
+          : c.type === "health" && c.conditionLevel
+            ? `<span class="game-card__level">Степень: ${escapeHtml(c.conditionLevel)}</span>`
+            : "";
 
       return `
         <div class="game-card game-card--private ${onTable ? "game-card--on-table" : ""} ${revealAll && !onTable ? "game-card--revealed-end" : ""}">
