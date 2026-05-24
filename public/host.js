@@ -56,25 +56,36 @@ function hasActiveHostSession() {
 }
 
 function showExitModal() {
-  exitModal.classList.remove("hidden");
+  exitModal?.classList.remove("hidden");
 }
 
 function hideExitModal() {
-  exitModal.classList.add("hidden");
+  exitModal?.classList.add("hidden");
 }
 
-hostExitLink.addEventListener("click", (e) => {
-  if (!hasActiveHostSession()) return;
-  e.preventDefault();
-  showExitModal();
-});
+function initHostExitFlow() {
+  const exitLink =
+    hostExitLink || document.querySelector("body.host a.back-link");
 
-exitConfirmNo.addEventListener("click", hideExitModal);
+  if (!exitLink || !exitModal || !exitConfirmYes || !exitConfirmNo) {
+    return;
+  }
 
-exitConfirmYes.addEventListener("click", () => {
-  exitConfirmYes.disabled = true;
-  socket.emit("hostEndSession");
-});
+  exitLink.addEventListener("click", (e) => {
+    if (!hasActiveHostSession()) return;
+    e.preventDefault();
+    showExitModal();
+  });
+
+  exitConfirmNo.addEventListener("click", hideExitModal);
+
+  exitConfirmYes.addEventListener("click", () => {
+    exitConfirmYes.disabled = true;
+    socket.emit("hostEndSession");
+  });
+}
+
+initHostExitFlow();
 
 socket.on("hostSessionEnded", () => {
   BunkerRuntime.saveHostId("");
