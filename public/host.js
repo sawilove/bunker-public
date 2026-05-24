@@ -1,5 +1,17 @@
 const socket = BunkerRuntime.connectSocket();
 
+function formatBunkerHint(scenario, spots) {
+  if (!scenario) return `Мест в бункере: ${spots}`;
+  const loc = scenario.locationLabel || "В бункере";
+  const stay = scenario.stayDurationLabel || scenario.yearsLabel;
+  const area = scenario.bunkerArea ? ` · ${scenario.bunkerArea}` : "";
+  const food = scenario.foodSupplyLabel ? ` · еда: ${scenario.foodSupplyLabel}` : "";
+  if (stay) {
+    return `${loc}: ${stay}${area}${food} · мест: ${spots}`;
+  }
+  return `Мест в бункере: ${spots}`;
+}
+
 const hostBadge = document.getElementById("hostBadge");
 const hostTagline = document.getElementById("hostTagline");
 const hostStatus = document.getElementById("hostStatus");
@@ -333,10 +345,9 @@ function applyState(state) {
       `«${scenarioHint}». Дождитесь игроков — рекомендуется 6–15 человек.`;
     hostStatus.textContent =
       n === 0 ? "Ожидание подключений…" : `В зале: ${n} чел.`;
-    const loc = state.scenario?.locationLabel || "В бункере";
-    bunkerHint.textContent = state.scenario?.yearsLabel
-      ? `${loc}: ${state.scenario.yearsLabel} · мест по таблице: ${state.bunkerSpots}`
-      : `Мест в бункере: ${state.bunkerSpots}`;
+    bunkerHint.textContent = state.scenario?.bunkerParamsPending
+      ? `${state.scenario.bunkerParamsNote || "Параметры бункера — при старте"} · мест: ${state.bunkerSpots}`
+      : formatBunkerHint(state.scenario, state.bunkerSpots);
     startBtn.disabled = !state.canStart;
     updateHostScenarioTheme(state.scenario);
     if (state.sessionCode) {
@@ -359,7 +370,9 @@ function applyState(state) {
   updateHostScenarioTheme(state.backstory, true);
 
   hostStatus.textContent = `В бункере мест: ${state.bunkerSpots} · выживших: ${state.survivorsCount}`;
-  bunkerHint.textContent = `Мест в бункере: ${state.bunkerSpots} · выживших: ${state.survivorsCount}`;
+  bunkerHint.textContent = state.backstory
+    ? `${formatBunkerHint(state.backstory, state.bunkerSpots)} · выживших: ${state.survivorsCount}`
+    : `Мест в бункере: ${state.bunkerSpots} · выживших: ${state.survivorsCount}`;
 
   if (inPlaying && state.round) {
     hostTagline.textContent =

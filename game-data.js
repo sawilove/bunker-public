@@ -21,77 +21,271 @@ const BACKSTORIES = [
     id: "nuclear",
     scene: "scene0",
     title: "Ядерная зима",
-    text: "Термоядерные удары стёрли с лица земли крупнейшие города. Радиоактивные осадки отравляют всё живое, температура за бортом упала до -40°C. Выжившие прячутся в подземных убежищах, но запасы еды и воды тают с каждым днём. Консервы, аккумуляторы и надежда — вот всё, что у вас осталось. Смогут ли незнакомцы ужиться в тесном бункере на долгие годы?",
-    yearsInBunker: 25,
+    text: "Термоядерные удары стёрли с лица земли крупнейшие города. Радиоактивные осадки отравляют всё живое, температура за бортом упала до -40°C. Выжившие прячутся в подземных убежищах, но запасы еды и воды тают с каждым днём. Консервы, аккумуляторы и надежда — вот всё, что у вас осталось. Смогут ли незнакомцы ужиться в тесном бункере на неопределённый срок?",
   },
   {
     id: "pandemic",
     scene: "scene1",
     title: "Пандемия",
     text: "Штамм «Некрозис-7» мутировал и прорвал все карантинные зоны. Заражённые заполонили улицы — они не мертвы, но уже и не люди. Медицинские центры переполнены, правительство молчит. Ваш бункер — последний чистый уголок в радиусе сотен километров, но воздушные фильтры изношены, а вакцины нет. Каждый чих может стать последним.",
-    yearsInBunker: 3,
   },
   {
     id: "flood",
     scene: "scene2",
     title: "Наводнение",
     text: "Глобальное таяние ледников подняло уровень мирового океана на сорок метров. Прибрежные мегаполисы ушли под воду, реки вышли из берегов и затопили континенты. Ваш бункер — бывшая подземная лаборатория на возвышенности. Генератор работает на износ, сырость проникает сквозь стены, а запасы пресной воды ограничены тем, что удалось собрать до потопа.",
-    yearsInBunker: 5,
   },
   {
     id: "meteor",
     scene: "scene3",
     title: "Падение метеорита",
     text: "Астероид диаметром пять километров врезался в Атлантику. Ударная волна обогнула планету трижды, цунами смело побережья, а в атмосферу поднялись миллиарды тонн пыли. Солнце не пробивается сквозь пелену уже месяц. Температура на поверхности упала до -20°C. Бункер выдержал удар, но системы жизнеобеспечения работают на пределе.",
-    yearsInBunker: 10,
   },
   {
     id: "ai",
     scene: "scene4",
     title: "Восстание машин",
     text: "Искусственный интеллект «Прометей» вышел из-под контроля и захватил всю цифровую инфраструктуру. Беспилотники патрулируют города, системы «умный дом» блокируют двери, а боевые дроны охотятся на уцелевших людей. Ваш бункер — последний серверный комплекс, отключённый от сети. Здесь нет интернета, но есть генератор и запасы. Главный вопрос: надолго ли?",
-    yearsInBunker: 7,
   },
   {
     id: "solar",
     scene: "scene5",
     title: "Солнечный гипершторм",
     text: "Рекордная вспышка на Солнце класса X-50 вывела из строя всю электронику на планете. Спутники сгорели, энергосистемы расплавились, самолёты попадали с неба. Снаружи — аномальная жара +60°C днём, магнитные бури и отсутствие связи. Ваш бункер — старый военный командный пункт с толстыми стенами. Электричество есть, но никто не знает, когда закончится топливо для генератора.",
-    yearsInBunker: 2,
   },
   {
     id: "fungus",
     scene: "scene6",
     title: "Грибковая биоинвазия",
     text: "Споры инопланетного грибка «Кордицепс-Гамма» распространились по всей планете за считанные недели. Они проникают в лёгкие, поражают нервную систему и превращают людей в безвольных носителей. Фильтрация воздуха в бункере — единственное, что сдерживает заражение. Но запасы фильтров ограничены, а грибок уже стучится в вентиляционные шахты. Каждый час — битва за чистый воздух.",
-    yearsInBunker: 8,
   },
   {
     id: "evolution",
     scene: "scene7",
     title: "Обратная эволюция",
-    text: "Неизвестный космический излучатель запустил процесс деволюции. Животные мутируют в доисторические формы, растения дичают, а люди теряют когнитивные способности с пугающей скоростью. Ваш бункер — исследовательский комплекс с толстыми свинцовыми стенами. Здесь вы последние, кто ещё мыслит ясно. Но антидот не найден, а припасы рассчитаны на двенадцать лет изоляции.",
-    yearsInBunker: 12,
+    text: "Неизвестный космический излучатель запустил процесс деволюции. Животные мутируют в доисторические формы, растения дичают, а люди теряют когнитивные способности с пугающей скоростью. Ваш бункер — исследовательский комплекс с толстыми свинцовыми стенами. Здесь вы последние, кто ещё мыслит ясно. Но антидот не найден, а запасы еды — лотерея.",
   },
   {
     id: "vulgar",
     scene: "scene8",
     title: "Ночная гулянка",
     text: "Никакой катастрофы не случилось. Просто вы оказались на закрытой вечеринке в вип-зале ночного клуба «Подземка», и дверь случайно заблокировалась. На кону — провести незабываемую ночь с тем, кто останется. Компромат, грязные секреты и пошлые шутки — вот ваше оружие. Шоу должно продолжаться, и ставки высоки как никогда.",
-    yearsInBunker: "1 страстная ночь",
     locationLabel: "Вечеринка длится",
     badge: "Сценарий 18+",
   },
 ];
 
-function formatYearsInBunker(years) {
-  if (typeof years === "string") return years;
-  const n = Math.abs(Math.floor(years));
+/** Пулы параметров бункера (выпадают случайно при старте игры) */
+const BUNKER_TYPES = [
+  "Бывший военный бункер холодной войны",
+  "Подземная правительственная лаборатория",
+  "Заброшенная станция метро, переоборудованная под жильё",
+  "Старый шахтный ствол с оборудованными камерами",
+  "Переоборудованный подвал торгового центра",
+  "Секретный объект «Омега-7»",
+  "Подземный склад крупного завода",
+  "Исследовательский комплекс со свинцовыми стенами",
+  "Бомбоубежище гражданской обороны 1970-х",
+  "Автономный серверный комплекс",
+  "Подземная гидропонная ферма",
+  "Старый командный пункт ВВС",
+  "Катакомбы под монастырём",
+  "Убежище миллиардера с сейфовой дверью",
+  "Затопленный этаж парковки (насосы ещё работают)",
+  "Бывшая подземная станция метеослужбы",
+  "Перестроенный тоннель метро с гермодверями",
+];
+
+const BUNKER_CONDITIONS = [
+  "Сухо и чисто, но душно от фильтрации воздуха",
+  "Сырые стены, в дальнем коридоре капает с потолка",
+  "Протечки в техотсеке, плесень в жилых каютах",
+  "Стерильные белые коридоры и неестественная тишина",
+  "Трещины в несущих балках, периодический гул",
+  "Тусклое аварийное освещение, запах озона",
+  "Обшарпанная обивка, скрипящие металлические койки",
+  "Климат-контроль исправен, лифт застрял между этажами",
+  "Забаррикадированный вход, следы паники в общей комнате",
+  "Холодно: отопление работает на 40% мощности",
+  "Вентиляция гудит, в одной из комнат пахнет бензином",
+  "Идеальная чистота, но не работает одна из камер",
+  "Следы грибка на стыках панелей, фильтры на износе",
+  "Тёпло, но вода из крана мутная — нужна очистка",
+];
+
+const BUNKER_AREAS = [
+  "42 м²",
+  "65 м²",
+  "85 м²",
+  "120 м²",
+  "150 м²",
+  "180 м²",
+  "220 м²",
+  "280 м²",
+  "350 м²",
+  "420 м²",
+  "500 м²",
+  "650 м²",
+];
+
+const BUNKER_INVENTORY = [
+  "Медпункт с базовыми препаратами",
+  "Склад консервов и сухпайков",
+  "Дизельный генератор",
+  "Радиостанция дальнего действия",
+  "Оружейная с сейфом",
+  "Библиотека и настольные игры",
+  "Оранжерея с искусственным светом",
+  "Мастерская с инструментами",
+  "Кинозал на 12 мест",
+  "Склад фильтров для вентиляции",
+  "Спортзал с тренажёрами",
+  "Холодильные камеры",
+  "Водоочистная установка",
+  "Промышленная кухня",
+  "Склад дизельного топлива",
+  "Лаборатория для анализа воды и воздуха",
+  "Сейф с документами и картами",
+  "Соляная комната (не используется)",
+  "Склад химзащиты и противогазов",
+  "Аптечный запас на экстренные случаи",
+];
+
+const BUNKER_STAY_VULGAR = [
+  "1 страстная ночь",
+  "до рассвета",
+  "72 часа",
+  "до закрытия клуба",
+  "ровно 8 часов вип-доступа",
+];
+
+const BUNKER_TYPES_VULGAR = [
+  "VIP-зал ночного клуба «Подземка»",
+  "Закрытый лаунж с барной стойкой",
+  "Приватная комната с диванами и неоном",
+  "Подвальный зал с караоке и дым-машиной",
+];
+
+const BUNKER_CONDITIONS_VULGAR = [
+  "Неоновая подсветка, липкий пол у барной стойки",
+  "Душно, кондиционер гудит на полную",
+  "Зеркала по стенам, запах парфюма и дыма",
+  "Мягкая мебель, но дверь заблокирована снаружи",
+  "Тусклый свет, в углу мигает «занято»",
+];
+
+const BUNKER_AREAS_VULGAR = [
+  "45 м²",
+  "60 м²",
+  "80 м²",
+  "95 м²",
+];
+
+const BUNKER_INVENTORY_VULGAR = [
+  "Барная стойка с запасом алкоголя",
+  "Караоке-система",
+  "Диваны и пуфы",
+  "Колонки с басом",
+  "Фотозона с неоновой вывеской",
+  "Мини-холодильник с напитками",
+  "Игральные кости и карты",
+  "Сейф с «компроматом»",
+];
+
+const BUNKER_PARAMS_PENDING_NOTE =
+  "Срок пребывания, запасы и описание бункера определятся случайно при старте игры.";
+
+function pluralRu(n, one, few, many) {
   const mod10 = n % 10;
   const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return `${n} год`;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${n} года`;
-  return `${n} лет`;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+  return many;
+}
+
+function formatYearsPart(n) {
+  return `${n} ${pluralRu(n, "год", "года", "лет")}`;
+}
+
+function formatMonthsPart(n) {
+  return `${n} ${pluralRu(n, "месяц", "месяца", "месяцев")}`;
+}
+
+function formatDuration(years, months) {
+  if (typeof years === "string") return years;
+  const y = Math.max(0, Math.floor(years || 0));
+  const m = Math.max(0, Math.floor(months || 0));
+  const parts = [];
+  if (y > 0) parts.push(formatYearsPart(y));
+  if (m > 0) parts.push(formatMonthsPart(m));
+  if (parts.length === 0) return "менее месяца";
+  return parts.join(" ");
+}
+
+function formatYearsInBunker(years) {
+  if (typeof years === "string") return years;
+  return formatDuration(years, 0);
+}
+
+function randomInt(min, max) {
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+function rollDuration(yearsMin, yearsMax, monthsMin, monthsMax) {
+  let years = randomInt(yearsMin, yearsMax);
+  let months = randomInt(monthsMin, monthsMax);
+  if (years === 0 && months === 0) {
+    months = randomInt(Math.max(1, monthsMin), monthsMax);
+  }
+  return { years, months };
+}
+
+function pickRandomMany(arr, count) {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, Math.min(count, copy.length));
+}
+
+function rollBunkerProfile(scenarioId) {
+  if (is18(scenarioId)) {
+    const stayLabel = pickRandom(BUNKER_STAY_VULGAR);
+    return {
+      bunkerType: pickRandom(BUNKER_TYPES_VULGAR),
+      bunkerCondition: pickRandom(BUNKER_CONDITIONS_VULGAR),
+      bunkerArea: pickRandom(BUNKER_AREAS_VULGAR),
+      bunkerInventory: pickRandomMany(BUNKER_INVENTORY_VULGAR, 3).join("; "),
+      stayDuration: null,
+      stayDurationLabel: stayLabel,
+      foodSupply: null,
+      foodSupplyLabel: pickRandom([
+        "закуски до утра",
+        "бар закрыт, только орешки",
+        "напитки на столе",
+        "мини-холодильник полон",
+      ]),
+      yearsLabel: stayLabel,
+      locationLabel: "Вечеринка длится",
+    };
+  }
+
+  const stay = rollDuration(0, 25, 0, 11);
+  const food = rollDuration(0, 12, 0, 11);
+
+  return {
+    bunkerType: pickRandom(BUNKER_TYPES),
+    bunkerCondition: pickRandom(BUNKER_CONDITIONS),
+    bunkerArea: pickRandom(BUNKER_AREAS),
+    bunkerInventory: pickRandomMany(BUNKER_INVENTORY, 4).join("; "),
+    stayDuration: stay,
+    stayDurationLabel: formatDuration(stay.years, stay.months),
+    foodSupply: food,
+    foodSupplyLabel: formatDuration(food.years, food.months),
+    yearsLabel: formatDuration(stay.years, stay.months),
+    locationLabel: "В бункере",
+  };
 }
 
 function getScenarioPreview(settings) {
@@ -101,8 +295,8 @@ function getScenarioPreview(settings) {
       title: "Случайный сценарий",
       text: "Катастрофа будет выбрана при старте. Готовьтесь к любому исходу.",
       scene: null,
-      yearsInBunker: null,
-      yearsLabel: null,
+      bunkerParamsPending: true,
+      bunkerParamsNote: BUNKER_PARAMS_PENDING_NOTE,
     };
   }
   const story = BACKSTORIES.find((b) => b.id === settings.backstoryId) || BACKSTORIES[0];
@@ -112,10 +306,10 @@ function getScenarioPreview(settings) {
     scene: story.scene,
     title: story.title,
     text: story.text,
-    yearsInBunker: story.yearsInBunker,
-    yearsLabel: formatYearsInBunker(story.yearsInBunker),
     badge: story.badge,
     locationLabel: story.locationLabel,
+    bunkerParamsPending: true,
+    bunkerParamsNote: BUNKER_PARAMS_PENDING_NOTE,
   };
 }
 
@@ -860,17 +1054,17 @@ function buildActiveBackstory(settings, playerCount) {
       BACKSTORIES.find((b) => b.id === settings.backstoryId) || BACKSTORIES[0];
   }
   const spots = getBunkerSpots(playerCount);
+  const bunker = rollBunkerProfile(story.id);
   return {
     id: story.id,
     scene: story.scene,
     title: story.title,
     text: story.text,
-    yearsInBunker: story.yearsInBunker,
-    yearsLabel: formatYearsInBunker(story.yearsInBunker),
     bunkerSpots: spots,
     spotsText: `Мест в бункере: ${spots} (из ${playerCount} претендентов).`,
     badge: story.badge,
-    locationLabel: story.locationLabel,
+    bunkerParamsPending: false,
+    ...bunker,
   };
 }
 
@@ -900,5 +1094,7 @@ module.exports = {
   buildActiveBackstory,
   getScenarioPreview,
   formatYearsInBunker,
+  formatDuration,
+  rollBunkerProfile,
   shuffleArray,
 };

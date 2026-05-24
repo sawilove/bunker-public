@@ -181,6 +181,50 @@ body.has-scenario-bg .waiting-modal__card {
   color: var(--text-dim);
 }
 
+.scenario-hero__years--pending {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.scenario-hero__years--pending strong {
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.scenario-hero__bunker-stats {
+  display: grid;
+  gap: 0.65rem 1.25rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  text-align: left;
+}
+
+@media (min-width: 520px) {
+  .scenario-hero__bunker-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.scenario-hero__stat {
+  margin: 0;
+}
+
+.scenario-hero__stat dt {
+  margin: 0 0 0.2rem;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.scenario-hero__stat dd {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+
 .host .scenario-hero {
   text-align: left;
 }
