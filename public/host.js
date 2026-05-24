@@ -1,4 +1,4 @@
-const socket = io();
+const socket = BunkerRuntime.connectSocket();
 
 const hostBadge = document.getElementById("hostBadge");
 const hostTagline = document.getElementById("hostTagline");
@@ -33,7 +33,18 @@ let selectedBackstoryId = "nuclear";
 let backstoryRandom = false;
 const backstoriesById = {};
 
-socket.emit("hostJoin");
+function emitHostJoin(extra = {}) {
+  socket.emit("hostJoin", {
+    hostId: BunkerRuntime.getHostId(),
+    ...extra,
+  });
+}
+
+emitHostJoin();
+
+socket.on("connect", () => {
+  emitHostJoin();
+});
 
 function escapeHtml(str) {
   const el = document.createElement("div");
@@ -100,7 +111,7 @@ function buildScenarioGrid(backstories) {
       (b) => `
     <button type="button" class="scenario-card" data-id="${b.id}" aria-selected="false"
       title="${escapeHtml(b.title)}">
-      ${b.scene ? `<img class="scenario-card__img" src="/scenarios/${b.scene}.png" alt="${escapeHtml(b.title)}" loading="lazy">` : `<span class="scenario-card__random-mark" aria-hidden="true">18+</span>`}
+      ${b.scene ? `<img class="scenario-card__img" src="${BunkerRuntime.assetUrl(`scenarios/${b.scene}.png`)}" alt="${escapeHtml(b.title)}" loading="lazy">` : `<span class="scenario-card__random-mark" aria-hidden="true">18+</span>`}
       <span class="scenario-card__label">${escapeHtml(b.title)}</span>
     </button>`
     )
@@ -143,7 +154,10 @@ function fillCatalog(catalog, settings) {
       socket.emit("createSession", currentSettingsPayload());
     });
     startBtn.addEventListener("click", () => socket.emit("startGame"));
-    newSessionBtn.addEventListener("click", () => socket.emit("newSession"));
+    newSessionBtn.addEventListener("click", () => {
+      BunkerRuntime.saveHostId("");
+      socket.emit("newSession");
+    });
   }
 
   suppressSettingsEmit = true;
@@ -157,10 +171,10 @@ function fillCatalog(catalog, settings) {
 function updateInvitePanel(code) {
   if (!code) return;
   sessionCodeDisplay.textContent = code;
-  const url = `${location.origin}/player?code=${encodeURIComponent(code)}`;
+  const url = BunkerRuntime.playerJoinUrl(code);
   if (url === lastQrUrl) return;
   lastQrUrl = url;
-  qrImg.src = `/api/qr.png?data=${encodeURIComponent(url)}`;
+  qrImg.src = BunkerRuntime.qrImageUrl(url);
   qrImg.alt = "QR-код для входа игрока";
 }
 
@@ -330,4 +344,11 @@ function applyState(state) {
   renderGameRoster(state.players, state.currentTurn, state.round, state.phase);
 }
 
-socket.on("gameState", applyState);
+socket.on("gameState", (state) => {
+  if (state.hostId) BunkerRuntime.saveHostId(state.hostId);
+  applyState(state);
+});
+
+socket.on("hostError", (msg) => {
+  alert(msg || "Не удалось подключиться как ведущий.");
+});

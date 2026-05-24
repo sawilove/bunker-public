@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Бункер — Игрок</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body class="player">
   <div id="scenarioBg" class="scenario-bg" aria-hidden="true"></div>
   <div class="page">
-    <a href="/" class="back-link">← Выйти из убежища</a>
+    <a href="index.html" class="back-link">← Выйти из убежища</a>
 
     <header class="site-header">
       <div class="site-header__badge" id="playerBadge">Личный терминал</div>
@@ -78,16 +78,18 @@
     </section>
     <footer class="authors-footer">
       <a href="https://vk.com/im_san" class="authors-footer__link" target="_blank" rel="noopener noreferrer">
-        <img src="/icons/author1.png" alt="Автор в VK" class="authors-footer__logo">
+        <img src="icons/author1.png" alt="Автор в VK" class="authors-footer__logo">
       </a>
       <a href="https://vk.com/ewlov3" class="authors-footer__link" target="_blank" rel="noopener noreferrer">
-        <img src="/icons/author2.png" alt="Автор в VK" class="authors-footer__logo">
+        <img src="icons/author2.png" alt="Автор в VK" class="authors-footer__logo">
       </a>
     </footer>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="/scenario-theme.js"></script>
-  <script src="/player.js"></script>
+  <script src="config.js"></script>
+  <script src="bunker-runtime.js"></script>
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
+  <script src="scenario-theme.js"></script>
+  <script src="player.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-const socket = io();
+const socket = BunkerRuntime.connectSocket();
 
 const codeSection = document.getElementById("codeSection");
 const joinSection = document.getElementById("joinSection");
@@ -112,6 +112,7 @@ leaveSessionBtn.addEventListener("click", () => {
   socket.emit("leaveSession");
   joined = false;
   validatedCode = null;
+  BunkerRuntime.clearPlayerSession();
   clearPlayerScenarioTheme();
   document.body.classList.remove("player--lobby", "player--in-game");
   waitingModal.classList.add("hidden");
@@ -142,8 +143,19 @@ socket.on("actionError", (msg) => alert(msg));
 socket.on("kicked", (msg) => {
   joined = false;
   validatedCode = null;
+  BunkerRuntime.clearPlayerSession();
   alert(msg);
   window.location.reload();
+});
+
+socket.on("reconnectFailed", (msg) => {
+  BunkerRuntime.clearPlayerSession();
+  joined = false;
+  validatedCode = null;
+  showCodeError(msg || "Не удалось восстановить сессию.");
+  codeSection.classList.remove("hidden");
+  joinSection.classList.add("hidden");
+  waitingModal.classList.add("hidden");
 });
 
 function renderCards(cards, isYourTurn, round, phase, excluded) {
@@ -211,6 +223,15 @@ function renderVoting(voting) {
 function applyState(state) {
   if (!state.you) return;
 
+  if (state.sessionCode && state.you.id) {
+    BunkerRuntime.savePlayerSession({
+      playerId: state.you.id,
+      code: state.sessionCode,
+      name: state.you.name,
+    });
+    validatedCode = state.sessionCode;
+  }
+
   if (!joined) {
     joined = true;
     codeSection.classList.add("hidden");
@@ -250,7 +271,7 @@ function applyState(state) {
     lobbyList.innerHTML = state.players
       .map((p) => {
         const tag = p.excluded ? " <span class='status-badge status-badge--excluded-inline'>ИСКЛЮЧЕН</span>" : "";
-        const you = p.id === socket.id ? " <em>(вы)</em>" : "";
+        const you = p.id === state.you.id ? " <em>(вы)</em>" : "";
         return `<li>${escapeHtml(p.name)}${you}${tag}</li>`;
       })
       .join("");
@@ -312,10 +333,26 @@ function applyState(state) {
 
 socket.on("gameState", applyState);
 
+function tryReconnect() {
+  const saved = BunkerRuntime.getPlayerSession();
+  if (saved.playerId && saved.code) {
+    socket.emit("playerReconnect", {
+      playerId: saved.playerId,
+      code: saved.code,
+    });
+    return true;
+  }
+  return false;
+}
+
+socket.on("connect", () => {
+  if (!joined) tryReconnect();
+});
+
 const urlCode = normalizeCodeInput(new URLSearchParams(location.search).get("code"));
 if (urlCode.length === 6) {
   sessionCodeInput.value = urlCode;
   requestCodeValidation(urlCode);
-} else {
+} else if (!BunkerRuntime.getPlayerSession().playerId) {
   sessionCodeInput.focus();
 }

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    (function () {
+      var path = location.pathname.replace(/\/$/, "");
+      var map = { host: "host.html", player: "player.html" };
+      var last = path.split("/").pop();
+      if (map[last]) {
+        var base = path.slice(0, path.lastIndexOf("/"));
+        location.replace((base ? base + "/" : "/") + map[last] + location.search + location.hash);
+      } else {
+        location.replace("index.html");
+      }
+    })();
+  </script>
+</head>
+<body></body>
+</html>

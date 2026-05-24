@@ -28,7 +28,10 @@ function applyScenarioBackground(data) {
   const bg = document.getElementById("scenarioBg");
   if (!bg) return;
   document.body.classList.add("has-scenario-bg");
-  bg.style.setProperty("--scenario-bg-image", `url(/scenarios/${data.scene}.png)`);
+  const img = window.BunkerRuntime
+    ? BunkerRuntime.assetUrl(`scenarios/${data.scene}.png`)
+    : `/scenarios/${data.scene}.png`;
+  bg.style.setProperty("--scenario-bg-image", `url(${img})`);
 }
 
 function renderScenarioHero(heroEl, data, options = {}) {
