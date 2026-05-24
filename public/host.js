@@ -25,8 +25,13 @@ const currentTurnName = document.getElementById("currentTurnName");
 const sessionCodeDisplay = document.getElementById("sessionCodeDisplay");
 const qrImg = document.getElementById("qrCode");
 const newSessionBtn = document.getElementById("newSessionBtn");
+const hostExitLink = document.getElementById("hostExitLink");
+const exitModal = document.getElementById("exitModal");
+const exitConfirmYes = document.getElementById("exitConfirmYes");
+const exitConfirmNo = document.getElementById("exitConfirmNo");
 
 let catalogReady = false;
+let hostPhase = "setup";
 let lastQrUrl = "";
 let suppressSettingsEmit = false;
 let selectedBackstoryId = "nuclear";
@@ -44,6 +49,36 @@ emitHostJoin();
 
 socket.on("connect", () => {
   emitHostJoin();
+});
+
+function hasActiveHostSession() {
+  return hostPhase !== "setup";
+}
+
+function showExitModal() {
+  exitModal.classList.remove("hidden");
+}
+
+function hideExitModal() {
+  exitModal.classList.add("hidden");
+}
+
+hostExitLink.addEventListener("click", (e) => {
+  if (!hasActiveHostSession()) return;
+  e.preventDefault();
+  showExitModal();
+});
+
+exitConfirmNo.addEventListener("click", hideExitModal);
+
+exitConfirmYes.addEventListener("click", () => {
+  exitConfirmYes.disabled = true;
+  socket.emit("hostEndSession");
+});
+
+socket.on("hostSessionEnded", () => {
+  BunkerRuntime.saveHostId("");
+  window.location.href = BunkerRuntime.pageUrl("index.html");
 });
 
 function escapeHtml(str) {
@@ -249,6 +284,7 @@ function renderGameRoster(players, currentTurn, round, phase) {
 
 function applyState(state) {
   fillCatalog(state.catalog, state.settings);
+  hostPhase = state.phase;
 
   const inSetup = state.phase === "setup";
   const inLobby = state.phase === "lobby";

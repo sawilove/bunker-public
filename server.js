@@ -353,6 +353,14 @@ function buildRoundInfo() {
   };
 }
 
+function endHostSession() {
+  for (const id of [...playerIds()]) {
+    emitToPlayer(id, "sessionEnded", "Ведущий завершил сессию.");
+    removePlayer(id);
+  }
+  resetToSetup();
+}
+
 function resetToSetup() {
   game.phase = "setup";
   sessionCode = null;
@@ -527,6 +535,12 @@ io.on("connection", (socket) => {
     hostId = generatePersistentId();
     bindHostSocket(socket.id);
     broadcast();
+  });
+
+  socket.on("hostEndSession", () => {
+    if (!isHostSocket(socket)) return;
+    endHostSession();
+    socket.emit("hostSessionEnded");
   });
 
   socket.on("createSession", (payload) => {

@@ -148,6 +148,23 @@ socket.on("kicked", (msg) => {
   window.location.reload();
 });
 
+socket.on("sessionEnded", (msg) => {
+  joined = false;
+  validatedCode = null;
+  BunkerRuntime.clearPlayerSession();
+  clearPlayerScenarioTheme();
+  document.body.classList.remove("player--lobby", "player--in-game");
+  waitingModal.classList.add("hidden");
+  joinSection.classList.add("hidden");
+  gameSection.classList.add("hidden");
+  votingSection.classList.add("hidden");
+  endedSection.classList.add("hidden");
+  turnSection.classList.add("hidden");
+  codeSection.classList.remove("hidden");
+  showCodeError(msg || "Ведущий завершил сессию.");
+  sessionCodeInput.focus();
+});
+
 socket.on("reconnectFailed", (msg) => {
   BunkerRuntime.clearPlayerSession();
   joined = false;
