@@ -1,5 +1,8 @@
 async function verifyTurnstile(token, remoteip) {
-  const secret = process.env.TURNSTILE_SECRET_KEY;
+  const secret =
+    process.env.TURNSTILE_SECRET_KEY ||
+    process.env.CLOUDFLARE_SECRET ||
+    process.env.TURNSTILE_SECRET;
   if (!secret) return true;
   if (!token || typeof token !== "string") return false;
 

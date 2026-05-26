@@ -13,8 +13,10 @@ function mailFrom() {
 function getTransporter() {
   if (transporter) return transporter;
 
-  const user = process.env.SMTP_USER || process.env.GMAIL_USER;
-  const pass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
+  const userRaw = process.env.SMTP_USER || process.env.GMAIL_USER;
+  const passRaw = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
+  const user = (userRaw || "").trim();
+  const pass = (passRaw || "").replace(/\s+/g, "");
   if (!user || !pass) {
     return null;
   }
