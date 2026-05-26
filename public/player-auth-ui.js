@@ -33,7 +33,7 @@
       ? " <span class='status-badge status-badge--excluded-inline'>ИСКЛЮЧЕН</span>"
       : "";
     const profileBtn = p.userId
-      ? `<button type="button" class="player-chip__profile btn btn--small" data-profile-user="${p.userId}" data-profile-name="${escapeHtml(p.name)}">Профиль</button>`
+      ? `<a class="player-chip__profile btn btn--small" href="${BunkerAuth.profileUrl(p.userId)}">Профиль</a>`
       : `<button type="button" class="player-chip__profile btn btn--small" data-profile-guest="${escapeHtml(p.name)}" data-profile-avatar="${escapeHtml(p.avatarUrl || "")}">Профиль</button>`;
     return `
       <li class="lobby-list__item player-chip">
@@ -107,13 +107,7 @@
   }
 
   function handleProfileClick(e) {
-    const userId = e.target.closest("[data-profile-user]")?.dataset.profileUser;
     const guestBtn = e.target.closest("[data-profile-guest]");
-    if (userId && window.BunkerProfileModal) {
-      const name = e.target.closest("[data-profile-user]")?.dataset.profileName;
-      BunkerProfileModal.showUser(userId, name);
-      return;
-    }
     if (guestBtn && window.BunkerProfileModal) {
       BunkerProfileModal.showGuest(
         guestBtn.dataset.profileGuest,
@@ -123,7 +117,7 @@
   }
 
   document.body.addEventListener("click", (e) => {
-    if (e.target.closest("[data-profile-user], [data-profile-guest]")) {
+    if (e.target.closest("[data-profile-guest]")) {
       handleProfileClick(e);
     }
     const inviteId = e.target.closest("[data-invite-friend]")?.dataset.inviteFriend;

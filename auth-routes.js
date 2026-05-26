@@ -35,6 +35,10 @@ function mountAuthRoutes(app) {
     res.sendFile(path.join(__dirname, "public", "account.html"));
   });
 
+  app.get("/user/:userId", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "profile.html"));
+  });
+
   app.get("/api/avatars/:userId", async (req, res) => {
     try {
       const buf = await getAvatarBuffer(req.params.userId);

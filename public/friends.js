@@ -32,11 +32,12 @@ function renderFriendRow(user, actionsHtml) {
   const frame = BunkerUserBadges.frameClass(user);
   const badges = BunkerUserBadges.roleBadgesHtml(user);
   const status = BunkerUserBadges.statusHtml(user);
+  const profileHref = BunkerAuth.profileUrl(user.id);
   return `
     <li class="friends-list__item ${frame}" data-user-id="${user.id}">
-      <img class="friends-list__avatar" src="${av}" alt="">
+      <a href="${profileHref}" class="friends-list__avatar-link"><img class="friends-list__avatar" src="${av}" alt=""></a>
       <div class="friends-list__info">
-        <span class="friends-list__name">${BunkerUserBadges.escapeHtml(user.nickname)}</span>
+        <a href="${profileHref}" class="friends-list__name friends-list__name--link">${BunkerUserBadges.escapeHtml(user.nickname)}</a>
         ${status}
         <span class="friends-list__badges">${badges}</span>
       </div>

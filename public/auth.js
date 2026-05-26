@@ -146,6 +146,29 @@
     return api(`/api/chat/${encodeURIComponent(peerId)}`);
   }
 
+  function profileUrl(userId) {
+    if (!userId) return "account.html";
+    const base = apiBase();
+    if (base) {
+      return `${base}/user/${encodeURIComponent(userId)}`;
+    }
+    if (window.BunkerRuntime) {
+      return BunkerRuntime.pageUrl(`user.html?id=${encodeURIComponent(userId)}`);
+    }
+    return `user.html?id=${encodeURIComponent(userId)}`;
+  }
+
+  async function getDevSettings() {
+    return api("/api/dev/settings");
+  }
+
+  async function setMaintenance(enabled) {
+    return api("/api/dev/maintenance", {
+      method: "POST",
+      body: JSON.stringify({ enabled }),
+    });
+  }
+
   window.BunkerAuth = {
     apiBase,
     assetUrl,
@@ -166,5 +189,8 @@
     respondFriend,
     removeFriend,
     getChat,
+    profileUrl,
+    getDevSettings,
+    setMaintenance,
   };
 })();

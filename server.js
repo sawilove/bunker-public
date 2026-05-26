@@ -25,13 +25,21 @@ const {
 const { mountAuthRoutes, resolvePlayerIdentity } = require("./auth-routes");
 const { recordGameStats, initDatabase } = require("./user-store");
 const { mountSocialRoutes, mountSocialSockets } = require("./social-routes");
+const { purgeOldChatMessages } = require("./social-store");
 const { syncInGameFromPlayers } = require("./presence");
+const {
+  loadSiteSettings,
+  mountDevRoutes,
+  maintenanceMiddleware,
+} = require("./site-settings");
 
 const app = express();
 const server = http.createServer(app);
 
 app.use(express.json({ limit: "6mb" }));
+app.use(maintenanceMiddleware);
 mountAuthRoutes(app);
+mountDevRoutes(app);
 
 const corsOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",").map((s) => s.trim()).filter(Boolean)
@@ -905,7 +913,14 @@ io.on("connection", (socket) => {
 const PORT = process.env.PORT || 3000;
 
 initDatabase()
+  .then(() => loadSiteSettings())
+  .then(() => purgeOldChatMessages())
   .then(() => {
+    setInterval(() => {
+      purgeOldChatMessages().catch((err) =>
+        console.error("chat purge:", err.message)
+      );
+    }, 60 * 60 * 1000);
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       if (process.env.DATABASE_URL) {

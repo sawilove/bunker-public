@@ -141,6 +141,14 @@ async function areFriends(userId, peerId) {
   return rows.length > 0;
 }
 
+const CHAT_RETENTION_HOURS = 48;
+
+async function purgeOldChatMessages() {
+  await getPool().query(
+    `DELETE FROM chat_messages WHERE created_at < NOW() - INTERVAL '48 hours'`
+  );
+}
+
 async function getChatMessages(userId, peerId, limit = 50, before = null) {
   if (!(await areFriends(userId, peerId))) {
     return { ok: false, error: "Можно писать только друзьям." };
@@ -158,7 +166,9 @@ async function getChatMessages(userId, peerId, limit = 50, before = null) {
      WHERE (
        (from_user_id = $1 AND to_user_id = $2)
        OR (from_user_id = $2 AND to_user_id = $1)
-     ) ${timeClause}
+     )
+     AND created_at > NOW() - INTERVAL '${CHAT_RETENTION_HOURS} hours'
+     ${timeClause}
      ORDER BY created_at DESC
      LIMIT $${params.length}`,
     params
@@ -213,4 +223,6 @@ module.exports = {
   areFriends,
   getChatMessages,
   sendChatMessage,
+  purgeOldChatMessages,
+  CHAT_RETENTION_HOURS,
 };

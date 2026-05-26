@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Бункер — Техобслуживание</title>
+  <style>
+    :root {
+      --bg: #0a0c0a;
+      --text: #c8d4bc;
+      --dim: #7a8a72;
+      --amber: #e8a838;
+      --red: #c44a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.25rem;
+      font-family: system-ui, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      text-align: center;
+    }
+    .box {
+      max-width: 28rem;
+      border: 1px solid #4a5f3a;
+      border-radius: 4px;
+      padding: 2rem 1.5rem;
+      background: #121612;
+      box-shadow: 0 4px 24px rgba(0,0,0,.6);
+    }
+    h1 {
+      margin: 0 0 .75rem;
+      font-size: 1.5rem;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--red);
+    }
+    p { margin: 0 0 1rem; color: var(--dim); line-height: 1.5; }
+    a {
+      color: var(--amber);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>☢ Техобслуживание</h1>
+    <p>Сайт временно недоступен — ведутся работы. Попробуйте зайти позже.</p>
+    <p><a href="account.html">Вход для команды разработки</a></p>
+  </div>
+</body>
+</html>

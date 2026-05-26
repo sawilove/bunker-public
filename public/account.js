@@ -97,6 +97,11 @@ loginForm.addEventListener("submit", async (e) => {
       document.getElementById("loginNickname").value,
       document.getElementById("loginPassword").value
     );
+    const next = new URLSearchParams(location.search).get("next");
+    if (next) {
+      location.href = next;
+      return;
+    }
     showProfile(user);
   } catch (err) {
     showError(loginError, err.message);

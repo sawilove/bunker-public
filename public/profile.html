@@ -3,23 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Бункер — Новости</title>
+  <title>Бункер — Профиль</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="news-page">
+<body class="account profile-page">
   <div class="page page--with-topbar">
     <div data-site-topbar class="site-topbar"></div>
     <a href="index.html" class="back-link">← На главную</a>
 
     <header class="site-header">
-      <div class="site-header__badge">Сводка штаба</div>
-      <h1>Новости</h1>
-      <p class="site-header__tagline">Что нового в проекте и ближайшие события</p>
+      <div class="site-header__badge">Досье выжившего</div>
+      <h1 id="profilePageTitle">Профиль</h1>
+      <p class="site-header__tagline" id="profilePageTagline">Загрузка…</p>
     </header>
 
-    <div id="newsList" class="news-list">
-      <p class="news-list__loading">Загрузка…</p>
-    </div>
+    <section id="profilePageContent" class="panel account-auth-panel">
+      <p>Загрузка профиля…</p>
+    </section>
   </div>
 
   <script src="config.js"></script>
@@ -31,6 +31,6 @@
   <script src="site-auth.js"></script>
   <script src="dev-panel.js"></script>
   <script src="chat-widget.js"></script>
-  <script src="news.js"></script>
+  <script src="profile.js"></script>
 </body>
 </html>

@@ -72,6 +72,13 @@ async function initDatabase() {
     CREATE INDEX IF NOT EXISTS chat_messages_thread_idx
     ON chat_messages (from_user_id, to_user_id, created_at DESC);
   `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS site_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
 }
 
 function rowToUser(row) {
