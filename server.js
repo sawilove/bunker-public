@@ -21,19 +21,13 @@ const {
   getScenarioPreview,
   shuffleArray,
   pickRandom,
-} = require("./game-data");
-const { mountAuthRoutes, resolvePlayerIdentity } = require("./auth-routes");
-const { recordGameStats, initDatabase } = require("./user-store");
-const { mountSocialRoutes, mountSocialSockets } = require("./social-routes");
-const { purgeOldChatMessages } = require("./social-store");
-const { syncInGameFromPlayers } = require("./presence");
-const {
-  loadSiteSettings,
-  mountDevRoutes,
-  maintenanceMiddleware,
-} = require("./site-settings");
-const { mountNewsRoutes } = require("./news-routes");
-const { seedNewsIfEmpty } = require("./news-store");
+} = require("./backend/game");
+const { mountAuthRoutes, resolvePlayerIdentity, recordGameStats } = require("./backend/auth");
+const { mountSocialRoutes, mountSocialSockets, purgeOldChatMessages, syncInGameFromPlayers } =
+  require("./backend/social");
+const { loadSiteSettings, mountDevRoutes, maintenanceMiddleware, initDatabase } =
+  require("./backend/core");
+const { mountNewsRoutes, seedNewsIfEmpty } = require("./backend/news");
 
 const app = express();
 const server = http.createServer(app);
