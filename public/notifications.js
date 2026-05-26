@@ -124,6 +124,20 @@
 
     save();
 
+    renderPanel();
+
+  }
+
+
+
+  function clearAll() {
+
+    items = [];
+
+    save();
+
+    renderPanel();
+
   }
 
 
@@ -471,6 +485,8 @@
     syncIncomingFromApi,
 
     markAllRead,
+
+    clearAll,
 
     unreadCount,
 

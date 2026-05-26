@@ -166,9 +166,14 @@ function hideSuggest() {
 
 async function updateSuggest() {
   const q = addFriendNick.value.trim();
+  showMsg(addFriendError, "");
   if (q.length < 1) {
     hideSuggest();
     lastSuggestions = [];
+    return;
+  }
+  if (!BunkerAuth.apiBase()) {
+    showMsg(addFriendError, "API не настроен.");
     return;
   }
   const seq = ++suggestSeq;
@@ -192,9 +197,10 @@ async function updateSuggest() {
       )
       .join("");
     addFriendSuggest.classList.remove("hidden");
-  } catch {
+  } catch (err) {
     hideSuggest();
     lastSuggestions = [];
+    showMsg(addFriendError, err.message || "Ошибка поиска.");
   }
 }
 
@@ -214,7 +220,11 @@ async function addFriendById(userId) {
 addFriendNick.addEventListener("input", () => {
   selectedUserId = null;
   clearTimeout(suggestTimer);
-  suggestTimer = setTimeout(updateSuggest, 200);
+  suggestTimer = setTimeout(updateSuggest, 120);
+});
+
+addFriendNick.addEventListener("focus", () => {
+  if (addFriendNick.value.trim().length >= 1) updateSuggest();
 });
 
 addFriendNick.addEventListener("blur", () => {

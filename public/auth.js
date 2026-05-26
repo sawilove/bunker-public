@@ -148,7 +148,9 @@
   }
 
   async function searchUsers(q) {
-    const data = await api(`/api/users/search?q=${encodeURIComponent(q)}`);
+    const query = (q || "").trim();
+    if (!query) return [];
+    const data = await api(`/api/users/search?q=${encodeURIComponent(query)}`);
     return data.users || [];
   }
 

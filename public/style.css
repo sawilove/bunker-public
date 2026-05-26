@@ -2035,9 +2035,44 @@ body.has-scenario-bg .waiting-modal__card {
 .crop-modal__frame {
   position: absolute;
   border: 2px solid var(--amber);
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
   cursor: move;
   touch-action: none;
+  box-sizing: border-box;
+}
+
+.crop-modal__handle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: var(--amber);
+  border: 2px solid #1a1a14;
+  border-radius: 2px;
+  box-sizing: border-box;
+  touch-action: none;
+}
+
+.crop-modal__handle--nw {
+  top: -7px;
+  left: -7px;
+  cursor: nwse-resize;
+}
+
+.crop-modal__handle--ne {
+  top: -7px;
+  right: -7px;
+  cursor: nesw-resize;
+}
+
+.crop-modal__handle--sw {
+  bottom: -7px;
+  left: -7px;
+  cursor: nesw-resize;
+}
+
+.crop-modal__handle--se {
+  bottom: -7px;
+  right: -7px;
+  cursor: nwse-resize;
 }
 
 .crop-modal__shade {
@@ -2064,19 +2099,6 @@ body.has-scenario-bg .waiting-modal__card {
   margin-top: 1rem;
 }
 
-.crop-modal__zoom {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-top: 0.75rem;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-.crop-modal__zoom input[type="range"] {
-  flex: 1;
-}
-
 .friends-suggest__empty {
   padding: 0.65rem;
   color: var(--text-dim);
@@ -2095,8 +2117,12 @@ body.has-scenario-bg .waiting-modal__card {
   min-height: 140px;
 }
 
+.profile-hero--default {
+  min-height: 160px;
+}
+
 .profile-hero--has-banner {
-  min-height: 200px;
+  min-height: 220px;
 }
 
 .profile-hero__overlay {
@@ -2123,17 +2149,22 @@ body.has-scenario-bg .waiting-modal__card {
 
 .profile-hero__bio {
   margin: 0.5rem 0 0;
-  font-size: 0.9rem;
-  color: var(--text-muted);
+  font-size: 0.95rem;
+  color: rgba(220, 215, 200, 0.92);
   line-height: 1.45;
-  max-width: 36rem;
+  max-width: 42rem;
+}
+
+.profile-hero--has-banner .profile-nickname {
+  color: #f0e6d0;
 }
 
 .profile-page-layout {
   display: grid;
-  grid-template-columns: 1fr minmax(200px, 280px);
-  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  gap: 1.5rem;
   align-items: start;
+  width: 100%;
 }
 
 .profile-page-main {
@@ -2291,6 +2322,12 @@ body.has-scenario-bg .waiting-modal__card {
   font-weight: 600;
 }
 
+.notif-dropdown__actions {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
 .notif-dropdown__read {
   background: none;
   border: none;
@@ -2298,6 +2335,7 @@ body.has-scenario-bg .waiting-modal__card {
   font-size: 0.75rem;
   cursor: pointer;
   padding: 0;
+  white-space: nowrap;
 }
 
 .notif-panel {
@@ -3130,9 +3168,51 @@ body.has-scenario-bg .waiting-modal__card {
 }
 
 /* —— Account page (centered auth like mobile) —— */
-body.account .page {
+body.account:not(.profile-page) .page {
   max-width: 28rem;
   margin-inline: auto;
+}
+
+/* —— Public profile page (wide) —— */
+body.profile-page .page {
+  max-width: min(960px, calc(100vw - 1.5rem));
+  margin-inline: auto;
+}
+
+body.profile-page .profile-page-panel {
+  width: 100%;
+  max-width: none;
+}
+
+body.profile-page .site-header--profile h1,
+body.profile-page .site-header--profile .site-header__tagline {
+  display: none !important;
+}
+
+body.profile-page .site-header--profile {
+  margin-bottom: 0.75rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (min-width: 900px) {
+  .profile-page-layout {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+
+  .profile-hero__body {
+    padding: 1.5rem 1.75rem;
+  }
 }
 
 body.account .site-header {

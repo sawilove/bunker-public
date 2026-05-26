@@ -46,17 +46,17 @@ function applyProfileHero(user) {
     const url = BunkerAuth.assetUrl(user.bannerUrl);
     profileHero.style.backgroundImage = `url('${url.replace(/'/g, "%27")}')`;
     profileHero.classList.add("profile-hero--has-banner");
-    if (bio) {
-      profileBioHero.textContent = bio;
-      profileBioHero.classList.remove("hidden");
-      profileBioBlock.classList.add("hidden");
-    } else {
-      profileBioHero.classList.add("hidden");
-      profileBioBlock.classList.add("hidden");
-    }
+    profileHero.classList.remove("profile-hero--default");
   } else {
     profileHero.style.backgroundImage = "";
     profileHero.classList.remove("profile-hero--has-banner");
+    profileHero.classList.add("profile-hero--default");
+  }
+  if (bio) {
+    profileBioHero.textContent = bio;
+    profileBioHero.classList.remove("hidden");
+    profileBioBlock.classList.add("hidden");
+  } else {
     profileBioHero.classList.add("hidden");
     profileBioBlock.classList.remove("hidden");
   }
@@ -183,10 +183,8 @@ profileEditForm.addEventListener("submit", async (e) => {
       nickname: editNickname.value.trim(),
       friendsHidden: hideFriendsCheck.checked,
     });
-    showProfile(user);
-    profileSuccess.textContent = "Профиль сохранён.";
-    profileSuccess.classList.remove("hidden");
-    setTimeout(() => profileSuccess.classList.add("hidden"), 3000);
+    if (window.BunkerSiteAuth) BunkerSiteAuth.refresh();
+    location.href = BunkerAuth.profileUrl(user.id);
   } catch (err) {
     showError(profileError, err.message);
   }

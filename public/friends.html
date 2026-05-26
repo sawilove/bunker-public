@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Бункер — Друзья</title>
+  <script src="page-base.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="friends">
@@ -21,10 +22,10 @@
       <p class="panel__title">Найти и добавить друга</p>
       <form id="addFriendForm" class="friends-add__form">
         <div class="friends-add__field">
-          <input type="text" id="addFriendNick" maxlength="20" placeholder="Никнейм" required autocomplete="off">
+          <input type="search" id="addFriendNick" maxlength="20" placeholder="Начните вводить никнейм…" autocomplete="off">
           <ul id="addFriendSuggest" class="friends-suggest hidden" role="listbox"></ul>
         </div>
-        <button type="submit" class="btn btn--amber">Добавить</button>
+        <button type="submit" class="btn btn--amber">Добавить выбранного</button>
       </form>
       <p id="addFriendError" class="form-error hidden"></p>
       <p id="addFriendSuccess" class="form-success hidden"></p>
@@ -59,6 +60,7 @@
   <div id="inviteToast" class="invite-toast hidden" role="alert"></div>
 
   <script src="config.js"></script>
+  <script src="bunker-runtime.js"></script>
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="auth.js"></script>
   <script src="user-badges.js"></script>

@@ -74,7 +74,13 @@
 
               <span>Уведомления</span>
 
-              <button type="button" class="notif-dropdown__read" id="notifReadAll">Прочитать все</button>
+              <div class="notif-dropdown__actions">
+
+                <button type="button" class="notif-dropdown__read" id="notifClearAll">Очистить</button>
+
+                <button type="button" class="notif-dropdown__read" id="notifReadAll">Прочитать все</button>
+
+              </div>
 
             </div>
 
@@ -121,6 +127,14 @@
       document.getElementById("notifReadAll")?.addEventListener("click", () => {
 
         BunkerNotifications.markAllRead();
+
+        BunkerNotifications.togglePanel(false);
+
+      });
+
+      document.getElementById("notifClearAll")?.addEventListener("click", () => {
+
+        BunkerNotifications.clearAll();
 
         BunkerNotifications.togglePanel(false);
 

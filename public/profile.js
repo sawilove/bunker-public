@@ -22,7 +22,7 @@
       : "";
 
     return `
-      <div class="profile-hero ${bannerUrl ? "profile-hero--has-banner" : ""}" ${bannerBg}>
+      <div class="profile-hero ${bannerUrl ? "profile-hero--has-banner" : "profile-hero--default"}" ${bannerBg}>
         <div class="profile-hero__overlay"></div>
         <div class="profile-hero__body">
           <div class="profile-avatar-wrap ${frame}">
@@ -95,8 +95,6 @@
     const friendsCount = meta.friendsCount ?? friends?.length ?? 0;
     const friendsHidden = meta.friendsHidden ?? user.friendsHidden;
 
-    title.textContent = user.nickname;
-    tagline.textContent = user.bio?.trim() || "Профиль игрока";
     document.title = `Бункер — ${user.nickname}`;
 
     const chatBtn =
@@ -104,20 +102,10 @@
         ? `<button type="button" class="btn btn--amber" data-open-chat="${user.id}">Написать</button>`
         : "";
 
-    const showBioBlock = !user.bio?.trim() || !user.bannerUrl;
-
     content.innerHTML = `
       <div class="profile-page-layout">
         <div class="profile-page-main">
           ${renderProfileHero(user)}
-          ${
-            showBioBlock
-              ? `<div class="profile-view__bio">
-            <span class="field__label">О себе</span>
-            <p class="profile-bio-text">${user.bio?.trim() ? BunkerUserBadges.escapeHtml(user.bio) : "—"}</p>
-          </div>`
-              : ""
-          }
           <div class="profile-view__actions">
             ${friendActionHtml(user.id)}
             ${chatBtn}
