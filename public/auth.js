@@ -77,24 +77,48 @@
     const res = await fetch(`${base}${path}`, { ...options, headers });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      throw new Error(data.error || "Ошибка запроса");
+      const err = new Error(data.error || "Ошибка запроса");
+      err.status = res.status;
+      throw err;
     }
     return data;
   }
 
-  async function register(nickname, password) {
+  async function requestEmailCode(email, purpose, captchaToken) {
+    return api("/api/auth/request-email-code", {
+      method: "POST",
+      body: JSON.stringify({ email, purpose, captchaToken }),
+    });
+  }
+
+  async function register(nickname, password, options = {}) {
+    const payload =
+      typeof options === "string"
+        ? { email: options }
+        : { ...(options || {}) };
     const data = await api("/api/auth/register", {
       method: "POST",
-      body: JSON.stringify({ nickname, password }),
+      body: JSON.stringify({
+        nickname,
+        password,
+        email: payload.email || "",
+        verificationCode: payload.verificationCode || "",
+        captchaToken: payload.captchaToken || "",
+      }),
     });
     setToken(data.token);
     return data.user;
   }
 
-  async function login(nickname, password) {
+  async function login(nickname, password, options = {}) {
+    const payload = options || {};
     const data = await api("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ nickname, password }),
+      body: JSON.stringify({
+        nickname,
+        password,
+        captchaToken: payload.captchaToken || "",
+      }),
     });
     setToken(data.token);
     return data.user;
@@ -105,10 +129,26 @@
     try {
       const data = await api("/api/auth/me");
       return data.user;
-    } catch {
-      clearAuth();
+    } catch (err) {
+      if (err?.status === 401 || err?.status === 403) {
+        clearAuth();
+      }
       return null;
     }
+  }
+
+  async function requestPasswordReset(email, captchaToken) {
+    return api("/api/auth/request-password-reset", {
+      method: "POST",
+      body: JSON.stringify({ email, captchaToken }),
+    });
+  }
+
+  async function resetPassword(email, code, newPassword, captchaToken) {
+    return api("/api/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ email, code, newPassword, captchaToken }),
+    });
   }
 
   async function updateProfile(fields) {
@@ -186,7 +226,7 @@
   }
 
   function profileUrl(userId) {
-    if (!userId) return pageUrl("account.html");
+    if (!userId) return pageUrl("profile.html");
     return pageUrl(`profile.html?id=${encodeURIComponent(userId)}`);
   }
 
@@ -251,6 +291,7 @@
     clearAuth,
     register,
     login,
+    requestEmailCode,
     fetchMe,
     updateProfile,
     fetchUser,
@@ -263,6 +304,8 @@
     requestFriendById,
     respondFriend,
     removeFriend,
+    requestPasswordReset,
+    resetPassword,
     getChat,
     profileUrl,
     pageUrl,

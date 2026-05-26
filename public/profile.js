@@ -74,7 +74,11 @@
 
   function friendActionHtml(userId) {
     if (friendship === "self") {
-      return `<a href="account.html?edit=1" class="btn btn--amber">Редактировать профиль</a>`;
+      const selfUrl = BunkerAuth.profileUrl(currentUserId);
+      const sep = selfUrl.includes("?") ? "&" : "?";
+      return `
+        <a href="${selfUrl}${sep}edit=1" class="btn btn--amber">Редактировать профиль</a>
+        <button type="button" class="btn" data-logout>Выйти</button>`;
     }
     if (friendship === "friends") {
       return `
@@ -123,6 +127,11 @@
     content.querySelector("[data-accept-friend]")?.addEventListener("click", onAcceptFriend);
     content.querySelector("[data-decline-friend]")?.addEventListener("click", onDeclineFriend);
     content.querySelector("[data-remove-friend]")?.addEventListener("click", onRemoveFriend);
+    content.querySelector("[data-logout]")?.addEventListener("click", () => {
+      BunkerAuth.clearAuth();
+      if (window.BunkerSiteAuth) BunkerSiteAuth.refresh();
+      location.href = BunkerAuth.pageUrl("auth.html?tab=login");
+    });
   }
 
   function showFriendError(msg) {
@@ -183,14 +192,7 @@
   }
 
   async function init() {
-    const userId = getUserIdFromUrl();
-    if (!userId) {
-      content.innerHTML = '<p class="form-error">Не указан id игрока.</p>';
-      tagline.textContent = "Откройте профиль по ссылке с id.";
-      return;
-    }
-
-    currentUserId = userId;
+    let userId = getUserIdFromUrl();
 
     if (!BunkerAuth.apiBase()) {
       content.innerHTML =
@@ -198,15 +200,21 @@
       return;
     }
 
-    if (!BunkerAuth.getToken()) {
-      const next = BunkerAuth.pageUrl(
-        `profile.html?id=${encodeURIComponent(userId)}`
-      );
+    const me = await BunkerAuth.fetchMe();
+    if (!me) {
+      const next = userId
+        ? BunkerAuth.pageUrl(`profile.html?id=${encodeURIComponent(userId)}`)
+        : BunkerAuth.pageUrl("profile.html");
       location.href = BunkerAuth.pageUrl(
-        `account.html?tab=login&next=${encodeURIComponent(next)}`
+        `auth.html?tab=login&next=${encodeURIComponent(next)}`
       );
       return;
     }
+    if (!userId) {
+      location.href = BunkerAuth.profileUrl(me.id);
+      return;
+    }
+    currentUserId = userId;
 
     try {
       const data = await BunkerAuth.fetchUser(userId);

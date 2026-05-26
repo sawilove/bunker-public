@@ -32,6 +32,7 @@ const roundInfoEl = document.getElementById("roundInfo");
 
 let joined = false;
 let validatedCode = null;
+let manualCodeFlow = false;
 
 function escapeHtml(str) {
   const el = document.createElement("div");
@@ -82,6 +83,11 @@ function showNameForm(code) {
 }
 
 function requestCodeValidation(code) {
+  manualCodeFlow = true;
+  const saved = BunkerRuntime.getPlayerSession();
+  if (saved.code && saved.code !== code) {
+    BunkerRuntime.clearPlayerSession();
+  }
   showCodeError("");
   socket.emit("validateSessionCode", code);
 }
@@ -373,6 +379,7 @@ function applyState(state) {
 socket.on("gameState", applyState);
 
 function tryReconnect() {
+  if (manualCodeFlow) return false;
   const saved = BunkerRuntime.getPlayerSession();
   if (saved.playerId && saved.code) {
     socket.emit("playerReconnect", {
@@ -390,6 +397,11 @@ socket.on("connect", () => {
 
 const urlCode = normalizeCodeInput(new URLSearchParams(location.search).get("code"));
 if (urlCode.length === 6) {
+  manualCodeFlow = true;
+  const saved = BunkerRuntime.getPlayerSession();
+  if (saved.code && saved.code !== urlCode) {
+    BunkerRuntime.clearPlayerSession();
+  }
   sessionCodeInput.value = urlCode;
   requestCodeValidation(urlCode);
 } else if (!BunkerRuntime.getPlayerSession().playerId) {

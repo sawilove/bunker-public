@@ -316,7 +316,7 @@ BunkerSocial.onInvite(showInviteToast);
 
 (async function init() {
   if (!BunkerAuth.apiBase() || !BunkerAuth.getToken()) {
-    location.href = "account.html";
+    location.href = "auth.html?tab=login";
     return;
   }
   BunkerSocial.connect();

@@ -1,8 +1,11 @@
 const path = require("path");
 const sharp = require("sharp");
+const { verifyTurnstile } = require("./turnstile");
+const { issueEmailCode } = require("./email-auth");
 const {
   register,
   login,
+  resetPassword,
   verifyToken,
   publicUser,
   getUserById,
@@ -49,9 +52,19 @@ async function requireUser(req, res) {
   return user;
 }
 
+async function requireCaptcha(req, res) {
+  const token = req.body?.captchaToken;
+  const ok = await verifyTurnstile(token, req.ip);
+  if (!ok) {
+    res.status(400).json({ error: "Подтвердите капчу." });
+    return false;
+  }
+  return true;
+}
+
 function mountAuthRoutes(app) {
   app.get("/account", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "account.html"));
+    res.redirect(302, "/auth.html");
   });
 
   app.get("/user/:userId", (req, res) => {
@@ -88,8 +101,57 @@ function mountAuthRoutes(app) {
     }
   });
 
+  app.post("/api/auth/request-email-code", async (req, res) => {
+    try {
+      if (!(await requireCaptcha(req, res))) return;
+      const { email, purpose } = req.body || {};
+      const result = await issueEmailCode(email, purpose);
+      if (!result.ok) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+      res.json({ ok: true, message: result.message });
+    } catch (err) {
+      console.error("request-email-code error", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
+  app.post("/api/auth/request-password-reset", async (req, res) => {
+    try {
+      if (!(await requireCaptcha(req, res))) return;
+      const { email } = req.body || {};
+      const result = await issueEmailCode(email, "reset");
+      if (!result.ok) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+      res.json({ ok: true, message: result.message });
+    } catch (err) {
+      console.error("request-password-reset error", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      if (!(await requireCaptcha(req, res))) return;
+      const { email, code, newPassword } = req.body || {};
+      const result = await resetPassword({ email, code, newPassword });
+      if (!result.ok) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+      res.json({ ok: true, message: result.message });
+    } catch (err) {
+      console.error("reset-password error", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
   app.post("/api/auth/register", async (req, res) => {
     try {
+      if (!(await requireCaptcha(req, res))) return;
       const result = await register(req.body || {});
       if (!result.ok) {
         res.status(400).json({ error: result.error });
@@ -105,6 +167,7 @@ function mountAuthRoutes(app) {
 
   app.post("/api/auth/login", async (req, res) => {
     try {
+      if (!(await requireCaptcha(req, res))) return;
       const result = await login(req.body || {});
       if (!result.ok) {
         res.status(401).json({ error: result.error });

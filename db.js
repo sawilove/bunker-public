@@ -58,6 +58,29 @@ async function initDatabase() {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS friends_hidden BOOLEAN NOT NULL DEFAULT false;
   `);
   await p.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;
+  `);
+  await p.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS email_lower TEXT;
+  `);
+  await p.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false;
+  `);
+  await p.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_idx
+    ON users (email_lower) WHERE email_lower IS NOT NULL;
+  `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS email_codes (
+      email_lower TEXT NOT NULL,
+      purpose TEXT NOT NULL,
+      code_hash TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (email_lower, purpose)
+    );
+  `);
+  await p.query(`
     CREATE TABLE IF NOT EXISTS friend_pairs (
       user_a TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       user_b TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -128,6 +151,9 @@ function rowToUser(row) {
     bunkerSurvivals: row.bunker_survivals,
     premium: !!row.premium,
     dev: !!row.dev,
+    email: row.email || null,
+    emailLower: row.email_lower || null,
+    emailVerified: !!row.email_verified,
     createdAt: row.created_at,
   };
 }

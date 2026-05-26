@@ -7,4 +7,6 @@ window.BUNKER_CONFIG = {
   donateUrl: "https://pay.cloudtips.ru/p/138742fa",
   /** ID страницы оплаты CloudTips — виджет с СБП без ухода со сайта (из ЛК CloudTips) */
   donateCloudTipsLayoutId: "",
+  /** Site key Cloudflare Turnstile для форм входа/регистрации/сброса */
+  turnstileSiteKey: "0x4AAAAAADW1V_wjeJKM6xXI",
 };

@@ -1,6 +1,12 @@
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const { getPool, initDatabase, rowToUser } = require("./db");
+const {
+  normalizeEmail,
+  validateEmail,
+  verifyEmailCode,
+  findUserByEmail,
+} = require("./email-auth");
 
 const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const SECRET =
@@ -103,35 +109,75 @@ async function verifyToken(token) {
   }
 }
 
-async function register({ nickname, password }) {
+async function register({ nickname, password, email, verificationCode }) {
   const nickErr = validateNickname(nickname);
   if (nickErr) return { ok: false, error: nickErr };
   const passErr = validatePassword(password);
   if (passErr) return { ok: false, error: passErr };
+  const emailErr = validateEmail(email);
+  if (emailErr) return { ok: false, error: emailErr };
+  if (!verificationCode || String(verificationCode).trim().length < 4) {
+    return { ok: false, error: "Введите код из письма." };
+  }
 
   const nick = normalizeNickname(nickname);
   if (await findByNickname(nick)) {
     return { ok: false, error: "Этот никнейм уже занят." };
   }
 
+  const emailKey = normalizeEmail(email);
+  if (await findUserByEmail(emailKey)) {
+    return { ok: false, error: "Этот email уже зарегистрирован." };
+  }
+
+  const codeCheck = await verifyEmailCode(emailKey, "register", verificationCode);
+  if (!codeCheck.ok) return codeCheck;
+
   const id = crypto.randomBytes(16).toString("hex");
   const passwordHash = bcrypt.hashSync(password, 10);
 
   try {
     await getPool().query(
-      `INSERT INTO users (id, nickname, nickname_lower, password_hash)
-       VALUES ($1, $2, $3, $4)`,
-      [id, nick, nick.toLowerCase(), passwordHash]
+      `INSERT INTO users (id, nickname, nickname_lower, password_hash, email, email_lower, email_verified)
+       VALUES ($1, $2, $3, $4, $5, $6, true)`,
+      [id, nick, nick.toLowerCase(), passwordHash, emailKey, emailKey]
     );
   } catch (err) {
     if (err.code === "23505") {
-      return { ok: false, error: "Этот никнейм уже занят." };
+      return { ok: false, error: "Этот никнейм или email уже занят." };
     }
     throw err;
   }
 
   const user = await getUserById(id);
   return { ok: true, user: publicUser(user), token: createToken(id) };
+}
+
+async function resetPassword({ email, code, newPassword }) {
+  const emailErr = validateEmail(email);
+  if (emailErr) return { ok: false, error: emailErr };
+  const passErr = validatePassword(newPassword);
+  if (passErr) return { ok: false, error: passErr };
+  if (!code || String(code).trim().length < 4) {
+    return { ok: false, error: "Введите код из письма." };
+  }
+
+  const emailKey = normalizeEmail(email);
+  const userId = await findUserByEmail(emailKey);
+  if (!userId) {
+    return { ok: false, error: "Аккаунт с таким email не найден." };
+  }
+
+  const codeCheck = await verifyEmailCode(emailKey, "reset", code);
+  if (!codeCheck.ok) return codeCheck;
+
+  const passwordHash = bcrypt.hashSync(newPassword, 10);
+  await getPool().query(`UPDATE users SET password_hash = $2 WHERE id = $1`, [
+    userId,
+    passwordHash,
+  ]);
+
+  return { ok: true, message: "Пароль обновлён." };
 }
 
 async function login({ nickname, password }) {
@@ -245,6 +291,7 @@ async function recordGameStats(playerUserIds, survivorUserIds) {
 module.exports = {
   initDatabase,
   register,
+  resetPassword,
   login,
   verifyToken,
   publicUser,

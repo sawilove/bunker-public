@@ -24,9 +24,9 @@
 
       <div class="site-topbar__inner">
 
-        <a href="account.html?tab=login" class="site-topbar__link">Вход</a>
+        <a href="auth.html?tab=login" class="site-topbar__link">Вход</a>
 
-        <a href="account.html?tab=register" class="site-topbar__btn btn btn--amber btn--small">Регистрация</a>
+        <a href="auth.html?tab=register" class="site-topbar__btn btn btn--amber btn--small">Регистрация</a>
 
       </div>`;
 

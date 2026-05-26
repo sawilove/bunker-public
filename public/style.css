@@ -476,6 +476,63 @@ body.has-scenario-bg .waiting-modal__card {
   border-radius: var(--radius);
 }
 
+input,
+textarea,
+select {
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+input::placeholder,
+textarea::placeholder,
+select::placeholder {
+  color: var(--text-dim);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--amber);
+  box-shadow: 0 0 0 2px var(--amber-glow);
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 0.35rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--green-dim), var(--amber));
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 50%;
+  border: 1px solid var(--amber);
+  background: var(--bg-panel);
+  box-shadow: 0 0 10px var(--amber-glow);
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 50%;
+  border: 1px solid var(--amber);
+  background: var(--bg-panel);
+  box-shadow: 0 0 10px var(--amber-glow);
+  cursor: pointer;
+}
+
 .join-form input::placeholder {
   color: var(--text-dim);
 }
@@ -3028,6 +3085,27 @@ body.has-scenario-bg .waiting-modal__card {
   resize: none;
   width: 100%;
   max-width: 100%;
+}
+
+.auth-inline-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+
+.auth-inline-row__field {
+  flex: 1;
+}
+
+.cf-turnstile {
+  margin: 0.2rem 0 0.4rem;
+}
+
+@media (max-width: 640px) {
+  .auth-inline-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 /* —— Profile modal (other players) —— */
