@@ -29,6 +29,7 @@ const app = express();
 const server = http.createServer(app);
 
 app.use(express.json({ limit: "6mb" }));
+mountAuthRoutes(app);
 
 const corsOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",").map((s) => s.trim()).filter(Boolean)
