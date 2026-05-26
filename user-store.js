@@ -8,7 +8,7 @@ const SECRET =
   process.env.JWT_SECRET ||
   "bunker-dev-secret-change-in-production";
 
-function publicUser(user) {
+function publicUser(user, extra = {}) {
   if (!user) return null;
   return {
     id: user.id,
@@ -17,6 +17,9 @@ function publicUser(user) {
     avatarUrl: user.avatarWebp ? `/api/avatars/${user.id}` : null,
     gamesPlayed: user.gamesPlayed || 0,
     bunkerSurvivals: user.bunkerSurvivals || 0,
+    premium: !!user.premium,
+    dev: !!user.dev,
+    ...extra,
   };
 }
 

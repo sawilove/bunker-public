@@ -24,12 +24,15 @@ const {
 } = require("./game-data");
 const { mountAuthRoutes, resolvePlayerIdentity } = require("./auth-routes");
 const { recordGameStats, initDatabase } = require("./user-store");
+const { mountSocialRoutes, mountSocialSockets } = require("./social-routes");
+const { syncInGameFromPlayers } = require("./presence");
 
 const app = express();
 const server = http.createServer(app);
 
 app.use(express.json({ limit: "6mb" }));
 mountAuthRoutes(app);
+mountSocialRoutes(app);
 
 const corsOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",").map((s) => s.trim()).filter(Boolean)
@@ -411,11 +414,13 @@ function resetToSetup() {
   game.turnOrder = [];
   game.votes = {};
   game.lastExcludedName = null;
+  syncInGameFromPlayers(game.players, game.phase);
 }
 
 function openLobby() {
   game.phase = "lobby";
   sessionCode = generateSessionCode();
+  syncInGameFromPlayers(game.players, game.phase);
 }
 
 function handleAllPlayersLeft() {
@@ -549,7 +554,40 @@ function removePlayer(playerId) {
   delete game.players[playerId];
   delete game.revealsThisRound[playerId];
   delete game.votes[playerId];
+  syncInGameFromPlayers(game.players, game.phase);
 }
+
+function getSessionInvitePayload(userId) {
+  if (game.phase !== "lobby" || !sessionCode) {
+    return { error: "Сессия не в зале ожидания." };
+  }
+  const player = Object.values(game.players).find((p) => p.userId === userId);
+  if (!player) {
+    return { error: "Вы не в этой сессии." };
+  }
+  return {
+    code: sessionCode,
+    nickname: player.nickname || player.name,
+  };
+}
+
+function getHostSessionInvitePayload() {
+  if (game.phase !== "lobby" || !sessionCode) {
+    return { error: "Сессия не в зале ожидания." };
+  }
+  return { code: sessionCode, nickname: "Ведущий" };
+}
+
+function resolveSessionInvite(userId, socket) {
+  const fromPlayer = getSessionInvitePayload(userId);
+  if (fromPlayer.code) return fromPlayer;
+  if (socket && isHostSocket(socket)) return getHostSessionInvitePayload();
+  return fromPlayer;
+}
+
+mountSocialSockets(io, {
+  getSessionInvitePayload: resolveSessionInvite,
+});
 
 io.on("connection", (socket) => {
   socket.on("hostJoin", (payload) => {
@@ -646,6 +684,7 @@ io.on("connection", (socket) => {
     }
 
     bindPlayerSocket(playerId, socket.id);
+    syncInGameFromPlayers(game.players, game.phase);
     socket.emit("gameState", buildPlayerState(playerId));
     broadcast();
   });
@@ -703,6 +742,7 @@ io.on("connection", (socket) => {
       socketId: null,
     };
     bindPlayerSocket(playerId, socket.id);
+    syncInGameFromPlayers(game.players, game.phase);
     socket.emit("gameState", buildPlayerState(playerId));
     broadcast();
   });

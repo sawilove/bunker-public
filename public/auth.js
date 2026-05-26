@@ -97,6 +97,39 @@
     return !!getToken();
   }
 
+  async function getFriends() {
+    return api("/api/friends");
+  }
+
+  async function searchUsers(q) {
+    const data = await api(`/api/users/search?q=${encodeURIComponent(q)}`);
+    return data.users || [];
+  }
+
+  async function requestFriend(nickname) {
+    return api("/api/friends/request", {
+      method: "POST",
+      body: JSON.stringify({ nickname }),
+    });
+  }
+
+  async function respondFriend(userId, accept) {
+    return api("/api/friends/respond", {
+      method: "POST",
+      body: JSON.stringify({ userId, accept }),
+    });
+  }
+
+  async function removeFriend(peerId) {
+    return api(`/api/friends/${encodeURIComponent(peerId)}`, {
+      method: "DELETE",
+    });
+  }
+
+  async function getChat(peerId) {
+    return api(`/api/chat/${encodeURIComponent(peerId)}`);
+  }
+
   window.BunkerAuth = {
     apiBase,
     assetUrl,
@@ -109,5 +142,11 @@
     updateProfile,
     uploadAvatar,
     isLoggedIn,
+    getFriends,
+    searchUsers,
+    requestFriend,
+    respondFriend,
+    removeFriend,
+    getChat,
   };
 })();

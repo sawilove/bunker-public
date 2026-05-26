@@ -9,6 +9,7 @@ const {
   setAvatarBuffer,
   getAvatarBuffer,
 } = require("./user-store");
+const { enrichPublicUser } = require("./social-store");
 
 const GUEST_AVATAR = "/icons/guest-avatar.svg";
 const DEFAULT_AVATAR = "/icons/default-avatar.svg";
@@ -83,7 +84,7 @@ function mountAuthRoutes(app) {
         res.status(401).json({ error: "Не авторизован." });
         return;
       }
-      res.json({ user: publicUser(user) });
+      res.json({ user: await enrichPublicUser(user) });
     } catch (err) {
       console.error("me error", err);
       res.status(500).json({ error: "Ошибка сервера." });

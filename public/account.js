@@ -9,6 +9,9 @@ const profileError = document.getElementById("profileError");
 const profileSuccess = document.getElementById("profileSuccess");
 const profileAvatar = document.getElementById("profileAvatar");
 const profileNickname = document.getElementById("profileNickname");
+const profileBadges = document.getElementById("profileBadges");
+const profileStatus = document.getElementById("profileStatus");
+const profileAvatarWrap = document.querySelector(".profile-avatar-wrap");
 const statGames = document.getElementById("statGames");
 const statSurvivals = document.getElementById("statSurvivals");
 const profileBio = document.getElementById("profileBio");
@@ -25,6 +28,9 @@ function setAvatarSrc(user) {
     ? BunkerAuth.assetUrl(user.avatarUrl)
     : BunkerAuth.assetUrl("/icons/default-avatar.svg");
   profileAvatar.src = url;
+  if (profileAvatarWrap) {
+    profileAvatarWrap.className = `profile-avatar-wrap ${BunkerUserBadges.frameClass(user)}`;
+  }
 }
 
 function showProfile(user) {
@@ -32,10 +38,13 @@ function showProfile(user) {
   profileSection.classList.remove("hidden");
   accountTagline.textContent = `Вы вошли как ${user.nickname}.`;
   profileNickname.textContent = user.nickname;
+  if (profileBadges) profileBadges.innerHTML = BunkerUserBadges.roleBadgesHtml(user);
+  if (profileStatus) profileStatus.innerHTML = BunkerUserBadges.statusHtml(user);
   statGames.textContent = String(user.gamesPlayed ?? 0);
   statSurvivals.textContent = String(user.bunkerSurvivals ?? 0);
   profileBio.value = user.bio || "";
   setAvatarSrc(user);
+  if (window.BunkerSocial) BunkerSocial.connect();
 }
 
 function showAuth() {
@@ -127,6 +136,13 @@ logoutBtn.addEventListener("click", () => {
   BunkerAuth.clearAuth();
   showAuth();
 });
+
+(function applyTabFromUrl() {
+  const tab = new URLSearchParams(location.search).get("tab");
+  if (tab === "register") {
+    document.querySelector('.auth-tabs__btn[data-tab="register"]')?.click();
+  }
+})();
 
 (async function init() {
   if (!BunkerAuth.apiBase()) {

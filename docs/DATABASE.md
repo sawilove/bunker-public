@@ -104,6 +104,17 @@ Server running on port ...
 | avatar_webp | Аватар (webp, до ~256×256) |
 | games_played | Сыграно игр |
 | bunker_survivals | Раз остался в бункере |
+| premium | Премиум (вручную в БД: `true` / `false`) |
+| dev | Разработчик (вручную в БД: `true` / `false`) |
+
+### Выдать премиум или статус разработчика
+
+В Neon → **SQL Editor**:
+
+```sql
+UPDATE users SET premium = true WHERE nickname_lower = 'никнейм';
+UPDATE users SET dev = true WHERE nickname_lower = 'никнейм';
+```
 
 Аватар отдаётся по адресу: `https://ваш-api.onrender.com/api/avatars/<id пользователя>`.
 

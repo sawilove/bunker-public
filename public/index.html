@@ -8,6 +8,7 @@
 </head>
 <body class="index">
   <div class="page">
+    <div data-site-topbar class="site-topbar"></div>
     <header class="site-header">
       <div class="site-header__badge">Протокол выживания №7</div>
       <h1>Бункер</h1>
@@ -16,12 +17,6 @@
       </p>
       <p class="site-header__status">Система убежища в режиме ожидания</p>
     </header>
-
-    <section class="panel">
-      <p class="panel__title">Аккаунт игрока</p>
-      <p class="panel__subtitle">Зарегистрируйтесь для профиля, аватарки и статистики — или играйте как гость.</p>
-      <a href="account.html" class="btn btn--amber btn--block">Вход и регистрация</a>
-    </section>
 
     <section class="panel">
       <p class="panel__title">Выберите роль в сессии</p>
@@ -52,6 +47,11 @@
     </footer>
   </div>
   <script src="config.js"></script>
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
+  <script src="auth.js"></script>
+  <script src="user-badges.js"></script>
+  <script src="social-client.js"></script>
+  <script src="site-auth.js"></script>
   <script src="donate.js"></script>
 </body>
 </html>
