@@ -10,6 +10,19 @@ function getBearerToken(req) {
   return null;
 }
 
+function getTokenFromRequest(req) {
+  const bearer = getBearerToken(req);
+  if (bearer) return bearer;
+  const cookie = req.headers.cookie || "";
+  const match = cookie.match(/(?:^|;\s*)bunker_token=([^;]*)/);
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
 async function loadSiteSettings() {
   try {
     const { rows } = await getPool().query(
@@ -37,7 +50,7 @@ function isMaintenanceEnabled() {
 }
 
 async function isDevUser(req) {
-  const user = await verifyToken(getBearerToken(req));
+  const user = await verifyToken(getTokenFromRequest(req));
   return !!user?.dev;
 }
 

@@ -54,5 +54,16 @@
     <h1>☢ Техобслуживание</h1>
     <p>Сайт временно недоступен — ведутся работы. Попробуйте зайти позже.</p>
   </div>
+  <script src="/config.js"></script>
+  <script src="/auth.js"></script>
+  <script>
+    (async function () {
+      if (!window.BunkerAuth || !BunkerAuth.getToken()) return;
+      try {
+        const me = await BunkerAuth.fetchMe();
+        if (me?.dev) location.replace("/index.html");
+      } catch (_) { /* не dev */ }
+    })();
+  </script>
 </body>
 </html>

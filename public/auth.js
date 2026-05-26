@@ -33,14 +33,31 @@
     return localStorage.getItem(STORAGE_TOKEN) || "";
   }
 
+  const COOKIE_MAX_AGE = 30 * 24 * 60 * 60;
+
+  function syncAuthCookie(token) {
+    if (token) {
+      document.cookie = `bunker_token=${encodeURIComponent(token)}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
+    } else {
+      document.cookie = "bunker_token=; path=/; max-age=0; SameSite=Lax";
+    }
+  }
+
   function setToken(token) {
-    if (token) localStorage.setItem(STORAGE_TOKEN, token);
-    else localStorage.removeItem(STORAGE_TOKEN);
+    if (token) {
+      localStorage.setItem(STORAGE_TOKEN, token);
+      syncAuthCookie(token);
+    } else {
+      localStorage.removeItem(STORAGE_TOKEN);
+      syncAuthCookie("");
+    }
   }
 
   function clearAuth() {
     setToken("");
   }
+
+  if (getToken()) syncAuthCookie(getToken());
 
   async function api(path, options = {}) {
     const base = apiBase();

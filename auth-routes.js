@@ -21,6 +21,22 @@ function getBearerToken(req) {
   return null;
 }
 
+const AUTH_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+function setAuthCookie(res, token) {
+  if (!token) return;
+  res.cookie("bunker_token", token, {
+    maxAge: AUTH_COOKIE_MAX_AGE_MS,
+    path: "/",
+    sameSite: "lax",
+    httpOnly: false,
+  });
+}
+
+function clearAuthCookie(res) {
+  res.clearCookie("bunker_token", { path: "/" });
+}
+
 async function requireUser(req, res) {
   const user = await verifyToken(getBearerToken(req));
   if (!user) {
@@ -61,6 +77,7 @@ function mountAuthRoutes(app) {
         res.status(400).json({ error: result.error });
         return;
       }
+      setAuthCookie(res, result.token);
       res.json({ user: result.user, token: result.token });
     } catch (err) {
       console.error("register error", err);
@@ -75,6 +92,7 @@ function mountAuthRoutes(app) {
         res.status(401).json({ error: result.error });
         return;
       }
+      setAuthCookie(res, result.token);
       res.json({ user: result.user, token: result.token });
     } catch (err) {
       console.error("login error", err);
