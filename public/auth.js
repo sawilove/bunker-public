@@ -17,6 +17,18 @@
     return path;
   }
 
+  function avatarUrlForUser(user, bust) {
+    if (!user?.avatarUrl) {
+      return assetUrl("/icons/default-avatar.svg");
+    }
+    let url = assetUrl(user.avatarUrl);
+    if (bust) {
+      const sep = url.includes("?") ? "&" : "?";
+      url += `${sep}bust=${bust}`;
+    }
+    return url;
+  }
+
   function getToken() {
     return localStorage.getItem(STORAGE_TOKEN) || "";
   }
@@ -137,6 +149,7 @@
   window.BunkerAuth = {
     apiBase,
     assetUrl,
+    avatarUrlForUser,
     getToken,
     setToken,
     clearAuth,

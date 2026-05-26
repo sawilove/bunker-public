@@ -95,7 +95,7 @@ async function sendFriendRequestToId(fromUserId, toUserId) {
      VALUES ($1, $2, 'pending', $3)`,
     [userA, userB, fromUserId]
   );
-  return { ok: true, accepted: false };
+  return { ok: true, accepted: false, toUserId, fromUserId };
 }
 
 async function respondFriendRequest(userId, peerId, accept) {

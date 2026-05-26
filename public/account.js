@@ -31,11 +31,8 @@ function showError(el, msg) {
   el.classList.toggle("hidden", !msg);
 }
 
-function setAvatarSrc(user) {
-  const url = user?.avatarUrl
-    ? BunkerAuth.assetUrl(user.avatarUrl)
-    : BunkerAuth.assetUrl("/icons/default-avatar.svg");
-  profileAvatar.src = url;
+function setAvatarSrc(user, bust) {
+  profileAvatar.src = BunkerAuth.avatarUrlForUser(user, bust || Date.now());
   if (profileAvatarWrap) {
     profileAvatarWrap.className = `profile-avatar-wrap ${BunkerUserBadges.frameClass(user)}`;
   }
@@ -159,6 +156,7 @@ changeAvatarBtn.addEventListener("click", async () => {
     const user = await BunkerAuth.uploadAvatar(dataUrl, crop);
     currentUser = user;
     fillProfileView(user);
+    setAvatarSrc(user, Date.now());
     if (window.BunkerSiteAuth) BunkerSiteAuth.refresh();
     profileSuccess.textContent = "Аватар обновлён.";
     profileSuccess.classList.remove("hidden");

@@ -8,13 +8,21 @@ const SECRET =
   process.env.JWT_SECRET ||
   "bunker-dev-secret-change-in-production";
 
+function avatarVersion(user) {
+  if (!user?.avatarUpdatedAt) return Date.now();
+  const t = user.avatarUpdatedAt;
+  return t instanceof Date ? t.getTime() : new Date(t).getTime();
+}
+
 function publicUser(user, extra = {}) {
   if (!user) return null;
   return {
     id: user.id,
     nickname: user.nickname,
     bio: user.bio || "",
-    avatarUrl: user.avatarWebp ? `/api/avatars/${user.id}` : null,
+    avatarUrl: user.avatarWebp
+      ? `/api/avatars/${user.id}?v=${avatarVersion(user)}`
+      : null,
     gamesPlayed: user.gamesPlayed || 0,
     bunkerSurvivals: user.bunkerSurvivals || 0,
     premium: !!user.premium,
@@ -168,10 +176,10 @@ async function updateProfile(userId, { bio, nickname }) {
 }
 
 async function setAvatarBuffer(userId, buffer) {
-  await getPool().query(`UPDATE users SET avatar_webp = $2 WHERE id = $1`, [
-    userId,
-    buffer,
-  ]);
+  await getPool().query(
+    `UPDATE users SET avatar_webp = $2, avatar_updated_at = NOW() WHERE id = $1`,
+    [userId, buffer]
+  );
   const user = await getUserById(userId);
   return publicUser(user);
 }

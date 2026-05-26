@@ -17,6 +17,12 @@ const {
   getUserStatus,
 } = require("./presence");
 
+let _io = null;
+
+function emitToUser(userId, event, payload) {
+  if (_io) _io.to(`user:${userId}`).emit(event, payload);
+}
+
 function getBearerToken(req) {
   const header = req.headers.authorization || "";
   if (header.startsWith("Bearer ")) return header.slice(7).trim();
@@ -32,7 +38,13 @@ async function requireUser(req, res) {
   return user;
 }
 
-function mountSocialRoutes(app) {
+function mountSocialRoutes(app, io) {
+  _io = io;
+
+  app.get("/news", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "news.html"));
+  });
+
   app.get("/friends", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "friends.html"));
   });
@@ -69,6 +81,12 @@ function mountSocialRoutes(app) {
       if (!result.ok) {
         res.status(400).json({ error: result.error });
         return;
+      }
+      if (result.ok && !result.accepted && result.toUserId) {
+        emitToUser(result.toUserId, "notification:friend_request", {
+          fromUserId: user.id,
+          fromNickname: user.nickname,
+        });
       }
       res.json(result);
     } catch (err) {
@@ -200,11 +218,13 @@ function mountSocialSockets(io, deps = {}) {
         socket.emit("social:error", { error: invite?.error || "Нет активной сессии." });
         return;
       }
-      emitToUser(friendId, "session:invite", {
+      const invitePayload = {
         code: invite.code,
         fromUserId: userId,
         fromNickname: invite.nickname,
-      });
+      };
+      emitToUser(friendId, "session:invite", invitePayload);
+      emitToUser(friendId, "notification:session_invite", invitePayload);
       socket.emit("session:inviteSent", { friendUserId: friendId });
     });
 

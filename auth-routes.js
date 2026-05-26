@@ -42,7 +42,7 @@ function mountAuthRoutes(app) {
         res.status(404).end();
         return;
       }
-      res.set("Cache-Control", "public, max-age=3600");
+      res.set("Cache-Control", "private, no-cache, must-revalidate");
       res.type("image/webp").send(buf);
     } catch (err) {
       console.error("avatar get error", err);
@@ -170,9 +170,10 @@ function mountAuthRoutes(app) {
       const top = Math.floor(cy * h);
       const width = Math.max(1, Math.floor(cw * w));
       const height = Math.max(1, Math.floor(ch * h));
+      const size = Math.min(width, height);
 
       const webp = await sharp(buffer)
-        .extract({ left, top, width, height })
+        .extract({ left, top, width: size, height: size })
         .resize(256, 256, { fit: "cover" })
         .webp({ quality: 85 })
         .toBuffer();

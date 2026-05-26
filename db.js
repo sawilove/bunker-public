@@ -46,6 +46,9 @@ async function initDatabase() {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS dev BOOLEAN NOT NULL DEFAULT false;
   `);
   await p.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_updated_at TIMESTAMPTZ;
+  `);
+  await p.query(`
     CREATE TABLE IF NOT EXISTS friend_pairs (
       user_a TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       user_b TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -80,6 +83,7 @@ function rowToUser(row) {
     passwordHash: row.password_hash,
     bio: row.bio || "",
     avatarWebp: row.avatar_webp,
+    avatarUpdatedAt: row.avatar_updated_at,
     gamesPlayed: row.games_played,
     bunkerSurvivals: row.bunker_survivals,
     premium: !!row.premium,

@@ -32,7 +32,6 @@ const server = http.createServer(app);
 
 app.use(express.json({ limit: "6mb" }));
 mountAuthRoutes(app);
-mountSocialRoutes(app);
 
 const corsOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",").map((s) => s.trim()).filter(Boolean)
@@ -41,6 +40,8 @@ const corsOrigins = process.env.CORS_ORIGIN
 const io = new Server(server, {
   cors: { origin: corsOrigins, methods: ["GET", "POST"] },
 });
+
+mountSocialRoutes(app, io);
 
 app.use(express.static("public"));
 app.use("/scenarios", express.static(path.join(__dirname, "public", "scenarios")));
