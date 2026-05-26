@@ -108,7 +108,7 @@ async function loadNews() {
 
     const [catData, newsData] = await Promise.all([
       BunkerAuth.getNewsCategories(),
-      BunkerAuth.getNews(activeCategory || undefined),
+      BunkerAuth.getNews(),
     ]);
     categories = catData.categories || [];
     allPosts = newsData.posts || [];
@@ -207,14 +207,10 @@ function fillCategorySelect() {
     .join("");
 }
 
-document.getElementById("newsFilters")?.addEventListener("click", async (e) => {
+document.getElementById("newsFilters")?.addEventListener("click", (e) => {
   const cat = e.target.closest("[data-category]")?.dataset.category;
   if (cat === undefined) return;
   activeCategory = cat;
-  if (BunkerAuth.apiBase()) {
-    const data = await BunkerAuth.getNews(activeCategory || undefined);
-    allPosts = data.posts || [];
-  }
   renderFilters();
   renderList();
 });
@@ -235,7 +231,7 @@ document.getElementById("newsDevForm")?.addEventListener("submit", async (e) => 
     else await BunkerAuth.createNews(payload);
     resetDevForm();
     document.getElementById("newsDevPanel").classList.add("hidden");
-    const data = await BunkerAuth.getNews(activeCategory || undefined);
+    const data = await BunkerAuth.getNews();
     allPosts = data.posts || [];
     renderList();
   } catch (err) {
@@ -284,12 +280,12 @@ document.getElementById("newsList")?.addEventListener("click", async (e) => {
   const editId = e.target.closest("[data-edit-news]")?.dataset.editNews;
   const deleteId = e.target.closest("[data-delete-news]")?.dataset.deleteNews;
   if (editId) {
-    const post = allPosts.find((p) => p.id === editId);
+    const post = allPosts.find((p) => String(p.id) === String(editId));
     if (post) openDevForm(post);
   }
   if (deleteId && confirm("Удалить эту новость?")) {
     await BunkerAuth.deleteNews(deleteId);
-    const data = await BunkerAuth.getNews(activeCategory || undefined);
+    const data = await BunkerAuth.getNews();
     allPosts = data.posts || [];
     renderList();
   }

@@ -2226,6 +2226,67 @@ body.has-scenario-bg .waiting-modal__card {
   flex-wrap: wrap;
 }
 
+@media (max-width: 640px) {
+  .site-topbar {
+    left: max(0.5rem, env(safe-area-inset-left, 0px));
+    right: max(0.5rem, env(safe-area-inset-right, 0px));
+    max-width: none;
+  }
+
+  .site-topbar__inner--user {
+    gap: 0.35rem;
+  }
+
+  .site-topbar__notif-wrap {
+    position: static;
+  }
+
+  .notif-dropdown {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: none;
+    max-height: min(85vh, calc(100dvh - env(safe-area-inset-bottom, 0px)));
+    border-radius: var(--radius) var(--radius) 0 0;
+    border-bottom: none;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .notif-dropdown__head {
+    flex-wrap: wrap;
+    gap: 0.35rem 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .notif-dropdown__read {
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .notif-panel {
+    max-height: none;
+    flex: 1;
+    min-height: 0;
+    padding: 0.5rem 0.75rem 0.75rem;
+  }
+
+  .notif-panel__item {
+    padding: 0.75rem;
+  }
+
+  .notif-panel__actions {
+    flex-direction: column;
+  }
+
+  .notif-panel__actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* —— News page —— */
 .news-list {
   display: flex;
@@ -2543,9 +2604,59 @@ body.has-scenario-bg .waiting-modal__card {
   flex-wrap: wrap;
 }
 
-.friends-add__form input {
+.friends-add__field {
+  position: relative;
   flex: 1;
   min-width: 140px;
+}
+
+.friends-add__form input {
+  width: 100%;
+  min-width: 0;
+}
+
+.friends-suggest {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.friends-suggest__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  cursor: pointer;
+}
+
+.friends-suggest__item:hover {
+  background: rgba(232, 168, 56, 0.1);
+}
+
+.friends-suggest__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.friends-suggest__name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .friends-list {
@@ -2682,6 +2793,68 @@ body.has-scenario-bg .waiting-modal__card {
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: 1.25rem;
+  align-items: center;
+}
+
+.profile-friend-status {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.profile-view__friends {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.profile-friends {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+.profile-friends__item {
+  border-radius: var(--radius);
+}
+
+.profile-friends__item.user-frame--dev {
+  border-left: 3px solid #e53935;
+  padding-left: 0.5rem;
+}
+
+.profile-friends__item.user-frame--premium {
+  border-left: 3px solid #d4a017;
+  padding-left: 0.5rem;
+}
+
+.profile-friends__link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0;
+  text-decoration: none;
+  color: inherit;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-friends__link:hover .profile-friends__name {
+  color: var(--amber);
+}
+
+.profile-friends__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profile-friends__name {
+  font-weight: 600;
+}
+
+.profile-friends__empty {
+  color: var(--text-muted);
+  margin: 0.5rem 0 0;
 }
 
 .profile-bio-text {

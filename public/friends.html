@@ -20,7 +20,10 @@
     <section class="panel friends-add">
       <p class="panel__title">Добавить по никнейму</p>
       <form id="addFriendForm" class="friends-add__form">
-        <input type="text" id="addFriendNick" maxlength="20" placeholder="Никнейм" required>
+        <div class="friends-add__field">
+          <input type="text" id="addFriendNick" maxlength="20" placeholder="Никнейм" required autocomplete="off">
+          <ul id="addFriendSuggest" class="friends-suggest hidden" role="listbox"></ul>
+        </div>
         <button type="submit" class="btn btn--amber">Добавить</button>
       </form>
       <p id="addFriendError" class="form-error hidden"></p>

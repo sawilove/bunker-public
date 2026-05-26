@@ -152,6 +152,63 @@ document.body.addEventListener("click", async (e) => {
   }
 });
 
+const addFriendNick = document.getElementById("addFriendNick");
+const addFriendSuggest = document.getElementById("addFriendSuggest");
+let suggestTimer = null;
+let suggestSeq = 0;
+
+function hideSuggest() {
+  addFriendSuggest.classList.add("hidden");
+  addFriendSuggest.innerHTML = "";
+}
+
+async function updateSuggest() {
+  const q = addFriendNick.value.trim();
+  if (q.length < 2) {
+    hideSuggest();
+    return;
+  }
+  const seq = ++suggestSeq;
+  try {
+    const users = await BunkerAuth.searchUsers(q);
+    if (seq !== suggestSeq) return;
+    if (!users.length) {
+      hideSuggest();
+      return;
+    }
+    addFriendSuggest.innerHTML = users
+      .map(
+        (u) =>
+          `<li class="friends-suggest__item" role="option" data-suggest-id="${u.id}">
+            <img class="friends-suggest__avatar" src="${BunkerAuth.assetUrl(u.avatarUrl || "/icons/default-avatar.svg")}" alt="">
+            <span class="friends-suggest__name">${BunkerUserBadges.escapeHtml(u.nickname)}</span>
+          </li>`
+      )
+      .join("");
+    addFriendSuggest.classList.remove("hidden");
+  } catch {
+    hideSuggest();
+  }
+}
+
+addFriendNick.addEventListener("input", () => {
+  clearTimeout(suggestTimer);
+  suggestTimer = setTimeout(updateSuggest, 200);
+});
+
+addFriendNick.addEventListener("blur", () => {
+  setTimeout(hideSuggest, 150);
+});
+
+addFriendSuggest.addEventListener("mousedown", (e) => {
+  e.preventDefault();
+  const item = e.target.closest("[data-suggest-id]");
+  if (!item) return;
+  const nick = item.querySelector(".friends-suggest__name")?.textContent;
+  if (nick) addFriendNick.value = nick;
+  hideSuggest();
+});
+
 addFriendForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   showMsg(addFriendError, "");

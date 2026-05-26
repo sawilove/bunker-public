@@ -146,6 +146,13 @@
     });
   }
 
+  async function requestFriendById(userId) {
+    return api("/api/friends/request", {
+      method: "POST",
+      body: JSON.stringify({ userId }),
+    });
+  }
+
   async function respondFriend(userId, accept) {
     return api("/api/friends/respond", {
       method: "POST",
@@ -237,6 +244,7 @@
     getFriends,
     searchUsers,
     requestFriend,
+    requestFriendById,
     respondFriend,
     removeFriend,
     getChat,

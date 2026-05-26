@@ -57,6 +57,23 @@ async function listFriends(userId) {
   return { friends, incoming, outgoing };
 }
 
+async function getFriendship(viewerId, profileUserId) {
+  if (!viewerId || !profileUserId) return "none";
+  if (viewerId === profileUserId) return "self";
+  const [userA, userB] = pairKey(viewerId, profileUserId);
+  const { rows } = await getPool().query(
+    `SELECT status, requested_by FROM friend_pairs WHERE user_a = $1 AND user_b = $2`,
+    [userA, userB]
+  );
+  const row = rows[0];
+  if (!row) return "none";
+  if (row.status === "accepted") return "friends";
+  if (row.status === "pending") {
+    return row.requested_by === viewerId ? "outgoing" : "incoming";
+  }
+  return "none";
+}
+
 async function sendFriendRequest(fromUserId, nickname) {
   const { rows } = await getPool().query(
     `SELECT id FROM users WHERE nickname_lower = $1`,
@@ -217,7 +234,9 @@ module.exports = {
   enrichPublicUser,
   searchUsersByNickname,
   listFriends,
+  getFriendship,
   sendFriendRequest,
+  sendFriendRequestToId,
   respondFriendRequest,
   removeFriend,
   areFriends,

@@ -5,6 +5,7 @@ const {
   searchUsersByNickname,
   listFriends,
   sendFriendRequest,
+  sendFriendRequestToId,
   respondFriendRequest,
   removeFriend,
   getChatMessages,
@@ -77,7 +78,9 @@ function mountSocialRoutes(app, io) {
     try {
       const user = await requireUser(req, res);
       if (!user) return;
-      const result = await sendFriendRequest(user.id, req.body?.nickname);
+      const result = req.body?.userId
+        ? await sendFriendRequestToId(user.id, req.body.userId)
+        : await sendFriendRequest(user.id, req.body?.nickname);
       if (!result.ok) {
         res.status(400).json({ error: result.error });
         return;

@@ -10,7 +10,7 @@ const {
   setAvatarBuffer,
   getAvatarBuffer,
 } = require("./user-store");
-const { enrichPublicUser } = require("./social-store");
+const { enrichPublicUser, getFriendship, listFriends } = require("./social-store");
 
 const GUEST_AVATAR = "/icons/guest-avatar.svg";
 const DEFAULT_AVATAR = "/icons/default-avatar.svg";
@@ -112,7 +112,13 @@ function mountAuthRoutes(app) {
         res.status(404).json({ error: "Игрок не найден." });
         return;
       }
-      res.json({ user: await enrichPublicUser(user) });
+      const friendship = await getFriendship(viewer.id, user.id);
+      const { friends } = await listFriends(user.id);
+      res.json({
+        user: await enrichPublicUser(user),
+        friendship,
+        friends,
+      });
     } catch (err) {
       console.error("user profile error", err);
       res.status(500).json({ error: "Ошибка сервера." });
