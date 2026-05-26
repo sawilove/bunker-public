@@ -95,7 +95,7 @@ loginForm.addEventListener("submit", async (e) => {
       { captchaToken }
     );
     const next = new URLSearchParams(location.search).get("next");
-    location.href = next || BunkerAuth.profileUrl(user.id);
+    location.href = next || BunkerAuth.profileUrl(user);
   } catch (err) {
     showMessage(loginError, err.message);
     resetCaptcha("login");
@@ -144,7 +144,7 @@ registerForm.addEventListener("submit", async (e) => {
         captchaToken,
       }
     );
-    location.href = BunkerAuth.profileUrl(user.id);
+    location.href = BunkerAuth.profileUrl(user);
   } catch (err) {
     showMessage(registerError, err.message);
     resetCaptcha("register");
@@ -209,7 +209,7 @@ resetForm.addEventListener("submit", async (e) => {
   }
   const user = await BunkerAuth.fetchMe();
   if (user) {
-    location.href = BunkerAuth.profileUrl(user.id);
+    location.href = BunkerAuth.profileUrl(user);
     return;
   }
   authSection.classList.remove("hidden");

@@ -24,6 +24,7 @@ function publicUser(user, extra = {}) {
   if (!user) return null;
   return {
     id: user.id,
+    profileId: user.profileId || user.id,
     nickname: user.nickname,
     bio: user.bio || "",
     avatarUrl: user.avatarWebp
@@ -63,6 +64,21 @@ function validatePassword(password) {
   return null;
 }
 
+function normalizeProfileId(value) {
+  return (value || "").trim().toLowerCase();
+}
+
+function validateProfileId(value) {
+  const id = normalizeProfileId(value);
+  if (id.length < 3 || id.length > 32) {
+    return "ID профиля: от 3 до 32 символов.";
+  }
+  if (!/^[a-z0-9_-]+$/.test(id)) {
+    return "ID профиля: только латиница, цифры, _ и -.";
+  }
+  return null;
+}
+
 function createToken(userId) {
   const issued = Date.now();
   const payload = `${userId}.${issued}`;
@@ -76,6 +92,23 @@ async function getUserById(userId) {
     [userId]
   );
   return rowToUser(rows[0]);
+}
+
+async function getUserByProfileId(profileId) {
+  const normalized = normalizeProfileId(profileId);
+  if (!normalized) return null;
+  const { rows } = await getPool().query(
+    `SELECT * FROM users WHERE profile_id = $1`,
+    [normalized]
+  );
+  return rowToUser(rows[0]);
+}
+
+async function getUserByPublicId(userIdOrProfileId) {
+  if (!userIdOrProfileId) return null;
+  const exact = await getUserById(userIdOrProfileId);
+  if (exact) return exact;
+  return getUserByProfileId(userIdOrProfileId);
 }
 
 async function findByNickname(nickname) {
@@ -138,9 +171,9 @@ async function register({ nickname, password, email, verificationCode }) {
 
   try {
     await getPool().query(
-      `INSERT INTO users (id, nickname, nickname_lower, password_hash, email, email_lower, email_verified)
-       VALUES ($1, $2, $3, $4, $5, $6, true)`,
-      [id, nick, nick.toLowerCase(), passwordHash, emailKey, emailKey]
+      `INSERT INTO users (id, profile_id, nickname, nickname_lower, password_hash, email, email_lower, email_verified)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, true)`,
+      [id, id, nick, nick.toLowerCase(), passwordHash, emailKey, emailKey]
     );
   } catch (err) {
     if (err.code === "23505") {
@@ -188,7 +221,7 @@ async function login({ nickname, password }) {
   return { ok: true, user: publicUser(user), token: createToken(user.id) };
 }
 
-async function updateProfile(userId, { bio, nickname, friendsHidden }) {
+async function updateProfile(userId, { bio, nickname, friendsHidden, profileId }) {
   const user = await getUserById(userId);
   if (!user) return { ok: false, error: "Пользователь не найден." };
 
@@ -214,13 +247,33 @@ async function updateProfile(userId, { bio, nickname, friendsHidden }) {
     hideFriends = friendsHidden;
   }
 
+  let nextProfileId = user.profileId || user.id;
+  if (profileId !== undefined) {
+    if (!user.premium) {
+      return { ok: false, error: "Изменение ID профиля доступно только Premium." };
+    }
+    const idErr = validateProfileId(profileId);
+    if (idErr) return { ok: false, error: idErr };
+    nextProfileId = normalizeProfileId(profileId);
+    const { rows: sameIdRows } = await getPool().query(
+      `SELECT 1 FROM users WHERE id = $1 AND id <> $2 LIMIT 1`,
+      [nextProfileId, userId]
+    );
+    if (sameIdRows.length) {
+      return { ok: false, error: "Этот ID профиля уже занят." };
+    }
+  }
+
   try {
     await getPool().query(
-      `UPDATE users SET bio = $2, nickname = $3, nickname_lower = $4, friends_hidden = $5 WHERE id = $1`,
-      [userId, bioText, nick, nick.toLowerCase(), hideFriends]
+      `UPDATE users SET bio = $2, nickname = $3, nickname_lower = $4, friends_hidden = $5, profile_id = $6 WHERE id = $1`,
+      [userId, bioText, nick, nick.toLowerCase(), hideFriends, nextProfileId]
     );
   } catch (err) {
     if (err.code === "23505") {
+      if (String(err.constraint || "").includes("users_profile_id")) {
+        return { ok: false, error: "Этот ID профиля уже занят." };
+      }
       return { ok: false, error: "Этот никнейм уже занят." };
     }
     throw err;
@@ -296,6 +349,7 @@ module.exports = {
   verifyToken,
   publicUser,
   getUserById,
+  getUserByPublicId,
   updateProfile,
   setAvatarBuffer,
   getAvatarBuffer,

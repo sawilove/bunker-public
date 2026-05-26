@@ -41,7 +41,7 @@
         <span>Выживаний: <strong>${user.bunkerSurvivals ?? 0}</strong></span>
       </div>
       ${user.bio ? `<p class="profile-modal__bio">${BunkerUserBadges.escapeHtml(user.bio)}</p>` : '<p class="profile-modal__bio profile-modal__bio--empty">Без описания</p>'}
-      <p class="profile-modal__link"><a href="${BunkerAuth.profileUrl(user.id)}" class="btn btn--small btn--amber">Открыть профиль</a></p>`;
+      <p class="profile-modal__link"><a href="${BunkerAuth.profileUrl(user)}" class="btn btn--small btn--amber">Открыть профиль</a></p>`;
   }
 
   function showGuest(name, avatarUrl) {

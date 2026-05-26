@@ -67,6 +67,18 @@ async function initDatabase() {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false;
   `);
   await p.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_id TEXT;
+  `);
+  await p.query(`
+    UPDATE users
+    SET profile_id = id
+    WHERE profile_id IS NULL OR profile_id = '';
+  `);
+  await p.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS users_profile_id_idx
+    ON users (profile_id);
+  `);
+  await p.query(`
     CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_idx
     ON users (email_lower) WHERE email_lower IS NOT NULL;
   `);
@@ -138,6 +150,7 @@ function rowToUser(row) {
   if (!row) return null;
   return {
     id: row.id,
+    profileId: row.profile_id || row.id,
     nickname: row.nickname,
     nicknameLower: row.nickname_lower,
     passwordHash: row.password_hash,

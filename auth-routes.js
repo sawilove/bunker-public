@@ -8,7 +8,7 @@ const {
   resetPassword,
   verifyToken,
   publicUser,
-  getUserById,
+  getUserByPublicId,
   updateProfile,
   setAvatarBuffer,
   getAvatarBuffer,
@@ -188,7 +188,7 @@ function mountAuthRoutes(app) {
         res.status(401).json({ error: "Требуется вход в аккаунт." });
         return;
       }
-      const user = await getUserById(req.params.userId);
+      const user = await getUserByPublicId(req.params.userId);
       if (!user) {
         res.status(404).json({ error: "Игрок не найден." });
         return;

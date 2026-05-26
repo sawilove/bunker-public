@@ -225,9 +225,13 @@
     return api(`/api/chat/${encodeURIComponent(peerId)}`);
   }
 
-  function profileUrl(userId) {
-    if (!userId) return pageUrl("profile.html");
-    return pageUrl(`profile.html?id=${encodeURIComponent(userId)}`);
+  function profileUrl(userOrId) {
+    if (!userOrId) return pageUrl("profile.html");
+    const id =
+      typeof userOrId === "object"
+        ? userOrId.profileId || userOrId.id
+        : userOrId;
+    return pageUrl(`profile.html?id=${encodeURIComponent(id)}`);
   }
 
   function pageUrl(filename) {

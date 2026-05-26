@@ -14,6 +14,8 @@
 
     news: `<svg class="site-topbar__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
 
+    premium: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 19h20M4 17l2-9 4 4 4-7 4 7 4-4 2 9"/></svg>`,
+
   };
 
 
@@ -24,11 +26,19 @@
 
       <div class="site-topbar__inner">
 
+        <button type="button" class="site-topbar__premium-btn" data-premium-modal title="Премиум">${ICONS.premium}</button>
+
         <a href="auth.html?tab=login" class="site-topbar__link">Вход</a>
 
         <a href="auth.html?tab=register" class="site-topbar__btn btn btn--amber btn--small">Регистрация</a>
 
       </div>`;
+
+    mount.querySelector("[data-premium-modal]")?.addEventListener("click", () => {
+
+      window.BunkerPremiumModal?.open(null);
+
+    });
 
   }
 
@@ -38,7 +48,7 @@
 
     const chip = BunkerUserBadges.renderUserChip(user, {
 
-      href: BunkerAuth.profileUrl(user.id),
+      href: BunkerAuth.profileUrl(user),
 
       showBadges: true,
 
@@ -50,11 +60,15 @@
 
       : "";
 
+    const premiumBtn = `<button type="button" class="site-topbar__premium-btn" data-premium-modal title="Премиум">${ICONS.premium}</button>`;
+
     mount.innerHTML = `
 
       <div class="site-topbar__inner site-topbar__inner--user">
 
         ${devBtn}
+
+        ${premiumBtn}
 
         <a href="news.html" class="site-topbar__icon-btn" title="Новости">${ICONS.news}</a>
 
@@ -101,6 +115,12 @@
     mount.querySelector("[data-dev-panel]")?.addEventListener("click", () => {
 
       window.BunkerDevPanel?.open();
+
+    });
+
+    mount.querySelector("[data-premium-modal]")?.addEventListener("click", () => {
+
+      window.BunkerPremiumModal?.open(user);
 
     });
 
