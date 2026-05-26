@@ -231,7 +231,7 @@
       typeof userOrId === "object"
         ? userOrId.profileId || userOrId.id
         : userOrId;
-    return pageUrl(`profile.html?id=${encodeURIComponent(id)}`);
+    return `/user/${encodeURIComponent(id)}`;
   }
 
   function pageUrl(filename) {

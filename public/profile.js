@@ -192,7 +192,7 @@
 
     const frame = BunkerUserBadges.frameClass(user);
 
-    const canChangeProfileId = !!user?.premium;
+    const canChangeProfileId = !!(user?.premium || user?.dev);
 
     const profileIdField = canChangeProfileId
 
@@ -206,7 +206,7 @@
 
           </label>`
 
-      : `<p class="profile-edit__hint">Смена ID профиля доступна только с подпиской Premium.</p>`;
+      : `<p class="profile-edit__hint">Смена ID профиля доступна только с подпиской Premium или для разработчиков.</p>`;
 
     const bannerBtn = canUseBanner(user)
 
@@ -816,7 +816,7 @@
 
       const next = userId
 
-        ? BunkerAuth.pageUrl(`profile.html?id=${encodeURIComponent(userId)}`)
+        ? BunkerAuth.profileUrl(userId)
 
         : BunkerAuth.pageUrl("profile.html");
 

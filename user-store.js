@@ -22,6 +22,7 @@ function mediaVersion(dateField) {
 
 function publicUser(user, extra = {}) {
   if (!user) return null;
+  const premiumActive = hasPremiumAccess(user);
   return {
     id: user.id,
     profileId: user.profileId || user.id,
@@ -36,7 +37,8 @@ function publicUser(user, extra = {}) {
     friendsHidden: !!user.friendsHidden,
     gamesPlayed: user.gamesPlayed || 0,
     bunkerSurvivals: user.bunkerSurvivals || 0,
-    premium: !!user.premium,
+    premium: premiumActive,
+    premiumUntil: user.premiumUntil || null,
     dev: !!user.dev,
     ...extra,
   };
@@ -62,6 +64,15 @@ function validatePassword(password) {
     return "Пароль: минимум 6 символов.";
   }
   return null;
+}
+
+function hasPremiumAccess(user) {
+  if (!user) return false;
+  if (user.dev) return true;
+  if (user.premium) return true; // legacy/manual permanent premium flag
+  if (!user.premiumUntil) return false;
+  const t = new Date(user.premiumUntil).getTime();
+  return Number.isFinite(t) && t > Date.now();
 }
 
 function normalizeProfileId(value) {
@@ -249,8 +260,8 @@ async function updateProfile(userId, { bio, nickname, friendsHidden, profileId }
 
   let nextProfileId = user.profileId || user.id;
   if (profileId !== undefined) {
-    if (!user.premium) {
-      return { ok: false, error: "Изменение ID профиля доступно только Premium." };
+    if (!(user.dev || hasPremiumAccess(user))) {
+      return { ok: false, error: "Изменение ID профиля доступно только Premium и разработчикам." };
     }
     const idErr = validateProfileId(profileId);
     if (idErr) return { ok: false, error: idErr };
@@ -318,7 +329,7 @@ async function getBannerBuffer(userId) {
 }
 
 function canUseBanner(user) {
-  return !!(user?.dev || user?.premium);
+  return hasPremiumAccess(user);
 }
 
 async function recordGameStats(playerUserIds, survivorUserIds) {
@@ -356,6 +367,7 @@ module.exports = {
   setBannerBuffer,
   getBannerBuffer,
   canUseBanner,
+  hasPremiumAccess,
   recordGameStats,
   createToken,
 };

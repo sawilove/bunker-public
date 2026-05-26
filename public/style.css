@@ -2297,12 +2297,72 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .site-topbar__inner {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   pointer-events: auto;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.site-topbar__desktop {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.site-topbar__menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+}
+
+.site-topbar__menu-btn:hover {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+.site-topbar__menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 12rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.4rem;
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  box-shadow: var(--shadow);
+}
+
+.site-topbar__menu-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  padding: 0.5rem 0.6rem;
+  border-radius: 6px;
+  text-decoration: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.site-topbar__menu-item:hover {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .page--with-topbar {
@@ -2461,6 +2521,14 @@ input[type="range"]::-moz-range-thumb {
 
   .site-topbar__inner--user {
     gap: 0.35rem;
+  }
+
+  .site-topbar__desktop {
+    display: none;
+  }
+
+  .site-topbar__menu-btn {
+    display: inline-flex;
   }
 
   .site-topbar__notif-wrap {
@@ -3639,6 +3707,8 @@ body.host .chat-widget {
   background: rgba(212, 160, 23, 0.12);
   color: #f0c040;
   cursor: pointer;
+  line-height: 0;
+  flex-shrink: 0;
 }
 
 .site-topbar__premium-btn:hover {
@@ -3650,6 +3720,7 @@ body.host .chat-widget {
 .site-topbar__premium-btn svg {
   width: 1.1rem;
   height: 1.1rem;
+  display: block;
 }
 
 .premium-modal {

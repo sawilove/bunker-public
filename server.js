@@ -84,6 +84,16 @@ app.get("/player", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "player.html"));
 });
 
+app.get("/game/:code", (req, res) => {
+  const code = String(req.params.code || "").trim().toUpperCase();
+  const safeCode = code.slice(0, 16);
+  if (!safeCode) {
+    res.redirect(302, "/player.html");
+    return;
+  }
+  res.redirect(302, `/player.html?code=${encodeURIComponent(safeCode)}`);
+});
+
 let hostId = null;
 let hostSocketId = null;
 let sessionCode = null;

@@ -15,6 +15,7 @@ const {
   setBannerBuffer,
   getBannerBuffer,
   canUseBanner,
+  hasPremiumAccess,
 } = require("./user-store");
 const { enrichPublicUser, getFriendship, listFriends } = require("./social-store");
 
@@ -391,7 +392,7 @@ async function resolvePlayerIdentity(payload) {
     userId: authUser.id,
     nickname: authUser.nickname,
     avatarUrl: pub.avatarUrl || DEFAULT_AVATAR,
-    premium: !!authUser.premium,
+    premium: hasPremiumAccess(authUser),
     dev: !!authUser.dev,
     nameMode: sessionName ? "session" : "nickname",
   };

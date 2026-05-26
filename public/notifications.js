@@ -356,7 +356,7 @@
 
     const base = location.pathname.replace(/[^/]*$/, "");
 
-    const url = `${base}player.html?code=${encodeURIComponent(data.code)}`;
+    const url = `${base}game/${encodeURIComponent(data.code)}`;
 
     add({
 

@@ -2,10 +2,11 @@
 (function () {
   const path = location.pathname.replace(/\\/g, "/");
   const needsRoot =
-    /^\/user\/[a-f0-9]{32}\/?$/i.test(path) ||
+    /^\/user\/[^/]+\/?$/i.test(path) ||
     path === "/account" ||
     path === "/news" ||
-    path === "/friends";
+    path === "/friends" ||
+    /^\/game\/[^/]+\/?$/i.test(path);
   if (!needsRoot || document.querySelector("base[data-bunker-root]")) return;
   const base = document.createElement("base");
   base.href = "/";

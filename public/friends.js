@@ -24,7 +24,7 @@ function showMsg(el, msg, isError = true) {
 
 function playerUrl(code) {
   const base = location.pathname.replace(/[^/]*$/, "");
-  return `${location.origin}${base}player.html?code=${encodeURIComponent(code)}`;
+  return `${location.origin}${base}game/${encodeURIComponent(code)}`;
 }
 
 function renderFriendRow(user, actionsHtml) {

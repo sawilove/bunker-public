@@ -11,7 +11,7 @@
     }
     const path = location.pathname.replace(/\\/g, "/");
     if (
-      /^\/user\/[a-f0-9]{32}\/?$/i.test(path) ||
+      /^\/user\/[^/]+\/?$/i.test(path) ||
       path === "/account" ||
       path === "/news" ||
       path === "/friends" ||
@@ -44,7 +44,7 @@
 
   function playerJoinUrl(code) {
     const q = encodeURIComponent(code);
-    return `${location.origin}${basePath}/player.html?code=${q}`;
+    return `${location.origin}${basePath}/game/${q}`;
   }
 
   function qrImageUrl(data) {

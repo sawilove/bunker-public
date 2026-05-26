@@ -43,6 +43,9 @@ async function initDatabase() {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS premium BOOLEAN NOT NULL DEFAULT false;
   `);
   await p.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_until TIMESTAMPTZ;
+  `);
+  await p.query(`
     ALTER TABLE users ADD COLUMN IF NOT EXISTS dev BOOLEAN NOT NULL DEFAULT false;
   `);
   await p.query(`
@@ -163,6 +166,7 @@ function rowToUser(row) {
     gamesPlayed: row.games_played,
     bunkerSurvivals: row.bunker_survivals,
     premium: !!row.premium,
+    premiumUntil: row.premium_until || null,
     dev: !!row.dev,
     email: row.email || null,
     emailLower: row.email_lower || null,

@@ -1,6 +1,6 @@
 (function () {
   const ICONS = {
-    crown: `<svg class="premium-benefit__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 19h20M4 17l2-9 4 4 4-7 4 7 4-4 2 9"/></svg>`,
+    crown: `<svg class="premium-benefit__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18h18l-2.2-10-4.3 4-3.5-6-3.5 6-4.3-4L3 18z"/></svg>`,
     banner: `<svg class="premium-benefit__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>`,
     lock: `<svg class="premium-benefit__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`,
     clock: `<svg class="premium-benefit__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`,
