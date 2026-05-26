@@ -2365,6 +2365,24 @@ input[type="range"]::-moz-range-thumb {
   background: rgba(255, 255, 255, 0.06);
 }
 
+.site-topbar__menu-user {
+  padding: 0.25rem 0.25rem 0.45rem;
+  margin-bottom: 0.15rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.site-topbar__menu-profile {
+  display: flex;
+  width: 100%;
+  max-width: none;
+  border-radius: 10px;
+}
+
+.site-topbar__menu-profile .user-chip__avatar {
+  width: 44px;
+  height: 44px;
+}
+
 .page--with-topbar {
   padding-top: 3.75rem;
 }

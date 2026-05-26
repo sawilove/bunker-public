@@ -34,8 +34,25 @@
     return url;
   }
 
+  function getTokenFromCookie() {
+    const match = document.cookie.match(/(?:^|;\s*)bunker_token=([^;]*)/);
+    if (!match) return "";
+    try {
+      return decodeURIComponent(match[1]);
+    } catch {
+      return match[1];
+    }
+  }
+
   function getToken() {
-    return localStorage.getItem(STORAGE_TOKEN) || "";
+    const stored = localStorage.getItem(STORAGE_TOKEN) || "";
+    if (stored) return stored;
+    const fromCookie = getTokenFromCookie();
+    if (fromCookie) {
+      localStorage.setItem(STORAGE_TOKEN, fromCookie);
+      return fromCookie;
+    }
+    return "";
   }
 
   const COOKIE_MAX_AGE = 30 * 24 * 60 * 60;
@@ -234,7 +251,22 @@
     return `/user/${encodeURIComponent(id)}`;
   }
 
+  const PAGE_ROUTES = {
+    "index.html": "/",
+    "auth.html": "/auth",
+    "news.html": "/news",
+    "friends.html": "/friends",
+    "host.html": "/host",
+    "player.html": "/player",
+    "profile.html": "/profile",
+  };
+
   function pageUrl(filename) {
+    const qIndex = filename.indexOf("?");
+    const pathPart = qIndex >= 0 ? filename.slice(0, qIndex) : filename;
+    const query = qIndex >= 0 ? filename.slice(qIndex) : "";
+    const route = PAGE_ROUTES[pathPart];
+    if (route) return route + query;
     if (window.BunkerRuntime) return BunkerRuntime.pageUrl(filename);
     return filename;
   }

@@ -1,11 +1,9 @@
-/** Ensures relative assets resolve from site root on /user/:id, /account, etc. */
+/** Ensures relative assets resolve from site root on clean URL routes. */
 (function () {
   const path = location.pathname.replace(/\\/g, "/");
   const needsRoot =
     /^\/user\/[^/]+\/?$/i.test(path) ||
-    path === "/account" ||
-    path === "/news" ||
-    path === "/friends" ||
+    /^\/(account|auth|news|friends|host|player|profile)\/?$/i.test(path) ||
     /^\/game\/[^/]+\/?$/i.test(path);
   if (!needsRoot || document.querySelector("base[data-bunker-root]")) return;
   const base = document.createElement("base");

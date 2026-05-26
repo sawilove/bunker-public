@@ -106,6 +106,12 @@ function maintenanceMiddleware(req, res, next) {
     p === "/maintenance.html" ||
     p === "/account.html" ||
     p === "/account" ||
+    p === "/auth" ||
+    p === "/auth.html" ||
+    p.startsWith("/user/") ||
+    p === "/profile" ||
+    p === "/news" ||
+    p === "/friends" ||
     p === "/api/dev/settings" ||
     p === "/api/dev/maintenance" ||
     p.startsWith("/socket.io") ||

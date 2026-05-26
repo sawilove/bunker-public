@@ -42,10 +42,11 @@
       ? BunkerAuth.assetUrl(user?.avatarUrl || "/icons/default-avatar.svg")
       : user?.avatarUrl || "icons/default-avatar.svg";
     const frame = frameClass(user);
+    const extraClass = opts.className ? ` ${opts.className}` : "";
     const tag = opts.href ? "a" : "div";
     const href = opts.href ? ` href="${opts.href}"` : "";
     return `
-      <${tag} class="user-chip ${frame}"${href}>
+      <${tag} class="user-chip ${frame}${extraClass}"${href}>
         <img class="user-chip__avatar" src="${av}" alt="">
         <span class="user-chip__meta">
           <span class="user-chip__name">${escapeHtml(user?.nickname || "Игрок")}</span>

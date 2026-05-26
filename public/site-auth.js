@@ -37,18 +37,20 @@
   }
 
   function renderGuest() {
+    const loginUrl = window.BunkerAuth ? BunkerAuth.pageUrl("auth.html?tab=login") : "/auth?tab=login";
+    const registerUrl = window.BunkerAuth ? BunkerAuth.pageUrl("auth.html?tab=register") : "/auth?tab=register";
     mount.innerHTML = `
       <div class="site-topbar__inner">
         <div class="site-topbar__desktop">
           <button type="button" class="site-topbar__premium-btn" data-premium-modal title="Премиум">${ICONS.premium}</button>
-          <a href="auth.html?tab=login" class="site-topbar__link">Вход</a>
-          <a href="auth.html?tab=register" class="site-topbar__btn btn btn--amber btn--small">Регистрация</a>
+          <a href="${loginUrl}" class="site-topbar__link">Вход</a>
+          <a href="${registerUrl}" class="site-topbar__btn btn btn--amber btn--small">Регистрация</a>
         </div>
         <button type="button" class="site-topbar__menu-btn" data-topbar-menu-toggle aria-expanded="false" aria-label="Меню">${ICONS.menu}</button>
         <div class="site-topbar__menu hidden" data-topbar-menu>
           <button type="button" class="site-topbar__menu-item" data-premium-modal>${ICONS.premium}<span>Премиум</span></button>
-          <a href="auth.html?tab=login" class="site-topbar__menu-item"><span>Вход</span></a>
-          <a href="auth.html?tab=register" class="site-topbar__menu-item"><span>Регистрация</span></a>
+          <a href="${loginUrl}" class="site-topbar__menu-item"><span>Вход</span></a>
+          <a href="${registerUrl}" class="site-topbar__menu-item"><span>Регистрация</span></a>
         </div>
       </div>`;
 
@@ -59,8 +61,16 @@
   }
 
   function renderUser(user) {
+    const profileHref = BunkerAuth.profileUrl(user);
+    const newsUrl = BunkerAuth.pageUrl("news.html");
+    const friendsUrl = BunkerAuth.pageUrl("friends.html");
+    const menuUserChip = BunkerUserBadges.renderUserChip(user, {
+      href: profileHref,
+      showBadges: true,
+      className: "site-topbar__menu-profile",
+    });
     const chip = BunkerUserBadges.renderUserChip(user, {
-      href: BunkerAuth.profileUrl(user),
+      href: profileHref,
       showBadges: true,
     });
     const devBtn = user.dev
@@ -73,7 +83,7 @@
         <div class="site-topbar__desktop">
           ${devBtn}
           ${premiumBtn}
-          <a href="news.html" class="site-topbar__icon-btn" title="Новости">${ICONS.news}</a>
+          <a href="${newsUrl}" class="site-topbar__icon-btn" title="Новости">${ICONS.news}</a>
           <div class="site-topbar__notif-wrap">
             <button type="button" class="site-topbar__icon-btn" data-notif-toggle title="Уведомления">
               ${ICONS.bell}
@@ -90,16 +100,16 @@
               <div id="notifPanel" class="notif-panel"></div>
             </div>
           </div>
-          <a href="friends.html" class="site-topbar__icon-btn" title="Друзья">${ICONS.friends}</a>
+          <a href="${friendsUrl}" class="site-topbar__icon-btn" title="Друзья">${ICONS.friends}</a>
           ${chip}
         </div>
         <button type="button" class="site-topbar__menu-btn" data-topbar-menu-toggle aria-expanded="false" aria-label="Меню">${ICONS.menu}</button>
         <div class="site-topbar__menu hidden" data-topbar-menu>
+          <div class="site-topbar__menu-user">${menuUserChip}</div>
           ${user.dev ? `<button type="button" class="site-topbar__menu-item" data-dev-panel>${ICONS.news}<span>Панель разработчика</span></button>` : ""}
           <button type="button" class="site-topbar__menu-item" data-premium-modal>${ICONS.premium}<span>Премиум</span></button>
-          <a href="${BunkerAuth.profileUrl(user)}" class="site-topbar__menu-item"><span>Профиль</span></a>
-          <a href="friends.html" class="site-topbar__menu-item">${ICONS.friends}<span>Друзья</span></a>
-          <a href="news.html" class="site-topbar__menu-item">${ICONS.news}<span>Новости</span></a>
+          <a href="${friendsUrl}" class="site-topbar__menu-item">${ICONS.friends}<span>Друзья</span></a>
+          <a href="${newsUrl}" class="site-topbar__menu-item">${ICONS.news}<span>Новости</span></a>
         </div>
       </div>`;
 

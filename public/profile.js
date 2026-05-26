@@ -28,7 +28,7 @@
 
     const m = location.pathname.match(/\/user\/([^/?#]+)\/?$/i);
 
-    return m ? m[1] : null;
+    return m ? decodeURIComponent(m[1]) : null;
 
   }
 
@@ -638,7 +638,7 @@
 
             ${chatBtn}
 
-            <a href="friends.html" class="btn">К друзьям</a>
+            <a href="${BunkerAuth.pageUrl("friends.html")}" class="btn">К друзьям</a>
 
           </div>
 
@@ -793,94 +793,61 @@
 
 
   async function init() {
-
     let userId = getUserIdFromUrl();
 
-
+    if (!content) return;
 
     if (!BunkerAuth.apiBase()) {
-
       content.innerHTML =
-
         '<p class="form-error">API не настроен. Укажите apiUrl в config.js.</p>';
-
       return;
-
     }
-
-
 
     const me = await BunkerAuth.fetchMe();
 
-    if (!me) {
-
-      const next = userId
-
-        ? BunkerAuth.profileUrl(userId)
-
-        : BunkerAuth.pageUrl("profile.html");
-
-      location.href = BunkerAuth.pageUrl(
-
-        `auth.html?tab=login&next=${encodeURIComponent(next)}`
-
-      );
-
-      return;
-
-    }
-
     if (!userId) {
-
-      const dest = BunkerAuth.profileUrl(me);
-
-      if (isEditFromUrl()) {
-
-        location.href = `${dest}${dest.includes("?") ? "&" : "?"}edit=1`;
-
+      if (!me) {
+        location.href = BunkerAuth.pageUrl(
+          `auth.html?tab=login&next=${encodeURIComponent(BunkerAuth.pageUrl("profile.html"))}`
+        );
         return;
-
       }
-
+      const dest = BunkerAuth.profileUrl(me);
+      if (isEditFromUrl()) {
+        location.href = `${dest}${dest.includes("?") ? "&" : "?"}edit=1`;
+        return;
+      }
       location.href = dest;
-
       return;
-
     }
 
     currentUserId = userId;
 
-
-
     try {
-
       const data = await BunkerAuth.fetchUser(userId);
-
       friendship = data.friendship || "none";
-
       const mode = isEditFromUrl() && friendship === "self" ? "edit" : "view";
-
       renderProfile(data.user, data.friends || [], {
-
         friendsCount: data.friendsCount,
-
         friendsHidden: data.friendsHidden,
-
       }, mode);
-
     } catch (err) {
-
+      if (err?.status === 401 && !me) {
+        location.href = BunkerAuth.pageUrl(
+          `auth.html?tab=login&next=${encodeURIComponent(BunkerAuth.profileUrl(userId))}`
+        );
+        return;
+      }
       content.innerHTML = `<p class="form-error">${BunkerUserBadges.escapeHtml(err.message)}</p>`;
-
-      tagline.textContent = "Не удалось загрузить профиль.";
-
+      if (tagline) tagline.textContent = "Не удалось загрузить профиль.";
     }
-
   }
 
-
-
-  init();
+  init().catch((err) => {
+    if (content) {
+      content.innerHTML = `<p class="form-error">${BunkerUserBadges.escapeHtml(err.message || "Ошибка загрузки.")}</p>`;
+    }
+  });
 
 })();
 

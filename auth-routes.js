@@ -64,12 +64,22 @@ async function requireCaptcha(req, res) {
 }
 
 function mountAuthRoutes(app) {
+  const publicDir = path.join(__dirname, "public");
+
   app.get("/account", (req, res) => {
-    res.redirect(302, "/auth.html");
+    res.redirect(302, "/auth");
+  });
+
+  app.get("/auth", (req, res) => {
+    res.sendFile(path.join(publicDir, "auth.html"));
+  });
+
+  app.get("/profile", (req, res) => {
+    res.sendFile(path.join(publicDir, "profile.html"));
   });
 
   app.get("/user/:userId", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "profile.html"));
+    res.sendFile(path.join(publicDir, "profile.html"));
   });
 
   app.get("/api/avatars/:userId", async (req, res) => {
@@ -185,18 +195,14 @@ function mountAuthRoutes(app) {
   app.get("/api/users/:userId", async (req, res) => {
     try {
       const viewer = await verifyToken(getBearerToken(req));
-      if (!viewer) {
-        res.status(401).json({ error: "Требуется вход в аккаунт." });
-        return;
-      }
       const user = await getUserByPublicId(req.params.userId);
       if (!user) {
         res.status(404).json({ error: "Игрок не найден." });
         return;
       }
-      const friendship = await getFriendship(viewer.id, user.id);
+      const isSelf = viewer?.id === user.id;
+      const friendship = viewer ? await getFriendship(viewer.id, user.id) : "none";
       const { friends } = await listFriends(user.id);
-      const isSelf = viewer.id === user.id;
       const hideList = user.friendsHidden && !isSelf;
       res.json({
         user: await enrichPublicUser(user),
