@@ -147,15 +147,13 @@
   }
 
   function profileUrl(userId) {
-    if (!userId) return "account.html";
-    const base = apiBase();
-    if (base) {
-      return `${base}/user/${encodeURIComponent(userId)}`;
-    }
-    if (window.BunkerRuntime) {
-      return BunkerRuntime.pageUrl(`user.html?id=${encodeURIComponent(userId)}`);
-    }
-    return `user.html?id=${encodeURIComponent(userId)}`;
+    if (!userId) return pageUrl("account.html");
+    return pageUrl(`profile.html?id=${encodeURIComponent(userId)}`);
+  }
+
+  function pageUrl(filename) {
+    if (window.BunkerRuntime) return BunkerRuntime.pageUrl(filename);
+    return filename;
   }
 
   async function getDevSettings() {
@@ -167,6 +165,42 @@
       method: "POST",
       body: JSON.stringify({ enabled }),
     });
+  }
+
+  async function getNews(category) {
+    const q = category ? `?category=${encodeURIComponent(category)}` : "";
+    return api(`/api/news${q}`);
+  }
+
+  async function getNewsCategories() {
+    return api("/api/news/categories");
+  }
+
+  async function createNews(data) {
+    return api("/api/news", { method: "POST", body: JSON.stringify(data) });
+  }
+
+  async function updateNews(id, data) {
+    return api(`/api/news/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async function deleteNews(id) {
+    return api(`/api/news/${encodeURIComponent(id)}`, { method: "DELETE" });
+  }
+
+  async function uploadNewsMedia(fileDataUrl, mimeType) {
+    return api("/api/news/media", {
+      method: "POST",
+      body: JSON.stringify({ file: fileDataUrl, mimeType }),
+    });
+  }
+
+  function newsMediaUrl(mediaId) {
+    const base = apiBase();
+    return base ? `${base}/api/news/media/${mediaId}` : `/api/news/media/${mediaId}`;
   }
 
   window.BunkerAuth = {
@@ -190,7 +224,15 @@
     removeFriend,
     getChat,
     profileUrl,
+    pageUrl,
     getDevSettings,
     setMaintenance,
+    getNews,
+    getNewsCategories,
+    createNews,
+    updateNews,
+    deleteNews,
+    uploadNewsMedia,
+    newsMediaUrl,
   };
 })();

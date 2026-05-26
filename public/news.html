@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Бункер — Новости</title>
+  <script src="page-base.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="news-page">
@@ -17,13 +18,57 @@
       <p class="site-header__tagline">Что нового в проекте и ближайшие события</p>
     </header>
 
+    <div id="newsFilters" class="news-filters"></div>
+
+    <section id="newsDevPanel" class="panel news-dev-panel hidden">
+      <p class="panel__title" id="newsDevPanelTitle">Новая запись</p>
+      <form id="newsDevForm" class="news-dev-form">
+        <input type="hidden" id="newsEditId" value="">
+        <label class="field">
+          <span class="field__label">Заголовок</span>
+          <input type="text" id="newsTitle" maxlength="200" required>
+        </label>
+        <label class="field">
+          <span class="field__label">Категория</span>
+          <select id="newsCategory"></select>
+        </label>
+        <label class="field">
+          <span class="field__label">Дата</span>
+          <input type="date" id="newsDate" required>
+        </label>
+        <label class="field">
+          <span class="field__label">Текст (Markdown)</span>
+          <span class="field__hint">**жирный**, *курсив*, [ссылка](url), списки через «- »</span>
+          <textarea id="newsBody" rows="8" maxlength="20000" required></textarea>
+        </label>
+        <div class="news-dev-form__toolbar">
+          <button type="button" class="btn btn--small" data-md="**" title="Жирный">B</button>
+          <button type="button" class="btn btn--small" data-md="*" title="Курсив">I</button>
+          <button type="button" class="btn btn--small" data-md="[текст](url)" title="Ссылка">Link</button>
+          <button type="button" class="btn btn--small" data-md="- " title="Список">List</button>
+        </div>
+        <label class="field">
+          <span class="field__label">Фото или видео</span>
+          <input type="file" id="newsMediaFile" accept="image/*,video/*">
+        </label>
+        <div id="newsMediaPreview" class="news-media-preview"></div>
+        <p id="newsDevError" class="form-error hidden"></p>
+        <div class="news-dev-form__actions">
+          <button type="submit" class="btn btn--amber">Сохранить</button>
+          <button type="button" id="newsDevCancel" class="btn hidden">Отмена</button>
+        </div>
+      </form>
+    </section>
+
     <div id="newsList" class="news-list">
       <p class="news-list__loading">Загрузка…</p>
     </div>
   </div>
 
   <script src="config.js"></script>
+  <script src="bunker-runtime.js"></script>
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" crossorigin="anonymous"></script>
   <script src="auth.js"></script>
   <script src="user-badges.js"></script>
   <script src="social-client.js"></script>

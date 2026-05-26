@@ -32,6 +32,8 @@ const {
   mountDevRoutes,
   maintenanceMiddleware,
 } = require("./site-settings");
+const { mountNewsRoutes } = require("./news-routes");
+const { seedNewsIfEmpty } = require("./news-store");
 
 const app = express();
 const server = http.createServer(app);
@@ -40,6 +42,7 @@ app.use(express.json({ limit: "6mb" }));
 app.use(maintenanceMiddleware);
 mountAuthRoutes(app);
 mountDevRoutes(app);
+mountNewsRoutes(app);
 
 const corsOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",").map((s) => s.trim()).filter(Boolean)
@@ -914,6 +917,7 @@ const PORT = process.env.PORT || 3000;
 
 initDatabase()
   .then(() => loadSiteSettings())
+  .then(() => seedNewsIfEmpty())
   .then(() => purgeOldChatMessages())
   .then(() => {
     setInterval(() => {

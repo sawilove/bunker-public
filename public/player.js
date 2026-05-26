@@ -309,8 +309,10 @@ function applyState(state) {
           : `<li>${escapeHtml(p.name)}</li>`
       )
       .join("");
-    if (window.BunkerPlayerAuth?.loadLobbyFriends) {
-      BunkerPlayerAuth.loadLobbyFriends();
+    if (window.BunkerPlayerAuth?.setLobbyOccupants) {
+      BunkerPlayerAuth.setLobbyOccupants(
+        state.players.map((p) => p.userId).filter(Boolean)
+      );
     }
     return;
   }

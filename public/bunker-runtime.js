@@ -10,6 +10,16 @@
       return meta.content.replace(/\/$/, "") || "";
     }
     const path = location.pathname.replace(/\\/g, "/");
+    if (
+      /^\/user\/[a-f0-9]{32}\/?$/i.test(path) ||
+      path === "/account" ||
+      path === "/news" ||
+      path === "/friends" ||
+      path === "/host" ||
+      path === "/player"
+    ) {
+      return "";
+    }
     if (path.endsWith("/")) {
       return path.slice(0, -1) || "";
     }

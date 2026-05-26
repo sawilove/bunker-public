@@ -66,7 +66,12 @@
     }
 
     if (!BunkerAuth.getToken()) {
-      location.href = `account.html?tab=login&next=${encodeURIComponent(location.pathname + location.search)}`;
+      const next = BunkerAuth.pageUrl(
+        `profile.html?id=${encodeURIComponent(userId)}`
+      );
+      location.href = BunkerAuth.pageUrl(
+        `account.html?tab=login&next=${encodeURIComponent(next)}`
+      );
       return;
     }
 

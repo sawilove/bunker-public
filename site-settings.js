@@ -75,6 +75,7 @@ function isStaticAsset(p) {
     /\.(js|css|png|jpe?g|webp|svg|ico|woff2?|map)$/i.test(p) ||
     p === "/config.js" ||
     p.startsWith("/api/avatars/") ||
+    p.startsWith("/api/news/media/") ||
     p.startsWith("/icons/")
   );
 }

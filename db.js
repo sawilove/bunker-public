@@ -79,6 +79,27 @@ async function initDatabase() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS news_posts (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL DEFAULT '',
+      category TEXT NOT NULL DEFAULT 'dev',
+      media JSONB NOT NULL DEFAULT '[]',
+      published_at DATE NOT NULL DEFAULT CURRENT_DATE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      author_id TEXT REFERENCES users(id) ON DELETE SET NULL
+    );
+  `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS news_media (
+      id TEXT PRIMARY KEY,
+      mime_type TEXT NOT NULL,
+      data BYTEA NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
 }
 
 function rowToUser(row) {
