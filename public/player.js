@@ -54,6 +54,29 @@ function normalizeCodeInput(value) {
   return (value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
 }
 
+function isPlayerEntryPath(pathname) {
+  const path = (pathname || location.pathname).replace(/\\/g, "/");
+  return path === "/player" || path === "/player.html";
+}
+
+function getCodeFromUrl() {
+  const params = new URLSearchParams(location.search);
+  let code = normalizeCodeInput(params.get("code"));
+  if (code.length === 6) return code;
+  const match = location.pathname.match(/\/game\/([^/?#]+)\/?$/i);
+  if (match) code = normalizeCodeInput(decodeURIComponent(match[1]));
+  return code.length === 6 ? code : "";
+}
+
+function redirectToGameUrl(code) {
+  const normalized = normalizeCodeInput(code);
+  if (normalized.length !== 6) return;
+  const targetPath = `/game/${encodeURIComponent(normalized)}`;
+  const currentPath = location.pathname.replace(/\\/g, "/");
+  if (currentPath.toUpperCase() === targetPath.toUpperCase()) return;
+  location.replace(BunkerRuntime.playerJoinUrl(normalized));
+}
+
 function showCodeError(msg) {
   codeError.textContent = msg;
   codeError.classList.toggle("hidden", !msg);
@@ -259,6 +282,15 @@ function renderVoting(voting) {
 function applyState(state) {
   if (!state.you) return;
 
+  if (
+    state.sessionCode &&
+    ["playing", "voting", "ended"].includes(state.phase) &&
+    isPlayerEntryPath()
+  ) {
+    redirectToGameUrl(state.sessionCode);
+    return;
+  }
+
   if (state.sessionCode && state.you.id) {
     BunkerRuntime.savePlayerSession({
       playerId: state.you.id,
@@ -395,16 +427,20 @@ socket.on("connect", () => {
   if (!joined) tryReconnect();
 });
 
-const urlCode = normalizeCodeInput(new URLSearchParams(location.search).get("code"));
-if (urlCode.length === 6) {
-  manualCodeFlow = true;
-  const saved = BunkerRuntime.getPlayerSession();
-  if (saved.code && saved.code !== urlCode) {
-    BunkerRuntime.clearPlayerSession();
-  }
+const urlCode = getCodeFromUrl();
+const savedSession = BunkerRuntime.getPlayerSession();
+if (urlCode) {
   sessionCodeInput.value = urlCode;
-  requestCodeValidation(urlCode);
-} else if (!BunkerRuntime.getPlayerSession().playerId) {
+  if (savedSession.playerId && savedSession.code === urlCode) {
+    manualCodeFlow = false;
+  } else {
+    manualCodeFlow = true;
+    if (savedSession.code && savedSession.code !== urlCode) {
+      BunkerRuntime.clearPlayerSession();
+    }
+    requestCodeValidation(urlCode);
+  }
+} else if (!savedSession.playerId) {
   sessionCodeInput.focus();
 }
 

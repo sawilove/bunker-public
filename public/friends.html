@@ -4,8 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Бункер — Друзья</title>
-  <script src="page-base.js"></script>
-  <link rel="stylesheet" href="style.css">
+  <script>
+    (function(){var p=location.pathname.replace(/\\/g,"/");var r=/^\/user\/[^/]+\/?$/i.test(p)||/^\/(?:account|auth|news|friends|host|player|profile|game\/[^/]+)\/?$/i.test(p);if(r&&!document.querySelector("base[data-bunker-root]")){var b=document.createElement("base");b.href="/";b.setAttribute("data-bunker-root","1");document.head.appendChild(b);}})();
+  </script>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body class="friends">
   <div class="page page--with-topbar">
@@ -59,17 +61,17 @@
 
   <div id="inviteToast" class="invite-toast hidden" role="alert"></div>
 
-  <script src="config.js"></script>
-  <script src="bunker-runtime.js"></script>
+  <script src="/config.js"></script>
+  <script src="/bunker-runtime.js"></script>
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
-  <script src="auth.js"></script>
-  <script src="user-badges.js"></script>
-  <script src="social-client.js"></script>
-  <script src="notifications.js"></script>
-  <script src="premium-modal.js"></script>
-  <script src="site-auth.js"></script>
-  <script src="dev-panel.js"></script>
-  <script src="chat-widget.js"></script>
-  <script src="friends.js"></script>
+  <script src="/auth.js"></script>
+  <script src="/user-badges.js"></script>
+  <script src="/social-client.js"></script>
+  <script src="/notifications.js"></script>
+  <script src="/premium-modal.js"></script>
+  <script src="/site-auth.js"></script>
+  <script src="/dev-panel.js"></script>
+  <script src="/chat-widget.js"></script>
+  <script src="/friends.js"></script>
 </body>
 </html>

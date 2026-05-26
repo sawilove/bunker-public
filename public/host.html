@@ -4,8 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Бункер — Ведущий</title>
-  <script src="page-base.js"></script>
-  <link rel="stylesheet" href="style.css">
+  <script>
+    (function(){var p=location.pathname.replace(/\\/g,"/");var r=/^\/user\/[^/]+\/?$/i.test(p)||/^\/(?:account|auth|news|friends|host|player|profile|game\/[^/]+)\/?$/i.test(p);if(r&&!document.querySelector("base[data-bunker-root]")){var b=document.createElement("base");b.href="/";b.setAttribute("data-bunker-root","1");document.head.appendChild(b);}})();
+  </script>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body class="host">
   <div id="scenarioBg" class="scenario-bg" aria-hidden="true"></div>
@@ -85,10 +87,10 @@
     <footer class="authors-footer">
       <div class="authors-footer__logos">
         <a href="https://vk.com/im_san" class="authors-footer__link" target="_blank" rel="noopener noreferrer">
-          <img src="icons/author1.png" alt="Автор в VK" class="authors-footer__logo">
+          <img src="/icons/author1.png" alt="Автор в VK" class="authors-footer__logo">
         </a>
         <a href="https://vk.com/ewlov3" class="authors-footer__link" target="_blank" rel="noopener noreferrer">
-          <img src="icons/author2.png" alt="Автор в VK" class="authors-footer__logo">
+          <img src="/icons/author2.png" alt="Автор в VK" class="authors-footer__logo">
         </a>
       </div>
       <a id="donateBtn" class="authors-footer__donate btn btn--amber" href="#">Поддержать проект</a>
@@ -108,19 +110,19 @@
     </div>
   </div>
 
-  <script src="config.js"></script>
-  <script src="donate.js"></script>
+  <script src="/config.js"></script>
+  <script src="/donate.js"></script>
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
-  <script src="auth.js"></script>
-  <script src="user-badges.js"></script>
-  <script src="social-client.js"></script>
-  <script src="notifications.js"></script>
-  <script src="premium-modal.js"></script>
-  <script src="site-auth.js"></script>
-  <script src="dev-panel.js"></script>
-  <script src="chat-widget.js"></script>
-  <script src="bunker-runtime.js"></script>
-  <script src="scenario-theme.js"></script>
-  <script src="host.js"></script>
+  <script src="/auth.js"></script>
+  <script src="/user-badges.js"></script>
+  <script src="/social-client.js"></script>
+  <script src="/notifications.js"></script>
+  <script src="/premium-modal.js"></script>
+  <script src="/site-auth.js"></script>
+  <script src="/dev-panel.js"></script>
+  <script src="/chat-widget.js"></script>
+  <script src="/bunker-runtime.js"></script>
+  <script src="/scenario-theme.js"></script>
+  <script src="/host.js"></script>
 </body>
 </html>

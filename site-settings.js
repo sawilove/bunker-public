@@ -112,6 +112,9 @@ function maintenanceMiddleware(req, res, next) {
     p === "/profile" ||
     p === "/news" ||
     p === "/friends" ||
+    p === "/host" ||
+    p === "/player" ||
+    /^\/game\/[^/]+\/?$/i.test(p) ||
     p === "/api/dev/settings" ||
     p === "/api/dev/maintenance" ||
     p.startsWith("/socket.io") ||

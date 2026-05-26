@@ -88,10 +88,10 @@ app.get("/game/:code", (req, res) => {
   const code = String(req.params.code || "").trim().toUpperCase();
   const safeCode = code.slice(0, 16);
   if (!safeCode) {
-    res.redirect(302, "/player.html");
+    res.redirect(302, "/player");
     return;
   }
-  res.redirect(302, `/player.html?code=${encodeURIComponent(safeCode)}`);
+  res.sendFile(path.join(__dirname, "public", "player.html"));
 });
 
 let hostId = null;
