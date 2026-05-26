@@ -2,14 +2,58 @@ const nodemailer = require("nodemailer");
 
 let transporter = null;
 
-function mailFrom() {
-  return (
+/** Пример адреса: user@domain.tld без угловых скобок. */
+const LOOSE_EMAIL = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
+
+/**
+ * MAIL_FROM может быть указан ошибочно как `<you@domain.com>` (только скобки) — так Resend отклоняет.
+ * Допустимые результаты: `you@domain.com` или `Имя <you@domain.com>`.
+ */
+function parseMailFromEnv() {
+  const raw = (
     process.env.MAIL_FROM ||
     process.env.SMTP_FROM ||
-    (process.env.RESEND_API_KEY
-      ? "Bunker <onboarding@resend.dev>"
-      : "Bunker <no-reply@tusa.team>")
-  );
+    ""
+  ).trim();
+  if (!raw) return null;
+
+  const nameEmail = raw.match(/^(.+?)\s*<\s*([^<>]+@\S+)\s*>\s*$/);
+  if (nameEmail) {
+    const name = nameEmail[1].trim().replace(/^["']|["']$/g, "");
+    const addr = nameEmail[2].trim();
+    if (LOOSE_EMAIL.test(addr) && name) return `${name} <${addr}>`;
+    if (LOOSE_EMAIL.test(addr)) return addr;
+    return null;
+  }
+
+  const onlyBrackets = raw.match(/^<\s*([^<>]+@\S+)\s*>\s*$/);
+  if (onlyBrackets && LOOSE_EMAIL.test(onlyBrackets[1].trim())) {
+    return onlyBrackets[1].trim();
+  }
+
+  if (LOOSE_EMAIL.test(raw)) return raw;
+
+  return null;
+}
+
+function mailFrom() {
+  const parsed = parseMailFromEnv();
+  if (!useResend()) {
+    if (parsed) return parsed;
+    return "Bunker <no-reply@tusa.team>";
+  }
+
+  if (!parsed) return "Bunker <onboarding@resend.dev>";
+
+  /** Тестовый домен Resend допускает в «from» только onboarding@… */
+  const addr = parsed.includes("<")
+    ? (parsed.match(/<([^>]+@[^>]+)>/) || [, ""])[1].trim()
+    : parsed.trim();
+  if (addr.endsWith("@resend.dev") && addr !== "onboarding@resend.dev") {
+    return "Bunker <onboarding@resend.dev>";
+  }
+
+  return parsed;
 }
 
 function resendApiKey() {
