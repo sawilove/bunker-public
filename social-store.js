@@ -12,13 +12,15 @@ async function enrichPublicUser(user) {
 
 async function searchUsersByNickname(query, excludeUserId, limit = 10) {
   const q = (query || "").trim().toLowerCase();
-  if (q.length < 2) return [];
+  if (q.length < 1) return [];
   const { rows } = await getPool().query(
     `SELECT * FROM users
      WHERE nickname_lower LIKE $1 AND id <> $2
-     ORDER BY nickname_lower
-     LIMIT $3`,
-    [`${q}%`, excludeUserId, limit]
+     ORDER BY
+       CASE WHEN nickname_lower LIKE $3 THEN 0 ELSE 1 END,
+       nickname_lower
+     LIMIT $4`,
+    [`%${q}%`, excludeUserId, `${q}%`, limit]
   );
   const users = [];
   for (const row of rows) {

@@ -9,6 +9,9 @@ const {
   updateProfile,
   setAvatarBuffer,
   getAvatarBuffer,
+  setBannerBuffer,
+  getBannerBuffer,
+  canUseBanner,
 } = require("./user-store");
 const { enrichPublicUser, getFriendship, listFriends } = require("./social-store");
 
@@ -70,6 +73,21 @@ function mountAuthRoutes(app) {
     }
   });
 
+  app.get("/api/banners/:userId", async (req, res) => {
+    try {
+      const buf = await getBannerBuffer(req.params.userId);
+      if (!buf) {
+        res.status(404).end();
+        return;
+      }
+      res.set("Cache-Control", "private, no-cache, must-revalidate");
+      res.type("image/webp").send(buf);
+    } catch (err) {
+      console.error("banner get error", err);
+      res.status(500).end();
+    }
+  });
+
   app.post("/api/auth/register", async (req, res) => {
     try {
       const result = await register(req.body || {});
@@ -114,10 +132,14 @@ function mountAuthRoutes(app) {
       }
       const friendship = await getFriendship(viewer.id, user.id);
       const { friends } = await listFriends(user.id);
+      const isSelf = viewer.id === user.id;
+      const hideList = user.friendsHidden && !isSelf;
       res.json({
         user: await enrichPublicUser(user),
         friendship,
-        friends,
+        friends: hideList ? [] : friends,
+        friendsCount: friends.length,
+        friendsHidden: !!user.friendsHidden,
       });
     } catch (err) {
       console.error("user profile error", err);
@@ -211,6 +233,68 @@ function mountAuthRoutes(app) {
     } catch (err) {
       console.error("avatar upload error", err);
       res.status(500).json({ error: "Не удалось обработать изображение." });
+    }
+  });
+
+  app.post("/api/auth/banner", async (req, res) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      if (!canUseBanner(user)) {
+        res.status(403).json({ error: "Баннер доступен только для Premium и разработчиков." });
+        return;
+      }
+
+      const { image, crop } = req.body || {};
+      if (!image || typeof image !== "string") {
+        res.status(400).json({ error: "Нет изображения." });
+        return;
+      }
+
+      const match = image.match(/^data:image\/(png|jpeg|jpg|webp);base64,(.+)$/i);
+      if (!match) {
+        res.status(400).json({ error: "Неверный формат изображения." });
+        return;
+      }
+
+      let buffer;
+      try {
+        buffer = Buffer.from(match[2], "base64");
+      } catch {
+        res.status(400).json({ error: "Не удалось прочитать файл." });
+        return;
+      }
+
+      if (buffer.length > 8 * 1024 * 1024) {
+        res.status(400).json({ error: "Файл больше 8 МБ." });
+        return;
+      }
+
+      const meta = await sharp(buffer).metadata();
+      const w = meta.width || 1;
+      const h = meta.height || 1;
+
+      const cx = Math.max(0, Math.min(1, Number(crop?.x) || 0));
+      const cy = Math.max(0, Math.min(1, Number(crop?.y) || 0));
+      const cw = Math.max(0.05, Math.min(1 - cx, Number(crop?.w) || 1));
+      const ch = Math.max(0.05, Math.min(1 - cy, Number(crop?.h) || 0.34));
+
+      const left = Math.floor(cx * w);
+      const top = Math.floor(cy * h);
+      const width = Math.max(1, Math.floor(cw * w));
+      const height = Math.max(1, Math.floor(ch * h));
+
+      const webp = await sharp(buffer)
+        .extract({ left, top, width, height })
+        .resize(1200, 400, { fit: "cover" })
+        .webp({ quality: 85 })
+        .toBuffer();
+
+      const updated = await setBannerBuffer(user.id, webp);
+      res.json({ user: updated });
+    } catch (err) {
+      console.error("banner upload error", err);
+      res.status(500).json({ error: "Не удалось обработать баннер." });
     }
   });
 }

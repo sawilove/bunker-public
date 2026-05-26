@@ -1,10 +1,73 @@
 (function () {
   const CHAT_ICON = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
+  const UNREAD_KEY = "bunker:chatUnread";
 
   let root = null;
   let friends = [];
   let activePeerId = null;
   let activePeerName = "";
+  let panelOpen = false;
+
+  function loadUnread() {
+    try {
+      return JSON.parse(localStorage.getItem(UNREAD_KEY) || "{}");
+    } catch {
+      return {};
+    }
+  }
+
+  function saveUnread(map) {
+    localStorage.setItem(UNREAD_KEY, JSON.stringify(map));
+  }
+
+  function getUnread(peerId) {
+    return loadUnread()[peerId] || 0;
+  }
+
+  function setUnread(peerId, count) {
+    const map = loadUnread();
+    if (count > 0) map[peerId] = count;
+    else delete map[peerId];
+    saveUnread(map);
+    updateBadges();
+  }
+
+  function totalUnread() {
+    return Object.values(loadUnread()).reduce((a, b) => a + b, 0);
+  }
+
+  function incrementUnread(peerId) {
+    setUnread(peerId, getUnread(peerId) + 1);
+  }
+
+  function clearUnread(peerId) {
+    setUnread(peerId, 0);
+  }
+
+  function updateBadges() {
+    if (!root) return;
+    const fabBadge = root.querySelector("[data-chat-fab-badge]");
+    const total = totalUnread();
+    if (fabBadge) {
+      fabBadge.textContent = total > 99 ? "99+" : String(total);
+      fabBadge.classList.toggle("hidden", total === 0);
+    }
+    root.querySelectorAll("[data-chat-peer]").forEach((btn) => {
+      const id = btn.dataset.chatPeer;
+      const n = getUnread(id);
+      let badge = btn.querySelector(".chat-widget__unread");
+      if (n > 0) {
+        if (!badge) {
+          badge = document.createElement("span");
+          badge.className = "chat-widget__unread";
+          btn.appendChild(badge);
+        }
+        badge.textContent = n > 99 ? "99+" : String(n);
+      } else if (badge) {
+        badge.remove();
+      }
+    });
+  }
 
   function ensureWidget() {
     if (root) return root;
@@ -13,6 +76,7 @@
     root.innerHTML = `
       <button type="button" class="chat-widget__fab" data-chat-fab title="Чат" aria-label="Чат">
         ${CHAT_ICON}
+        <span class="chat-widget__fab-badge hidden" data-chat-fab-badge>0</span>
       </button>
       <div class="chat-widget__panel hidden" data-chat-panel>
         <div class="chat-widget__head">
@@ -44,15 +108,20 @@
 
     if (window.BunkerSocial) {
       BunkerSocial.onChat((msg) => {
-        if (
+        const peerId = msg.mine ? msg.toUserId : msg.fromUserId;
+        const inThread =
           activePeerId &&
-          (msg.fromUserId === activePeerId || msg.toUserId === activePeerId)
-        ) {
+          panelOpen &&
+          (msg.fromUserId === activePeerId || msg.toUserId === activePeerId);
+        if (inThread) {
           appendMessage(msg);
+        } else if (!msg.mine && peerId) {
+          incrementUnread(peerId);
         }
       });
     }
 
+    updateBadges();
     return root;
   }
 
@@ -83,12 +152,16 @@
     el.innerHTML = friends
       .map((f) => {
         const av = BunkerAuth.assetUrl(f.avatarUrl || "/icons/default-avatar.svg");
+        const n = getUnread(f.id);
+        const badge = n > 0 ? `<span class="chat-widget__unread">${n > 99 ? "99+" : n}</span>` : "";
         return `<button type="button" class="chat-widget__friend" data-chat-peer="${f.id}">
           <img src="${av}" alt="">
           <span>${BunkerUserBadges.escapeHtml(f.nickname)}</span>
+          ${badge}
         </button>`;
       })
       .join("");
+    updateBadges();
   }
 
   function showFriendsList() {
@@ -102,6 +175,7 @@
 
   async function openThread(peerId) {
     activePeerId = peerId;
+    clearUnread(peerId);
     const friend = friends.find((f) => f.id === peerId);
     activePeerName = friend?.nickname || "Чат";
     root.querySelector("[data-chat-head-title]").textContent = activePeerName;
@@ -149,9 +223,12 @@
     const panel = root.querySelector("[data-chat-panel]");
     const open = show ?? panel.classList.contains("hidden");
     panel.classList.toggle("hidden", !open);
+    panelOpen = open;
     if (open) {
       showFriendsList();
       loadFriends();
+    } else {
+      activePeerId = null;
     }
   }
 

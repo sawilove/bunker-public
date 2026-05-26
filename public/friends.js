@@ -156,6 +156,8 @@ const addFriendNick = document.getElementById("addFriendNick");
 const addFriendSuggest = document.getElementById("addFriendSuggest");
 let suggestTimer = null;
 let suggestSeq = 0;
+let selectedUserId = null;
+let lastSuggestions = [];
 
 function hideSuggest() {
   addFriendSuggest.classList.add("hidden");
@@ -164,16 +166,20 @@ function hideSuggest() {
 
 async function updateSuggest() {
   const q = addFriendNick.value.trim();
-  if (q.length < 2) {
+  if (q.length < 1) {
     hideSuggest();
+    lastSuggestions = [];
     return;
   }
   const seq = ++suggestSeq;
   try {
     const users = await BunkerAuth.searchUsers(q);
     if (seq !== suggestSeq) return;
+    lastSuggestions = users;
     if (!users.length) {
-      hideSuggest();
+      addFriendSuggest.innerHTML =
+        '<li class="friends-suggest__empty">Никого не найдено</li>';
+      addFriendSuggest.classList.remove("hidden");
       return;
     }
     addFriendSuggest.innerHTML = users
@@ -188,10 +194,25 @@ async function updateSuggest() {
     addFriendSuggest.classList.remove("hidden");
   } catch {
     hideSuggest();
+    lastSuggestions = [];
   }
 }
 
+async function addFriendById(userId) {
+  const result = await BunkerAuth.requestFriendById(userId);
+  addFriendNick.value = "";
+  selectedUserId = null;
+  hideSuggest();
+  showMsg(
+    addFriendSuccess,
+    result.accepted ? "Заявка принята — вы друзья!" : "Заявка отправлена.",
+    false
+  );
+  await loadFriends();
+}
+
 addFriendNick.addEventListener("input", () => {
+  selectedUserId = null;
   clearTimeout(suggestTimer);
   suggestTimer = setTimeout(updateSuggest, 200);
 });
@@ -200,13 +221,21 @@ addFriendNick.addEventListener("blur", () => {
   setTimeout(hideSuggest, 150);
 });
 
-addFriendSuggest.addEventListener("mousedown", (e) => {
+addFriendSuggest.addEventListener("mousedown", async (e) => {
   e.preventDefault();
   const item = e.target.closest("[data-suggest-id]");
   if (!item) return;
+  selectedUserId = item.dataset.suggestId;
   const nick = item.querySelector(".friends-suggest__name")?.textContent;
   if (nick) addFriendNick.value = nick;
   hideSuggest();
+  showMsg(addFriendError, "");
+  showMsg(addFriendSuccess, "", false);
+  try {
+    await addFriendById(selectedUserId);
+  } catch (err) {
+    showMsg(addFriendError, err.message);
+  }
 });
 
 addFriendForm.addEventListener("submit", async (e) => {
@@ -214,15 +243,34 @@ addFriendForm.addEventListener("submit", async (e) => {
   showMsg(addFriendError, "");
   showMsg(addFriendSuccess, "", false);
   try {
-    const nick = document.getElementById("addFriendNick").value;
-    const result = await BunkerAuth.requestFriend(nick);
-    document.getElementById("addFriendNick").value = "";
-    showMsg(
-      addFriendSuccess,
-      result.accepted ? "Заявка принята — вы друзья!" : "Заявка отправлена.",
-      false
-    );
-    await loadFriends();
+    const q = addFriendNick.value.trim();
+    if (!q) {
+      showMsg(addFriendError, "Введите никнейм для поиска.");
+      return;
+    }
+
+    let userId = selectedUserId;
+    if (!userId) {
+      const exact = lastSuggestions.find(
+        (u) => u.nickname.toLowerCase() === q.toLowerCase()
+      );
+      if (exact) userId = exact.id;
+      else if (lastSuggestions.length === 1) userId = lastSuggestions[0].id;
+      else {
+        const users = await BunkerAuth.searchUsers(q);
+        const match = users.find((u) => u.nickname.toLowerCase() === q.toLowerCase());
+        if (match) userId = match.id;
+        else if (users.length === 1) userId = users[0].id;
+      }
+    }
+
+    if (!userId) {
+      showMsg(addFriendError, "Выберите игрока из списка подсказок.");
+      await updateSuggest();
+      return;
+    }
+
+    await addFriendById(userId);
   } catch (err) {
     showMsg(addFriendError, err.message);
   }

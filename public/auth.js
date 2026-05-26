@@ -10,7 +10,12 @@
     if (!path) return "";
     if (/^https?:\/\//i.test(path)) return path;
     const base = apiBase();
-    if ((path.startsWith("/uploads/") || path.startsWith("/api/avatars/")) && base) {
+    if (
+      (path.startsWith("/uploads/") ||
+        path.startsWith("/api/avatars/") ||
+        path.startsWith("/api/banners/")) &&
+      base
+    ) {
       return `${base}${path}`;
     }
     if (window.BunkerRuntime) return BunkerRuntime.assetUrl(path.replace(/^\//, ""));
@@ -120,6 +125,14 @@
 
   async function uploadAvatar(imageDataUrl, crop) {
     const data = await api("/api/auth/avatar", {
+      method: "POST",
+      body: JSON.stringify({ image: imageDataUrl, crop }),
+    });
+    return data.user;
+  }
+
+  async function uploadBanner(imageDataUrl, crop) {
+    const data = await api("/api/auth/banner", {
       method: "POST",
       body: JSON.stringify({ image: imageDataUrl, crop }),
     });
@@ -240,6 +253,7 @@
     updateProfile,
     fetchUser,
     uploadAvatar,
+    uploadBanner,
     isLoggedIn,
     getFriends,
     searchUsers,

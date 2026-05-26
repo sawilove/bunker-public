@@ -11,15 +11,20 @@ const profileError = document.getElementById("profileError");
 const profileSuccess = document.getElementById("profileSuccess");
 const profileAvatar = document.getElementById("profileAvatar");
 const profileAvatarWrap = document.getElementById("profileAvatarWrap");
+const profileHero = document.getElementById("profileHero");
 const profileNickname = document.getElementById("profileNickname");
 const profileBadges = document.getElementById("profileBadges");
 const profileStatus = document.getElementById("profileStatus");
 const profileBioView = document.getElementById("profileBioView");
+const profileBioHero = document.getElementById("profileBioHero");
+const profileBioBlock = document.getElementById("profileBioBlock");
 const statGames = document.getElementById("statGames");
 const statSurvivals = document.getElementById("statSurvivals");
 const profileBio = document.getElementById("profileBio");
 const editNickname = document.getElementById("editNickname");
 const changeAvatarBtn = document.getElementById("changeAvatarBtn");
+const changeBannerBtn = document.getElementById("changeBannerBtn");
+const hideFriendsCheck = document.getElementById("hideFriendsCheck");
 const editProfileBtn = document.getElementById("editProfileBtn");
 const cancelEditBtn = document.getElementById("cancelEditBtn");
 const logoutBtn = document.getElementById("logoutBtn");
@@ -31,6 +36,32 @@ function showError(el, msg) {
   el.classList.toggle("hidden", !msg);
 }
 
+function canUseBanner(user) {
+  return !!(user?.dev || user?.premium);
+}
+
+function applyProfileHero(user) {
+  const bio = user.bio?.trim() || "";
+  if (user.bannerUrl) {
+    const url = BunkerAuth.assetUrl(user.bannerUrl);
+    profileHero.style.backgroundImage = `url('${url.replace(/'/g, "%27")}')`;
+    profileHero.classList.add("profile-hero--has-banner");
+    if (bio) {
+      profileBioHero.textContent = bio;
+      profileBioHero.classList.remove("hidden");
+      profileBioBlock.classList.add("hidden");
+    } else {
+      profileBioHero.classList.add("hidden");
+      profileBioBlock.classList.add("hidden");
+    }
+  } else {
+    profileHero.style.backgroundImage = "";
+    profileHero.classList.remove("profile-hero--has-banner");
+    profileBioHero.classList.add("hidden");
+    profileBioBlock.classList.remove("hidden");
+  }
+}
+
 function setAvatarSrc(user, bust) {
   profileAvatar.src = BunkerAuth.avatarUrlForUser(user, bust || Date.now());
   if (profileAvatarWrap) {
@@ -39,13 +70,15 @@ function setAvatarSrc(user, bust) {
 }
 
 function fillProfileView(user) {
+  const bio = user.bio?.trim() || "";
   profileNickname.textContent = user.nickname;
   if (profileBadges) profileBadges.innerHTML = BunkerUserBadges.roleBadgesHtml(user);
   if (profileStatus) profileStatus.innerHTML = BunkerUserBadges.statusHtml(user);
   statGames.textContent = String(user.gamesPlayed ?? 0);
   statSurvivals.textContent = String(user.bunkerSurvivals ?? 0);
-  profileBioView.textContent = user.bio?.trim() || "—";
+  profileBioView.textContent = bio || "—";
   setAvatarSrc(user);
+  applyProfileHero(user);
 }
 
 function showProfile(user) {
@@ -67,6 +100,8 @@ function enterEditMode() {
   profileSuccess.classList.add("hidden");
   editNickname.value = currentUser.nickname;
   profileBio.value = currentUser.bio || "";
+  hideFriendsCheck.checked = !!currentUser.friendsHidden;
+  changeBannerBtn.classList.toggle("hidden", !canUseBanner(currentUser));
 }
 
 function showAuth() {
@@ -103,6 +138,9 @@ loginForm.addEventListener("submit", async (e) => {
       return;
     }
     showProfile(user);
+    if (new URLSearchParams(location.search).get("edit") === "1") {
+      enterEditMode();
+    }
   } catch (err) {
     showError(loginError, err.message);
   }
@@ -143,6 +181,7 @@ profileEditForm.addEventListener("submit", async (e) => {
     const user = await BunkerAuth.updateProfile({
       bio: profileBio.value,
       nickname: editNickname.value.trim(),
+      friendsHidden: hideFriendsCheck.checked,
     });
     showProfile(user);
     profileSuccess.textContent = "Профиль сохранён.";
@@ -174,6 +213,27 @@ changeAvatarBtn.addEventListener("click", async () => {
   }
 });
 
+changeBannerBtn.addEventListener("click", async () => {
+  if (!canUseBanner(currentUser)) return;
+  showError(profileError, "");
+  try {
+    const { dataUrl, crop } = await BunkerAvatarCrop.pickAndCropBanner();
+    changeBannerBtn.disabled = true;
+    const user = await BunkerAuth.uploadBanner(dataUrl, crop);
+    currentUser = user;
+    fillProfileView(user);
+    if (window.BunkerSiteAuth) BunkerSiteAuth.refresh();
+    profileSuccess.textContent = "Баннер обновлён.";
+    profileSuccess.classList.remove("hidden");
+  } catch (err) {
+    if (err.message !== "cancel") {
+      showError(profileError, err.message || "Не удалось загрузить баннер.");
+    }
+  } finally {
+    changeBannerBtn.disabled = false;
+  }
+});
+
 logoutBtn.addEventListener("click", () => {
   BunkerAuth.clearAuth();
   showAuth();
@@ -194,6 +254,12 @@ logoutBtn.addEventListener("click", () => {
     return;
   }
   const user = await BunkerAuth.fetchMe();
-  if (user) showProfile(user);
-  else showAuth();
+  if (user) {
+    showProfile(user);
+    if (new URLSearchParams(location.search).get("edit") === "1") {
+      enterEditMode();
+    }
+  } else {
+    showAuth();
+  }
 })();

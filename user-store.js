@@ -8,9 +8,9 @@ const SECRET =
   process.env.JWT_SECRET ||
   "bunker-dev-secret-change-in-production";
 
-function avatarVersion(user) {
-  if (!user?.avatarUpdatedAt) return Date.now();
-  const t = user.avatarUpdatedAt;
+function mediaVersion(dateField) {
+  if (!dateField) return Date.now();
+  const t = dateField;
   return t instanceof Date ? t.getTime() : new Date(t).getTime();
 }
 
@@ -21,8 +21,12 @@ function publicUser(user, extra = {}) {
     nickname: user.nickname,
     bio: user.bio || "",
     avatarUrl: user.avatarWebp
-      ? `/api/avatars/${user.id}?v=${avatarVersion(user)}`
+      ? `/api/avatars/${user.id}?v=${mediaVersion(user.avatarUpdatedAt)}`
       : null,
+    bannerUrl: user.bannerWebp
+      ? `/api/banners/${user.id}?v=${mediaVersion(user.bannerUpdatedAt)}`
+      : null,
+    friendsHidden: !!user.friendsHidden,
     gamesPlayed: user.gamesPlayed || 0,
     bunkerSurvivals: user.bunkerSurvivals || 0,
     premium: !!user.premium,
@@ -138,7 +142,7 @@ async function login({ nickname, password }) {
   return { ok: true, user: publicUser(user), token: createToken(user.id) };
 }
 
-async function updateProfile(userId, { bio, nickname }) {
+async function updateProfile(userId, { bio, nickname, friendsHidden }) {
   const user = await getUserById(userId);
   if (!user) return { ok: false, error: "Пользователь не найден." };
 
@@ -159,10 +163,15 @@ async function updateProfile(userId, { bio, nickname }) {
     }
   }
 
+  let hideFriends = user.friendsHidden;
+  if (typeof friendsHidden === "boolean") {
+    hideFriends = friendsHidden;
+  }
+
   try {
     await getPool().query(
-      `UPDATE users SET bio = $2, nickname = $3, nickname_lower = $4 WHERE id = $1`,
-      [userId, bioText, nick, nick.toLowerCase()]
+      `UPDATE users SET bio = $2, nickname = $3, nickname_lower = $4, friends_hidden = $5 WHERE id = $1`,
+      [userId, bioText, nick, nick.toLowerCase(), hideFriends]
     );
   } catch (err) {
     if (err.code === "23505") {
@@ -190,6 +199,27 @@ async function getAvatarBuffer(userId) {
     [userId]
   );
   return rows[0]?.avatar_webp || null;
+}
+
+async function setBannerBuffer(userId, buffer) {
+  await getPool().query(
+    `UPDATE users SET banner_webp = $2, banner_updated_at = NOW() WHERE id = $1`,
+    [userId, buffer]
+  );
+  const user = await getUserById(userId);
+  return publicUser(user);
+}
+
+async function getBannerBuffer(userId) {
+  const { rows } = await getPool().query(
+    `SELECT banner_webp FROM users WHERE id = $1`,
+    [userId]
+  );
+  return rows[0]?.banner_webp || null;
+}
+
+function canUseBanner(user) {
+  return !!(user?.dev || user?.premium);
 }
 
 async function recordGameStats(playerUserIds, survivorUserIds) {
@@ -222,6 +252,9 @@ module.exports = {
   updateProfile,
   setAvatarBuffer,
   getAvatarBuffer,
+  setBannerBuffer,
+  getBannerBuffer,
+  canUseBanner,
   recordGameStats,
   createToken,
 };

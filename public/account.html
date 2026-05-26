@@ -120,27 +120,35 @@
 
       <div id="profileView">
 
-        <div class="profile-header">
+        <div id="profileHero" class="profile-hero">
 
-          <div class="profile-avatar-wrap" id="profileAvatarWrap">
+          <div class="profile-hero__overlay"></div>
 
-            <img id="profileAvatar" class="profile-avatar" src="icons/default-avatar.svg" alt="Аватар">
+          <div class="profile-hero__body">
 
-          </div>
+            <div class="profile-avatar-wrap" id="profileAvatarWrap">
 
-          <div class="profile-header__info">
+              <img id="profileAvatar" class="profile-avatar" src="icons/default-avatar.svg" alt="Аватар">
 
-            <h2 class="profile-nickname" id="profileNickname">—</h2>
+            </div>
 
-            <div id="profileBadges" class="profile-badges"></div>
+            <div class="profile-header__info">
 
-            <p id="profileStatus" class="profile-status"></p>
+              <h2 class="profile-nickname" id="profileNickname">—</h2>
 
-            <div class="profile-stats">
+              <div id="profileBadges" class="profile-badges"></div>
 
-              <span class="profile-stat">Игр: <strong id="statGames">0</strong></span>
+              <p id="profileStatus" class="profile-status"></p>
 
-              <span class="profile-stat">Выживаний: <strong id="statSurvivals">0</strong></span>
+              <div class="profile-stats">
+
+                <span class="profile-stat">Игр: <strong id="statGames">0</strong></span>
+
+                <span class="profile-stat">Выживаний: <strong id="statSurvivals">0</strong></span>
+
+              </div>
+
+              <p id="profileBioHero" class="profile-hero__bio hidden"></p>
 
             </div>
 
@@ -148,7 +156,7 @@
 
         </div>
 
-        <div class="profile-view__bio">
+        <div class="profile-view__bio" id="profileBioBlock">
 
           <span class="field__label">О себе</span>
 
@@ -189,6 +197,16 @@
         </label>
 
         <button type="button" id="changeAvatarBtn" class="btn btn--small">Изменить фото</button>
+
+        <button type="button" id="changeBannerBtn" class="btn btn--small hidden">Изменить баннер</button>
+
+        <label class="field field--checkbox">
+
+          <input type="checkbox" id="hideFriendsCheck">
+
+          <span>Скрыть список друзей в профиле</span>
+
+        </label>
 
         <p id="profileError" class="form-error hidden"></p>
 
