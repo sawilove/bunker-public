@@ -1,5 +1,24 @@
 const socket = BunkerRuntime.connectSocket();
 
+function playerAvatarUrl(url) {
+  if (!url) return BunkerRuntime.assetUrl("icons/guest-avatar.svg");
+  if (url.startsWith("/uploads/") || url.startsWith("/api/avatars/")) {
+    const base = (window.BUNKER_CONFIG?.apiUrl || window.BUNKER_CONFIG?.wsUrl || "").replace(
+      /\/$/,
+      ""
+    );
+    return base ? `${base}${url}` : BunkerRuntime.assetUrl(url.replace(/^\//, ""));
+  }
+  return BunkerRuntime.assetUrl(url.replace(/^\//, ""));
+}
+
+function playerNameHtml(p) {
+  const guestBadge = p.isGuest
+    ? ' <span class="player-badge player-badge--guest">Гость</span>'
+    : "";
+  return `${escapeHtml(p.name)}${guestBadge}`;
+}
+
 function formatBunkerHint(scenario, spots) {
   if (!scenario) return `Мест в бункере: ${spots}`;
   const loc = scenario.locationLabel || "В бункере";
@@ -247,7 +266,8 @@ function renderLobbyRoster(players) {
     .map(
       (p) => `
     <article class="lobby-row">
-      <span class="lobby-row__name">${escapeHtml(p.name)}</span>
+      <img class="player-chip__avatar" src="${playerAvatarUrl(p.avatarUrl)}" alt="">
+      <span class="lobby-row__name">${playerNameHtml(p)}</span>
       <button type="button" class="btn btn--danger btn--small" data-kick="${p.id}">Исключить</button>
     </article>
   `
@@ -289,8 +309,9 @@ function renderGameRoster(players, currentTurn, round, phase) {
       return `
         <article class="player-row ${isTurn ? "player-row--turn" : ""} ${p.excluded ? "player-row--excluded" : ""}" data-player-id="${p.id}">
           <div class="player-row__header">
+            <img class="player-chip__avatar player-row__avatar" src="${playerAvatarUrl(p.avatarUrl)}" alt="">
             <h2 class="player-row__name">
-              ${escapeHtml(p.name)}
+              ${playerNameHtml(p)}
               ${excludedTag}
               ${isTurn ? '<span class="turn-chip">ход</span>' : ""}
             </h2>

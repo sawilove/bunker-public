@@ -1,0 +1,191 @@
+const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
+const { getPool, initDatabase, rowToUser } = require("./db");
+
+const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const SECRET =
+  process.env.AUTH_SECRET ||
+  process.env.JWT_SECRET ||
+  "bunker-dev-secret-change-in-production";
+
+function publicUser(user) {
+  if (!user) return null;
+  return {
+    id: user.id,
+    nickname: user.nickname,
+    bio: user.bio || "",
+    avatarUrl: user.avatarWebp ? `/api/avatars/${user.id}` : null,
+    gamesPlayed: user.gamesPlayed || 0,
+    bunkerSurvivals: user.bunkerSurvivals || 0,
+  };
+}
+
+function normalizeNickname(nickname) {
+  return (nickname || "").trim();
+}
+
+function validateNickname(nickname) {
+  const n = normalizeNickname(nickname);
+  if (n.length < 3 || n.length > 20) {
+    return "Никнейм: от 3 до 20 символов.";
+  }
+  if (!/^[a-zA-Zа-яА-ЯёЁ0-9_-]+$/.test(n)) {
+    return "Никнейм: только буквы, цифры, _ и -.";
+  }
+  return null;
+}
+
+function validatePassword(password) {
+  if (!password || password.length < 6) {
+    return "Пароль: минимум 6 символов.";
+  }
+  return null;
+}
+
+function createToken(userId) {
+  const issued = Date.now();
+  const payload = `${userId}.${issued}`;
+  const sig = crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
+  return Buffer.from(`${payload}.${sig}`).toString("base64url");
+}
+
+async function getUserById(userId) {
+  const { rows } = await getPool().query(
+    `SELECT * FROM users WHERE id = $1`,
+    [userId]
+  );
+  return rowToUser(rows[0]);
+}
+
+async function findByNickname(nickname) {
+  const key = normalizeNickname(nickname).toLowerCase();
+  const { rows } = await getPool().query(
+    `SELECT * FROM users WHERE nickname_lower = $1`,
+    [key]
+  );
+  return rowToUser(rows[0]);
+}
+
+async function verifyToken(token) {
+  if (!token || typeof token !== "string") return null;
+  try {
+    const decoded = Buffer.from(token, "base64url").toString("utf8");
+    const lastDot = decoded.lastIndexOf(".");
+    if (lastDot === -1) return null;
+    const payload = decoded.slice(0, lastDot);
+    const sig = decoded.slice(lastDot + 1);
+    const expected = crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
+    if (sig.length !== expected.length) return null;
+    if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
+      return null;
+    }
+    const [userId, issuedStr] = payload.split(".");
+    const issued = Number(issuedStr);
+    if (!userId || !issued || Date.now() - issued > TOKEN_TTL_MS) return null;
+    return getUserById(userId);
+  } catch {
+    return null;
+  }
+}
+
+async function register({ nickname, password }) {
+  const nickErr = validateNickname(nickname);
+  if (nickErr) return { ok: false, error: nickErr };
+  const passErr = validatePassword(password);
+  if (passErr) return { ok: false, error: passErr };
+
+  const nick = normalizeNickname(nickname);
+  if (await findByNickname(nick)) {
+    return { ok: false, error: "Этот никнейм уже занят." };
+  }
+
+  const id = crypto.randomBytes(16).toString("hex");
+  const passwordHash = bcrypt.hashSync(password, 10);
+
+  try {
+    await getPool().query(
+      `INSERT INTO users (id, nickname, nickname_lower, password_hash)
+       VALUES ($1, $2, $3, $4)`,
+      [id, nick, nick.toLowerCase(), passwordHash]
+    );
+  } catch (err) {
+    if (err.code === "23505") {
+      return { ok: false, error: "Этот никнейм уже занят." };
+    }
+    throw err;
+  }
+
+  const user = await getUserById(id);
+  return { ok: true, user: publicUser(user), token: createToken(id) };
+}
+
+async function login({ nickname, password }) {
+  const user = await findByNickname(nickname);
+  if (!user || !bcrypt.compareSync(password, user.passwordHash)) {
+    return { ok: false, error: "Неверный никнейм или пароль." };
+  }
+  return { ok: true, user: publicUser(user), token: createToken(user.id) };
+}
+
+async function updateProfile(userId, { bio }) {
+  const user = await getUserById(userId);
+  if (!user) return { ok: false, error: "Пользователь не найден." };
+  const bioText = typeof bio === "string" ? bio.trim().slice(0, 500) : user.bio;
+  await getPool().query(`UPDATE users SET bio = $2 WHERE id = $1`, [
+    userId,
+    bioText,
+  ]);
+  const updated = await getUserById(userId);
+  return { ok: true, user: publicUser(updated) };
+}
+
+async function setAvatarBuffer(userId, buffer) {
+  await getPool().query(`UPDATE users SET avatar_webp = $2 WHERE id = $1`, [
+    userId,
+    buffer,
+  ]);
+  const user = await getUserById(userId);
+  return publicUser(user);
+}
+
+async function getAvatarBuffer(userId) {
+  const { rows } = await getPool().query(
+    `SELECT avatar_webp FROM users WHERE id = $1`,
+    [userId]
+  );
+  return rows[0]?.avatar_webp || null;
+}
+
+async function recordGameStats(playerUserIds, survivorUserIds) {
+  const played = [...new Set(playerUserIds.filter(Boolean))];
+  if (played.length === 0) return;
+
+  const survived = new Set(survivorUserIds.filter(Boolean));
+  const survivors = played.filter((id) => survived.has(id));
+
+  await getPool().query(
+    `UPDATE users SET games_played = games_played + 1 WHERE id = ANY($1::text[])`,
+    [played]
+  );
+
+  if (survivors.length > 0) {
+    await getPool().query(
+      `UPDATE users SET bunker_survivals = bunker_survivals + 1 WHERE id = ANY($1::text[])`,
+      [survivors]
+    );
+  }
+}
+
+module.exports = {
+  initDatabase,
+  register,
+  login,
+  verifyToken,
+  publicUser,
+  getUserById,
+  updateProfile,
+  setAvatarBuffer,
+  getAvatarBuffer,
+  recordGameStats,
+  createToken,
+};

@@ -1,3 +1,9 @@
+try {
+  require("dotenv").config();
+} catch {
+  /* dotenv опционален */
+}
+
 const crypto = require("crypto");
 const express = require("express");
 const http = require("http");
@@ -16,9 +22,13 @@ const {
   shuffleArray,
   pickRandom,
 } = require("./game-data");
+const { mountAuthRoutes, resolvePlayerIdentity } = require("./auth-routes");
+const { recordGameStats, initDatabase } = require("./user-store");
 
 const app = express();
 const server = http.createServer(app);
+
+app.use(express.json({ limit: "6mb" }));
 
 const corsOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",").map((s) => s.trim()).filter(Boolean)
@@ -232,6 +242,14 @@ function endGame() {
   game.phase = "ended";
   game.currentTurn = null;
   revealAllCards();
+
+  const playerUserIds = playerIds().map((id) => game.players[id].userId);
+  const survivorUserIds = activePlayerIds()
+    .filter((id) => !game.players[id].excluded)
+    .map((id) => game.players[id].userId);
+  recordGameStats(playerUserIds, survivorUserIds).catch((err) => {
+    console.error("recordGameStats error", err);
+  });
 }
 
 function startVoting() {
@@ -320,6 +338,19 @@ function buildVotingInfo(forPlayerId) {
   };
 }
 
+function mapPlayerBrief(id) {
+  const p = game.players[id];
+  return {
+    id,
+    name: p.name,
+    excluded: !!p.excluded,
+    connected: !!p.socketId,
+    isGuest: !!p.isGuest,
+    nickname: p.nickname || null,
+    avatarUrl: p.avatarUrl,
+  };
+}
+
 function sanitizePlayerForHost(id, p) {
   const revealAll = game.phase === "ended";
   return {
@@ -327,6 +358,9 @@ function sanitizePlayerForHost(id, p) {
     name: p.name,
     excluded: !!p.excluded,
     connected: !!p.socketId,
+    isGuest: !!p.isGuest,
+    nickname: p.nickname || null,
+    avatarUrl: p.avatarUrl,
     revealsThisRound: game.revealsThisRound[id] || 0,
     cards: p.cards.map((c) => {
       if (revealAll || c.opened) {
@@ -445,6 +479,9 @@ function buildPlayerState(playerId) {
           id: playerId,
           name: me.name,
           excluded: !!me.excluded,
+          isGuest: !!me.isGuest,
+          nickname: me.nickname || null,
+          avatarUrl: me.avatarUrl,
           cards: me.cards.map((c) => mapCardForClient(c, revealAll)),
         }
       : null,
@@ -488,8 +525,20 @@ function resetToLobby() {
   game.votes = {};
   game.lastExcludedName = null;
   for (const id of playerIds()) {
-    const { name, socketId } = game.players[id];
-    game.players[id] = { id, name, cards: [], excluded: false, socketId };
+    const { name, socketId, userId, isGuest, nickname, avatarUrl, nameMode } =
+      game.players[id];
+    game.players[id] = {
+      id,
+      name,
+      cards: [],
+      excluded: false,
+      socketId,
+      userId: userId || null,
+      isGuest: !!isGuest,
+      nickname: nickname || null,
+      avatarUrl,
+      nameMode: nameMode || null,
+    };
   }
 }
 
@@ -600,10 +649,25 @@ io.on("connection", (socket) => {
     broadcast();
   });
 
-  socket.on("playerJoin", (payload) => {
-    const name = typeof payload === "string" ? payload : payload?.name;
+  socket.on("playerJoin", async (payload) => {
     const code = typeof payload === "string" ? null : payload?.code;
-    const trimmed = (name || "").trim().slice(0, 24);
+    let identity;
+    try {
+      identity = await resolvePlayerIdentity(
+        typeof payload === "string" ? { name: payload, code } : payload
+      );
+    } catch (err) {
+      console.error("playerJoin auth error", err);
+      socket.emit("joinError", "Ошибка проверки аккаунта.");
+      return;
+    }
+
+    if (!identity.ok) {
+      socket.emit("joinError", identity.error);
+      return;
+    }
+
+    const trimmed = identity.displayName;
     if (!trimmed) {
       socket.emit("joinError", "Введите имя.");
       return;
@@ -628,6 +692,11 @@ io.on("connection", (socket) => {
     game.players[playerId] = {
       id: playerId,
       name: trimmed,
+      userId: identity.userId,
+      isGuest: identity.isGuest,
+      nickname: identity.nickname,
+      avatarUrl: identity.avatarUrl,
+      nameMode: identity.nameMode || null,
       cards: [],
       excluded: false,
       socketId: null,
@@ -785,6 +854,18 @@ io.on("connection", (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+
+initDatabase()
+  .then(() => {
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+      if (process.env.DATABASE_URL) {
+        console.log("Database: connected");
+      }
+    });
+  })
+  .catch((err) => {
+    console.error("Database init failed:", err.message);
+    console.error("Задайте DATABASE_URL (см. docs/DATABASE.md)");
+    process.exit(1);
+  });

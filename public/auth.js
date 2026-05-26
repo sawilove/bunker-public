@@ -1,0 +1,113 @@
+(function () {
+  const STORAGE_TOKEN = "bunker:authToken";
+  const config = window.BUNKER_CONFIG || {};
+
+  function apiBase() {
+    return (config.apiUrl || config.wsUrl || "").replace(/\/$/, "");
+  }
+
+  function assetUrl(path) {
+    if (!path) return "";
+    if (/^https?:\/\//i.test(path)) return path;
+    const base = apiBase();
+    if ((path.startsWith("/uploads/") || path.startsWith("/api/avatars/")) && base) {
+      return `${base}${path}`;
+    }
+    if (window.BunkerRuntime) return BunkerRuntime.assetUrl(path.replace(/^\//, ""));
+    return path;
+  }
+
+  function getToken() {
+    return localStorage.getItem(STORAGE_TOKEN) || "";
+  }
+
+  function setToken(token) {
+    if (token) localStorage.setItem(STORAGE_TOKEN, token);
+    else localStorage.removeItem(STORAGE_TOKEN);
+  }
+
+  function clearAuth() {
+    setToken("");
+  }
+
+  async function api(path, options = {}) {
+    const base = apiBase();
+    if (!base) throw new Error("API не настроен. Укажите apiUrl в config.js");
+    const headers = { ...(options.headers || {}) };
+    if (options.body && !headers["Content-Type"]) {
+      headers["Content-Type"] = "application/json";
+    }
+    const token = getToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const res = await fetch(`${base}${path}`, { ...options, headers });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || "Ошибка запроса");
+    }
+    return data;
+  }
+
+  async function register(nickname, password) {
+    const data = await api("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ nickname, password }),
+    });
+    setToken(data.token);
+    return data.user;
+  }
+
+  async function login(nickname, password) {
+    const data = await api("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ nickname, password }),
+    });
+    setToken(data.token);
+    return data.user;
+  }
+
+  async function fetchMe() {
+    if (!getToken()) return null;
+    try {
+      const data = await api("/api/auth/me");
+      return data.user;
+    } catch {
+      clearAuth();
+      return null;
+    }
+  }
+
+  async function updateProfile(bio) {
+    const data = await api("/api/auth/profile", {
+      method: "PATCH",
+      body: JSON.stringify({ bio }),
+    });
+    return data.user;
+  }
+
+  async function uploadAvatar(imageDataUrl, crop) {
+    const data = await api("/api/auth/avatar", {
+      method: "POST",
+      body: JSON.stringify({ image: imageDataUrl, crop }),
+    });
+    return data.user;
+  }
+
+  function isLoggedIn() {
+    return !!getToken();
+  }
+
+  window.BunkerAuth = {
+    apiBase,
+    assetUrl,
+    getToken,
+    setToken,
+    clearAuth,
+    register,
+    login,
+    fetchMe,
+    updateProfile,
+    uploadAvatar,
+    isLoggedIn,
+  };
+})();

@@ -102,10 +102,23 @@ sessionCodeInput.addEventListener("input", () => {
 
 joinForm.addEventListener("submit", (e) => {
   e.preventDefault();
-  const name = playerNameInput.value.trim();
-  if (!name || !validatedCode) return;
+  if (!validatedCode) return;
   showJoinError("");
-  socket.emit("playerJoin", { name, code: validatedCode });
+  const payload = window.BunkerPlayerAuth
+    ? BunkerPlayerAuth.buildJoinPayload(validatedCode)
+    : { name: playerNameInput.value.trim(), code: validatedCode };
+
+  if (!window.BunkerAuth?.isLoggedIn()) {
+    if (!payload.name?.trim()) {
+      showJoinError("Введите имя.");
+      return;
+    }
+  } else if (payload.nameMode === "session" && !payload.name?.trim()) {
+    showJoinError("Введите имя для этой сессии.");
+    return;
+  }
+
+  socket.emit("playerJoin", payload);
 });
 
 leaveSessionBtn.addEventListener("click", () => {
@@ -284,13 +297,17 @@ function applyState(state) {
       ? "Сценарий откроется при старте игры."
       : "Дождитесь старта — детали катастрофы объявит ведущий.";
     waitingName.textContent = state.you.name;
+    if (window.BunkerPlayerAuth) BunkerPlayerAuth.updateWaitingYou(state.you);
     waitingCount.textContent = `Подключено игроков: ${state.playerCount}`;
     lobbyList.innerHTML = state.players
-      .map((p) => {
-        const tag = p.excluded ? " <span class='status-badge status-badge--excluded-inline'>ИСКЛЮЧЕН</span>" : "";
-        const you = p.id === state.you.id ? " <em>(вы)</em>" : "";
-        return `<li>${escapeHtml(p.name)}${you}${tag}</li>`;
-      })
+      .map((p) =>
+        window.BunkerPlayerAuth
+          ? BunkerPlayerAuth.renderPlayerChip(p, {
+              you: p.id === state.you.id,
+              excluded: p.excluded,
+            })
+          : `<li>${escapeHtml(p.name)}</li>`
+      )
       .join("");
     return;
   }
@@ -372,4 +389,8 @@ if (urlCode.length === 6) {
   requestCodeValidation(urlCode);
 } else if (!BunkerRuntime.getPlayerSession().playerId) {
   sessionCodeInput.focus();
+}
+
+if (window.BunkerPlayerAuth) {
+  BunkerPlayerAuth.initAccount();
 }

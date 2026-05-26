@@ -661,6 +661,7 @@ body.has-scenario-bg .waiting-modal__card {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  flex-wrap: wrap;
   padding: 0.4rem 0.65rem 0.3rem;
   border-bottom: 1px solid var(--border);
   background: rgba(255,255,255,0.02);
@@ -1699,4 +1700,305 @@ body.has-scenario-bg .waiting-modal__card {
   .player .game-card__table-badge {
     width: 100%;
   }
+}
+
+/* —— Account & auth —— */
+.btn--block {
+  display: flex;
+  width: 100%;
+  max-width: 20rem;
+  margin: 0 auto 1.25rem;
+}
+
+.btn--small {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.75rem;
+}
+
+.account-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.account-bar__text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.auth-tabs__btn {
+  flex: 1;
+  padding: 0.5rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-deep);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.auth-tabs__btn--active {
+  border-color: var(--amber);
+  color: var(--amber);
+  background: rgba(232, 168, 56, 0.1);
+}
+
+.auth-form,
+.profile-form,
+.join-form--stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  max-width: 28rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field__label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.field__hint {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.field textarea,
+.auth-form input,
+.profile-form textarea {
+  padding: 0.65rem 0.85rem;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  resize: vertical;
+}
+
+.form-success {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--green);
+}
+
+.profile-header {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.profile-avatar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.profile-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--amber);
+  background: var(--bg-deep);
+}
+
+.profile-nickname {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+  color: var(--amber);
+  letter-spacing: 0.05em;
+}
+
+.profile-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+.profile-stat strong {
+  color: var(--green);
+}
+
+.profile-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.profile-hint {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.name-mode-fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  margin: 0;
+}
+
+.name-mode-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.35rem 0;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.player-chip__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--border-bright);
+  background: var(--bg-deep);
+}
+
+.player-row__avatar {
+  width: 32px;
+  height: 32px;
+}
+
+.player-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.player-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.player-badge--guest {
+  background: rgba(140, 140, 140, 0.2);
+  border: 1px solid var(--text-dim);
+  color: var(--text-dim);
+}
+
+.waiting-modal__you {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.waiting-modal__you .player-chip__avatar {
+  width: 48px;
+  height: 48px;
+}
+
+.lobby-list__item {
+  list-style: none;
+  margin: 0.35rem 0;
+}
+
+.lobby-row .player-chip__avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.player-row__header .player-row__avatar {
+  margin-right: 0.25rem;
+}
+
+/* —— Avatar crop modal —— */
+.crop-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.crop-modal__card {
+  width: min(100%, 480px);
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.crop-modal__viewport {
+  position: relative;
+  width: 100%;
+  margin: 0 auto;
+  overflow: hidden;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.crop-modal__canvas {
+  display: block;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.crop-modal__frame {
+  position: absolute;
+  border: 2px solid var(--amber);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+  cursor: move;
+  touch-action: none;
+}
+
+.crop-modal__shade {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.crop-modal__shade--top,
+.crop-modal__shade--bottom {
+  left: 0;
+  width: 100%;
+}
+
+.crop-modal__shade--left,
+.crop-modal__shade--right {
+  top: 0;
+}
+
+.crop-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
 }

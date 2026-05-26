@@ -21,6 +21,11 @@
 
     <section id="scenarioHero" class="scenario-hero hidden"></section>
 
+    <section id="accountBar" class="panel account-bar">
+      <p class="account-bar__text" id="accountBarText">Вход не выполнен — вы войдёте как гость.</p>
+      <a href="account.html" class="btn btn--small" id="accountBarLink">Аккаунт</a>
+    </section>
+
     <section id="codeSection" class="panel">
       <p class="panel__title">Код сессии</p>
       <p class="panel__subtitle">Введите 6-значный код с экрана ведущего</p>
@@ -32,10 +37,33 @@
     </section>
 
     <section id="joinSection" class="panel hidden">
-      <p class="panel__title">Регистрация у ворот</p>
+      <p class="panel__title">Вход в сессию</p>
       <p class="panel__subtitle">Сессия: <strong id="joinedSessionCode">—</strong></p>
-      <form class="join-form" id="joinForm">
-        <input type="text" id="playerName" placeholder="Имя или позывной" maxlength="24" required autocomplete="nickname">
+      <form class="join-form join-form--stacked" id="joinForm">
+        <div id="guestJoinFields">
+          <label class="field">
+            <span class="field__label">Имя в сессии</span>
+            <input type="text" id="playerName" placeholder="Имя или позывной" maxlength="24" required autocomplete="nickname">
+          </label>
+          <p class="field__hint">Гостевой вход — только имя, без профиля.</p>
+        </div>
+        <div id="memberJoinFields" class="hidden">
+          <fieldset class="name-mode-fieldset">
+            <legend class="field__label">Как вас показывать в игре</legend>
+            <label class="name-mode-option">
+              <input type="radio" name="nameMode" value="nickname" checked>
+              <span>Никнейм: <strong id="memberNicknameLabel">—</strong></span>
+            </label>
+            <label class="name-mode-option">
+              <input type="radio" name="nameMode" value="session">
+              <span>Другое имя в этой сессии</span>
+            </label>
+          </fieldset>
+          <label class="field hidden" id="sessionNameField">
+            <span class="field__label">Имя в сессии</span>
+            <input type="text" id="sessionName" placeholder="Позывной для этой игры" maxlength="24" autocomplete="nickname">
+          </label>
+        </div>
         <button type="submit" class="btn btn--amber">Войти в зал ожидания</button>
       </form>
       <p id="joinError" class="form-error hidden"></p>
@@ -46,7 +74,10 @@
         <p class="waiting-modal__badge">Зал ожидания</p>
         <h2 class="waiting-modal__title" id="waitingTitle">Ожидаем начала игры</h2>
         <p class="waiting-modal__text" id="waitingCount">Подключено игроков: 0</p>
-        <p class="waiting-modal__name">Вы: <strong id="waitingName">—</strong></p>
+        <div class="waiting-modal__you">
+          <img id="waitingAvatar" class="player-chip__avatar" src="icons/guest-avatar.svg" alt="">
+          <p class="waiting-modal__name">Вы: <strong id="waitingName">—</strong> <span id="waitingBadge" class="player-badge player-badge--guest">Гость</span></p>
+        </div>
         <ul id="lobbyList" class="lobby-list waiting-modal__list"></ul>
         <button type="button" id="leaveSessionBtn" class="btn btn--danger">Выйти из сессии</button>
       </div>
@@ -91,9 +122,11 @@
 
   <script src="config.js"></script>
   <script src="donate.js"></script>
+  <script src="auth.js"></script>
   <script src="bunker-runtime.js"></script>
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="scenario-theme.js"></script>
+  <script src="player-auth-ui.js"></script>
   <script src="player.js"></script>
 </body>
 </html>

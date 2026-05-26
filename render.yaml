@@ -9,3 +9,7 @@ services:
         value: "20"
       - key: CORS_ORIGIN
         sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: AUTH_SECRET
+        sync: false

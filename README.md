@@ -33,7 +33,10 @@ GitHub Pages отдаёт только статику (HTML/JS/CSS). **WebSocket
 1. Залейте репозиторий на GitHub.
 2. [Render](https://render.com) → New → Web Service → этот репозиторий.
 3. Build: `npm install`, Start: `node server.js`.
-4. В Environment добавьте:
+4. Создайте бесплатную PostgreSQL в [Neon](https://neon.tech) — пошагово: **[docs/DATABASE.md](docs/DATABASE.md)**.
+5. В Environment на Render добавьте:
+   - `DATABASE_URL` — строка подключения из Neon
+   - `AUTH_SECRET` — случайная длинная строка
    - `CORS_ORIGIN` = `https://<user>.github.io` (и при необходимости `https://<user>.github.io/<repo>`)
 
 Скопируйте URL сервиса, например `https://bunker-api.onrender.com`.
