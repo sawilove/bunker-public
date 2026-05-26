@@ -491,12 +491,19 @@ function buildPlayerState(playerId) {
           cards: me.cards.map((c) => mapCardForClient(c, revealAll)),
         }
       : null,
-    players: playerIds().map((id) => ({
-      id,
-      name: game.players[id].name,
-      excluded: !!game.players[id].excluded,
-      connected: !!game.players[id].socketId,
-    })),
+    players: playerIds().map((id) => {
+      const p = game.players[id];
+      return {
+        id,
+        name: p.name,
+        userId: p.userId || null,
+        isGuest: !!p.isGuest,
+        nickname: p.nickname || null,
+        avatarUrl: p.avatarUrl || null,
+        excluded: !!p.excluded,
+        connected: !!p.socketId,
+      };
+    }),
     currentTurn: game.currentTurn,
     isYourTurn: game.phase === "playing" && game.currentTurn === playerId && isActive,
     playerCount: playerIds().length,

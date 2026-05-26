@@ -5,6 +5,7 @@ const {
   login,
   verifyToken,
   publicUser,
+  getUserById,
   updateProfile,
   setAvatarBuffer,
   getAvatarBuffer,
@@ -73,6 +74,25 @@ function mountAuthRoutes(app) {
       res.json({ user: result.user, token: result.token });
     } catch (err) {
       console.error("login error", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
+  app.get("/api/users/:userId", async (req, res) => {
+    try {
+      const viewer = await verifyToken(getBearerToken(req));
+      if (!viewer) {
+        res.status(401).json({ error: "Требуется вход в аккаунт." });
+        return;
+      }
+      const user = await getUserById(req.params.userId);
+      if (!user) {
+        res.status(404).json({ error: "Игрок не найден." });
+        return;
+      }
+      res.json({ user: await enrichPublicUser(user) });
+    } catch (err) {
+      console.error("user profile error", err);
       res.status(500).json({ error: "Ошибка сервера." });
     }
   });
@@ -182,20 +202,12 @@ async function resolvePlayerIdentity(payload) {
     };
   }
 
-  const mode = payload?.nameMode === "session" ? "session" : "nickname";
-  let displayName = authUser.nickname;
-
-  if (mode === "session") {
-    const sessionName = (payload?.name || payload?.sessionName || "")
-      .trim()
-      .slice(0, 24);
-    if (!sessionName) {
-      return { ok: false, error: "Введите имя для этой сессии." };
-    }
-    displayName = sessionName;
-  }
-
+  const sessionName = (payload?.name || payload?.sessionName || "")
+    .trim()
+    .slice(0, 24);
+  const displayName = sessionName || authUser.nickname;
   const pub = publicUser(authUser);
+
   return {
     ok: true,
     isGuest: false,
@@ -203,7 +215,9 @@ async function resolvePlayerIdentity(payload) {
     userId: authUser.id,
     nickname: authUser.nickname,
     avatarUrl: pub.avatarUrl || DEFAULT_AVATAR,
-    nameMode: mode,
+    premium: !!authUser.premium,
+    dev: !!authUser.dev,
+    nameMode: sessionName ? "session" : "nickname",
   };
 }
 

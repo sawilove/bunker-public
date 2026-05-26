@@ -77,12 +77,16 @@
     }
   }
 
-  async function updateProfile(bio) {
+  async function updateProfile(fields) {
     const data = await api("/api/auth/profile", {
       method: "PATCH",
-      body: JSON.stringify({ bio }),
+      body: JSON.stringify(fields || {}),
     });
     return data.user;
+  }
+
+  async function fetchUser(userId) {
+    return api(`/api/users/${encodeURIComponent(userId)}`);
   }
 
   async function uploadAvatar(imageDataUrl, crop) {
@@ -140,6 +144,7 @@
     login,
     fetchMe,
     updateProfile,
+    fetchUser,
     uploadAvatar,
     isLoggedIn,
     getFriends,

@@ -8,7 +8,8 @@
 </head>
 <body class="player">
   <div id="scenarioBg" class="scenario-bg" aria-hidden="true"></div>
-  <div class="page">
+  <div class="page page--with-topbar">
+    <div data-site-topbar class="site-topbar"></div>
     <a href="index.html" class="back-link">← Выйти из убежища</a>
 
     <header class="site-header">
@@ -20,11 +21,6 @@
     </header>
 
     <section id="scenarioHero" class="scenario-hero hidden"></section>
-
-    <section id="accountBar" class="panel account-bar">
-      <p class="account-bar__text" id="accountBarText">Вход не выполнен — вы войдёте как гость.</p>
-      <a href="account.html" class="btn btn--small" id="accountBarLink">Аккаунт</a>
-    </section>
 
     <section id="codeSection" class="panel">
       <p class="panel__title">Код сессии</p>
@@ -48,20 +44,10 @@
           <p class="field__hint">Гостевой вход — только имя, без профиля.</p>
         </div>
         <div id="memberJoinFields" class="hidden">
-          <fieldset class="name-mode-fieldset">
-            <legend class="field__label">Как вас показывать в игре</legend>
-            <label class="name-mode-option">
-              <input type="radio" name="nameMode" value="nickname" checked>
-              <span>Никнейм: <strong id="memberNicknameLabel">—</strong></span>
-            </label>
-            <label class="name-mode-option">
-              <input type="radio" name="nameMode" value="session">
-              <span>Другое имя в этой сессии</span>
-            </label>
-          </fieldset>
-          <label class="field hidden" id="sessionNameField">
-            <span class="field__label">Имя в сессии</span>
-            <input type="text" id="sessionName" placeholder="Позывной для этой игры" maxlength="24" autocomplete="nickname">
+          <label class="field">
+            <span class="field__label">Позывной в сессии</span>
+            <input type="text" id="memberCallsign" placeholder="Оставьте пустым — будет ваш никнейм" maxlength="24" autocomplete="nickname">
+            <span class="field__hint">Необязательно. Пустое поле — отображается никнейм аккаунта.</span>
           </label>
         </div>
         <button type="submit" class="btn btn--amber">Войти в зал ожидания</button>
@@ -79,6 +65,10 @@
           <p class="waiting-modal__name">Вы: <strong id="waitingName">—</strong> <span id="waitingBadge" class="player-badge player-badge--guest">Гость</span></p>
         </div>
         <ul id="lobbyList" class="lobby-list waiting-modal__list"></ul>
+        <div id="lobbyInviteSection" class="lobby-invite hidden">
+          <p class="lobby-invite__title">Пригласить друзей</p>
+          <ul id="lobbyInviteList" class="lobby-invite__list"></ul>
+        </div>
         <button type="button" id="leaveSessionBtn" class="btn btn--danger">Выйти из сессии</button>
       </div>
     </div>
@@ -122,9 +112,13 @@
 
   <script src="config.js"></script>
   <script src="donate.js"></script>
-  <script src="auth.js"></script>
-  <script src="bunker-runtime.js"></script>
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
+  <script src="auth.js"></script>
+  <script src="user-badges.js"></script>
+  <script src="social-client.js"></script>
+  <script src="site-auth.js"></script>
+  <script src="profile-modal.js"></script>
+  <script src="bunker-runtime.js"></script>
   <script src="scenario-theme.js"></script>
   <script src="player-auth-ui.js"></script>
   <script src="player.js"></script>

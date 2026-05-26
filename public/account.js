@@ -1,5 +1,7 @@
 const authSection = document.getElementById("authSection");
 const profileSection = document.getElementById("profileSection");
+const profileView = document.getElementById("profileView");
+const profileEditForm = document.getElementById("profileEditForm");
 const accountTagline = document.getElementById("accountTagline");
 const loginForm = document.getElementById("loginForm");
 const registerForm = document.getElementById("registerForm");
@@ -8,15 +10,21 @@ const registerError = document.getElementById("registerError");
 const profileError = document.getElementById("profileError");
 const profileSuccess = document.getElementById("profileSuccess");
 const profileAvatar = document.getElementById("profileAvatar");
+const profileAvatarWrap = document.getElementById("profileAvatarWrap");
 const profileNickname = document.getElementById("profileNickname");
 const profileBadges = document.getElementById("profileBadges");
 const profileStatus = document.getElementById("profileStatus");
-const profileAvatarWrap = document.querySelector(".profile-avatar-wrap");
+const profileBioView = document.getElementById("profileBioView");
 const statGames = document.getElementById("statGames");
 const statSurvivals = document.getElementById("statSurvivals");
 const profileBio = document.getElementById("profileBio");
+const editNickname = document.getElementById("editNickname");
 const changeAvatarBtn = document.getElementById("changeAvatarBtn");
+const editProfileBtn = document.getElementById("editProfileBtn");
+const cancelEditBtn = document.getElementById("cancelEditBtn");
 const logoutBtn = document.getElementById("logoutBtn");
+
+let currentUser = null;
 
 function showError(el, msg) {
   el.textContent = msg || "";
@@ -33,21 +41,39 @@ function setAvatarSrc(user) {
   }
 }
 
-function showProfile(user) {
-  authSection.classList.add("hidden");
-  profileSection.classList.remove("hidden");
-  accountTagline.textContent = `Вы вошли как ${user.nickname}.`;
+function fillProfileView(user) {
   profileNickname.textContent = user.nickname;
   if (profileBadges) profileBadges.innerHTML = BunkerUserBadges.roleBadgesHtml(user);
   if (profileStatus) profileStatus.innerHTML = BunkerUserBadges.statusHtml(user);
   statGames.textContent = String(user.gamesPlayed ?? 0);
   statSurvivals.textContent = String(user.bunkerSurvivals ?? 0);
-  profileBio.value = user.bio || "";
+  profileBioView.textContent = user.bio?.trim() || "—";
   setAvatarSrc(user);
+}
+
+function showProfile(user) {
+  currentUser = user;
+  authSection.classList.add("hidden");
+  profileSection.classList.remove("hidden");
+  profileView.classList.remove("hidden");
+  profileEditForm.classList.add("hidden");
+  accountTagline.textContent = `Вы вошли как ${user.nickname}.`;
+  fillProfileView(user);
   if (window.BunkerSocial) BunkerSocial.connect();
+  if (window.BunkerSiteAuth) BunkerSiteAuth.refresh();
+}
+
+function enterEditMode() {
+  profileView.classList.add("hidden");
+  profileEditForm.classList.remove("hidden");
+  showError(profileError, "");
+  profileSuccess.classList.add("hidden");
+  editNickname.value = currentUser.nickname;
+  profileBio.value = currentUser.bio || "";
 }
 
 function showAuth() {
+  currentUser = null;
   profileSection.classList.add("hidden");
   authSection.classList.remove("hidden");
   accountTagline.textContent = "Регистрация, вход и профиль игрока.";
@@ -100,15 +126,26 @@ registerForm.addEventListener("submit", async (e) => {
   }
 });
 
-profileForm.addEventListener("submit", async (e) => {
+editProfileBtn.addEventListener("click", enterEditMode);
+
+cancelEditBtn.addEventListener("click", () => {
+  profileEditForm.classList.add("hidden");
+  profileView.classList.remove("hidden");
+});
+
+profileEditForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   showError(profileError, "");
-  showError(profileSuccess, "");
+  profileSuccess.classList.add("hidden");
   try {
-    const user = await BunkerAuth.updateProfile(profileBio.value);
+    const user = await BunkerAuth.updateProfile({
+      bio: profileBio.value,
+      nickname: editNickname.value.trim(),
+    });
     showProfile(user);
     profileSuccess.textContent = "Профиль сохранён.";
     profileSuccess.classList.remove("hidden");
+    setTimeout(() => profileSuccess.classList.add("hidden"), 3000);
   } catch (err) {
     showError(profileError, err.message);
   }
@@ -120,7 +157,9 @@ changeAvatarBtn.addEventListener("click", async () => {
     const { dataUrl, crop } = await BunkerAvatarCrop.pickAndCrop();
     changeAvatarBtn.disabled = true;
     const user = await BunkerAuth.uploadAvatar(dataUrl, crop);
-    showProfile(user);
+    currentUser = user;
+    fillProfileView(user);
+    if (window.BunkerSiteAuth) BunkerSiteAuth.refresh();
     profileSuccess.textContent = "Аватар обновлён.";
     profileSuccess.classList.remove("hidden");
   } catch (err) {
@@ -135,6 +174,7 @@ changeAvatarBtn.addEventListener("click", async () => {
 logoutBtn.addEventListener("click", () => {
   BunkerAuth.clearAuth();
   showAuth();
+  if (window.BunkerSiteAuth) BunkerSiteAuth.refresh();
 });
 
 (function applyTabFromUrl() {

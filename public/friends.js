@@ -54,7 +54,6 @@ function renderLists() {
         renderFriendRow(
           u,
           `<button type="button" class="btn btn--small" data-chat="${u.id}">Чат</button>
-           <button type="button" class="btn btn--small" data-invite="${u.id}">В сессию</button>
            <button type="button" class="btn btn--small btn--danger" data-remove="${u.id}">Удалить</button>`
         )
       )
@@ -137,11 +136,6 @@ document.body.addEventListener("click", async (e) => {
   if (chatId) {
     const user = friendsData.friends.find((f) => f.id === chatId);
     if (user) openChat(user);
-  }
-  if (inviteId) {
-    BunkerSocial.inviteToSession(inviteId);
-    addFriendSuccess.textContent = "Приглашение отправлено (если вы в зале ожидания).";
-    addFriendSuccess.classList.remove("hidden");
   }
   if (removeId && confirm("Удалить из друзей?")) {
     await BunkerAuth.removeFriend(removeId);

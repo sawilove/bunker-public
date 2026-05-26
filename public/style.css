@@ -74,12 +74,17 @@ body::after {
   opacity: 0.5;
 }
 
+body {
+  overflow-x: hidden;
+}
+
 .page {
   position: relative;
   z-index: 1;
   max-width: 1100px;
   margin: 0 auto;
   padding: 2rem 1.25rem 3rem;
+  overflow-x: hidden;
 }
 
 .host .page {
@@ -1286,6 +1291,9 @@ body.has-scenario-bg .waiting-modal__card {
 .waiting-modal__card {
   width: 100%;
   max-width: 22rem;
+  max-height: min(90vh, 640px);
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 1.75rem;
   background: var(--bg-panel);
   border: 1px solid var(--border-bright);
@@ -1889,7 +1897,26 @@ body.has-scenario-bg .waiting-modal__card {
 .player-chip {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.lobby-list__item.player-chip {
+  justify-content: flex-start;
+  text-align: left;
+  padding: 0.5rem 0;
+}
+
+.player-chip__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-chip__profile {
+  flex-shrink: 0;
 }
 
 .player-badge {
@@ -2013,42 +2040,80 @@ body.has-scenario-bg .waiting-modal__card {
 
 /* —— Site topbar (auth) —— */
 .site-topbar {
+  position: fixed;
+  top: max(0.5rem, env(safe-area-inset-top, 0px));
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
+  z-index: 200;
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 1rem;
+  margin: 0;
+  max-width: calc(100vw - 1.5rem);
+  pointer-events: none;
 }
 
 .site-topbar__inner {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  pointer-events: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.page--with-topbar {
+  padding-top: 3.25rem;
 }
 
 .site-topbar__link {
   color: var(--text-muted);
   text-decoration: none;
   font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .site-topbar__link:hover {
   color: var(--amber);
 }
 
-.user-chip {
+.site-topbar__friends {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.site-topbar__friends:hover {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+.site-topbar__icon {
+  display: block;
+}
+
+.user-chip {
+  display: inline-flex;
+  align-items: stretch;
+  max-width: min(240px, calc(100vw - 5rem));
+  padding: 3px;
   border-radius: 999px;
   border: 2px solid transparent;
+  box-sizing: border-box;
   text-decoration: none;
   color: inherit;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.35);
 }
 
 .user-chip__avatar {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
   border-radius: 50%;
   object-fit: cover;
 }
@@ -2057,23 +2122,35 @@ body.has-scenario-bg .waiting-modal__card {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.1rem;
-  padding-right: 0.35rem;
+  justify-content: center;
+  gap: 0.12rem;
+  min-width: 0;
+  padding: 0.15rem 0.5rem 0.15rem 0.35rem;
 }
 
 .user-chip__name {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.user-frame--dev {
+.user-chip__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  max-width: 100%;
+}
+
+.user-chip.user-frame--dev {
   border-color: #e53935;
-  box-shadow: 0 0 0 1px rgba(229, 57, 53, 0.35);
 }
 
-.user-frame--premium {
+.user-chip.user-frame--premium {
   border-color: #d4a017;
-  box-shadow: 0 0 0 1px rgba(212, 160, 23, 0.35);
 }
 
 .user-badge {
@@ -2288,4 +2365,161 @@ body.has-scenario-bg .waiting-modal__card {
   color: var(--text-muted);
   font-size: 1.25rem;
   cursor: pointer;
+}
+
+/* —— Profile view / edit —— */
+.profile-view__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.profile-bio-text {
+  margin: 0.35rem 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.profile-form textarea {
+  resize: none;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* —— Profile modal (other players) —— */
+.profile-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.profile-modal__card {
+  position: relative;
+  width: min(100%, 400px);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.profile-modal__close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.65rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.profile-modal__header {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  border-radius: var(--radius);
+}
+
+.profile-modal__header.user-frame--dev {
+  border: 2px solid #e53935;
+}
+
+.profile-modal__header.user-frame--premium {
+  border: 2px solid #d4a017;
+}
+
+.profile-modal__avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.profile-modal__name {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  word-break: break-word;
+}
+
+.profile-modal__nick {
+  margin: 0 0 0.35rem;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.profile-modal__stats {
+  display: flex;
+  gap: 1.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.profile-modal__bio {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.profile-modal__bio--empty {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* —— Lobby friend invites —— */
+.lobby-invite {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  text-align: left;
+}
+
+.lobby-invite__title {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.lobby-invite__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.lobby-invite__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  min-width: 0;
+}
+
+.lobby-invite__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.lobby-invite__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
 }

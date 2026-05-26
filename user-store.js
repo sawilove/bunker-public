@@ -130,14 +130,39 @@ async function login({ nickname, password }) {
   return { ok: true, user: publicUser(user), token: createToken(user.id) };
 }
 
-async function updateProfile(userId, { bio }) {
+async function updateProfile(userId, { bio, nickname }) {
   const user = await getUserById(userId);
   if (!user) return { ok: false, error: "Пользователь не найден." };
-  const bioText = typeof bio === "string" ? bio.trim().slice(0, 500) : user.bio;
-  await getPool().query(`UPDATE users SET bio = $2 WHERE id = $1`, [
-    userId,
-    bioText,
-  ]);
+
+  let bioText = user.bio;
+  if (typeof bio === "string") {
+    bioText = bio.trim().slice(0, 500);
+  }
+
+  let nick = user.nickname;
+  if (nickname !== undefined) {
+    const nickErr = validateNickname(nickname);
+    if (nickErr) return { ok: false, error: nickErr };
+    nick = normalizeNickname(nickname);
+    if (nick.toLowerCase() !== user.nicknameLower) {
+      if (await findByNickname(nick)) {
+        return { ok: false, error: "Этот никнейм уже занят." };
+      }
+    }
+  }
+
+  try {
+    await getPool().query(
+      `UPDATE users SET bio = $2, nickname = $3, nickname_lower = $4 WHERE id = $1`,
+      [userId, bioText, nick, nick.toLowerCase()]
+    );
+  } catch (err) {
+    if (err.code === "23505") {
+      return { ok: false, error: "Этот никнейм уже занят." };
+    }
+    throw err;
+  }
+
   const updated = await getUserById(userId);
   return { ok: true, user: publicUser(updated) };
 }

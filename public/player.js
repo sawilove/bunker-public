@@ -309,6 +309,9 @@ function applyState(state) {
           : `<li>${escapeHtml(p.name)}</li>`
       )
       .join("");
+    if (window.BunkerPlayerAuth?.loadLobbyFriends) {
+      BunkerPlayerAuth.loadLobbyFriends();
+    }
     return;
   }
 
