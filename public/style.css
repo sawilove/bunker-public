@@ -3667,6 +3667,23 @@ body.account .back-link {
   border-top: 1px solid var(--border);
 }
 
+.chat-widget__tool {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-deep);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.chat-widget__tool:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
 .chat-widget__form input {
   flex: 1;
   min-width: 0;
@@ -3690,6 +3707,88 @@ body.account .back-link {
 .chat-widget [data-chat-error] {
   margin: 0 0.75rem 0.5rem;
   font-size: 0.8rem;
+}
+
+.chat-widget__picker {
+  max-height: 210px;
+  overflow-y: auto;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--border);
+  background: rgba(5, 8, 5, 0.75);
+}
+
+.chat-widget__picker--emoji {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.chat-widget__emoji {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-deep);
+  color: var(--text);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0.25rem 0;
+}
+
+.chat-widget__emoji:hover {
+  border-color: var(--amber);
+}
+
+.chat-widget__sticker-pack h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-family: var(--font-display);
+  color: var(--amber);
+}
+
+.chat-widget__sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.chat-widget__sticker-btn {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-deep);
+  padding: 0.2rem;
+  cursor: pointer;
+}
+
+.chat-widget__sticker-btn:hover {
+  border-color: var(--amber);
+}
+
+.chat-widget__sticker-btn img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.chat-widget__msg--sticker {
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 0.25rem;
+}
+
+.chat-widget__sticker {
+  display: block;
+  width: min(150px, 50vw);
+  max-width: 100%;
+  border-radius: var(--radius);
+}
+
+.chat-widget__sticker-label {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  text-align: center;
 }
 
 .friends-list__name--link {

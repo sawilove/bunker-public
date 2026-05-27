@@ -1,6 +1,22 @@
 (function () {
   const CHAT_ICON = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
   const UNREAD_KEY = "bunker:chatUnread";
+  const STICKER_PREFIX = "[[sticker:";
+  const STICKER_SUFFIX = "]]";
+  const EMOJI_LIST = ["😀", "😁", "😂", "🤣", "😊", "😍", "😎", "🤔", "😴", "😢", "😡", "👍", "👎", "❤️", "🔥", "☢️"];
+  const STICKER_PACKS = [
+    {
+      id: "rustie_pack",
+      title: "Ржавик",
+      stickers: [
+        { file: "rustie1.png", title: "Ржавик 1" },
+        { file: "rustie2.png", title: "Ржавик 2" },
+        { file: "rustie3.png", title: "Ржавик 3" },
+        { file: "rustie4.png", title: "Ржавик 4" },
+        { file: "rustie5.png", title: "Ржавик 5" },
+      ],
+    },
+  ];
 
   let root = null;
   let friends = [];
@@ -88,9 +104,13 @@
         <div class="chat-widget__thread hidden" data-chat-thread>
           <div class="chat-widget__messages" data-chat-messages></div>
           <form class="chat-widget__form" data-chat-form>
+            <button type="button" class="chat-widget__tool" data-chat-toggle-emoji title="Эмодзи" aria-label="Эмодзи">😊</button>
+            <button type="button" class="chat-widget__tool" data-chat-toggle-stickers title="Стикеры" aria-label="Стикеры">🖼️</button>
             <input type="text" data-chat-input maxlength="2000" placeholder="Сообщение…" autocomplete="off">
             <button type="submit" class="btn btn--amber btn--small">→</button>
           </form>
+          <div class="chat-widget__picker chat-widget__picker--emoji hidden" data-chat-emoji-panel></div>
+          <div class="chat-widget__picker chat-widget__picker--stickers hidden" data-chat-sticker-panel></div>
           <p class="form-error hidden" data-chat-error></p>
         </div>
         <p class="chat-widget__hint" data-chat-hint>Сообщения хранятся 48 часов</p>
@@ -101,10 +121,16 @@
     root.querySelector("[data-chat-close]").addEventListener("click", () => togglePanel(false));
     root.querySelector("[data-chat-back]").addEventListener("click", showFriendsList);
     root.querySelector("[data-chat-form]").addEventListener("submit", onSubmit);
+    root.querySelector("[data-chat-toggle-emoji]").addEventListener("click", toggleEmojiPanel);
+    root.querySelector("[data-chat-toggle-stickers]").addEventListener("click", toggleStickerPanel);
     root.querySelector("[data-chat-friends]").addEventListener("click", (e) => {
       const id = e.target.closest("[data-chat-peer]")?.dataset.chatPeer;
       if (id) openThread(id);
     });
+    root.querySelector("[data-chat-emoji-panel]").addEventListener("click", onEmojiClick);
+    root.querySelector("[data-chat-sticker-panel]").addEventListener("click", onStickerClick);
+    renderEmojiPanel();
+    renderStickerPanel();
 
     if (window.BunkerSocial) {
       BunkerSocial.onChat((msg) => {
@@ -171,6 +197,7 @@
     root.querySelector("[data-chat-friends]").classList.remove("hidden");
     root.querySelector("[data-chat-thread]").classList.add("hidden");
     root.querySelector("[data-chat-hint]").classList.remove("hidden");
+    hidePanels();
   }
 
   async function openThread(peerId) {
@@ -198,7 +225,23 @@
     const msgs = root.querySelector("[data-chat-messages]");
     const el = document.createElement("div");
     el.className = `chat-widget__msg ${msg.mine ? "chat-widget__msg--mine" : ""}`;
-    el.textContent = msg.body;
+    const sticker = parseSticker(msg.body);
+    if (sticker) {
+      el.classList.add("chat-widget__msg--sticker");
+      const img = document.createElement("img");
+      img.className = "chat-widget__sticker";
+      img.src = sticker.src;
+      img.alt = sticker.title;
+      img.loading = "lazy";
+      img.decoding = "async";
+      const label = document.createElement("span");
+      label.className = "chat-widget__sticker-label";
+      label.textContent = sticker.title;
+      el.appendChild(img);
+      el.appendChild(label);
+    } else {
+      el.textContent = msg.body;
+    }
     msgs.appendChild(el);
     msgs.scrollTop = msgs.scrollHeight;
   }
@@ -216,6 +259,90 @@
     if (!body || !activePeerId) return;
     BunkerSocial.sendChat(activePeerId, body);
     input.value = "";
+    hidePanels();
+  }
+
+  function parseSticker(body) {
+    const text = String(body || "");
+    if (!text.startsWith(STICKER_PREFIX) || !text.endsWith(STICKER_SUFFIX)) return null;
+    const raw = text.slice(STICKER_PREFIX.length, -STICKER_SUFFIX.length);
+    const [key, title] = raw.split("|");
+    if (!key || !title) return null;
+    const [packId, file] = key.split("/");
+    if (!packId || !file) return null;
+    const pack = STICKER_PACKS.find((item) => item.id === packId);
+    if (!pack || !pack.stickers.some((s) => s.file === file)) return null;
+    return {
+      src: `/stickers/${packId}/${file}`,
+      title: title.slice(0, 80),
+    };
+  }
+
+  function hidePanels() {
+    root.querySelector("[data-chat-emoji-panel]").classList.add("hidden");
+    root.querySelector("[data-chat-sticker-panel]").classList.add("hidden");
+  }
+
+  function toggleEmojiPanel() {
+    if (!activePeerId) return;
+    const emoji = root.querySelector("[data-chat-emoji-panel]");
+    const stickers = root.querySelector("[data-chat-sticker-panel]");
+    const show = emoji.classList.contains("hidden");
+    emoji.classList.toggle("hidden", !show);
+    stickers.classList.add("hidden");
+  }
+
+  function toggleStickerPanel() {
+    if (!activePeerId) return;
+    const stickers = root.querySelector("[data-chat-sticker-panel]");
+    const emoji = root.querySelector("[data-chat-emoji-panel]");
+    const show = stickers.classList.contains("hidden");
+    stickers.classList.toggle("hidden", !show);
+    emoji.classList.add("hidden");
+  }
+
+  function renderEmojiPanel() {
+    const panel = root.querySelector("[data-chat-emoji-panel]");
+    panel.innerHTML = EMOJI_LIST.map((emoji) => {
+      return `<button type="button" class="chat-widget__emoji" data-chat-emoji="${emoji}" aria-label="${emoji}">${emoji}</button>`;
+    }).join("");
+  }
+
+  function renderStickerPanel() {
+    const panel = root.querySelector("[data-chat-sticker-panel]");
+    panel.innerHTML = STICKER_PACKS.map((pack) => {
+      const stickers = pack.stickers.map((sticker) => {
+        const src = `/stickers/${pack.id}/${sticker.file}`;
+        const safeTitle = BunkerUserBadges.escapeHtml(sticker.title);
+        return `<button type="button" class="chat-widget__sticker-btn" data-chat-sticker-pack="${pack.id}" data-chat-sticker-file="${sticker.file}" data-chat-sticker-title="${safeTitle}" aria-label="${safeTitle}">
+          <img src="${src}" alt="${safeTitle}" loading="lazy" decoding="async">
+        </button>`;
+      }).join("");
+      return `<section class="chat-widget__sticker-pack">
+        <h4>${BunkerUserBadges.escapeHtml(pack.title)}</h4>
+        <div class="chat-widget__sticker-grid">${stickers}</div>
+      </section>`;
+    }).join("");
+  }
+
+  function onEmojiClick(e) {
+    const btn = e.target.closest("[data-chat-emoji]");
+    if (!btn) return;
+    const input = root.querySelector("[data-chat-input]");
+    input.value += btn.dataset.chatEmoji || "";
+    input.focus();
+  }
+
+  function onStickerClick(e) {
+    const btn = e.target.closest("[data-chat-sticker-file]");
+    if (!btn || !activePeerId) return;
+    const packId = btn.dataset.chatStickerPack;
+    const file = btn.dataset.chatStickerFile;
+    const title = btn.dataset.chatStickerTitle || "Стикер";
+    if (!packId || !file) return;
+    const body = `${STICKER_PREFIX}${packId}/${file}|${title}${STICKER_SUFFIX}`;
+    BunkerSocial.sendChat(activePeerId, body);
+    hidePanels();
   }
 
   function togglePanel(show) {
@@ -229,6 +356,7 @@
       loadFriends();
     } else {
       activePeerId = null;
+      hidePanels();
     }
   }
 

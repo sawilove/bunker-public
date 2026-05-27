@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0a0c0a">
+  <meta name="color-scheme" content="dark">
+  <title>Бункер</title>
+  <link rel="stylesheet" href="intro.css">
+</head>
+<body>
+  <div id="intro" class="intro" aria-live="polite">
+    <!-- Экран 1: логотип -->
+    <section id="screenLogo" class="intro__screen is-active" aria-label="Загрузка">
+      <div class="intro__logo-wrap">
+        <div class="intro__logo-glow" aria-hidden="true"></div>
+        <img
+          class="intro__logo"
+          src="app_logo.jpg"
+          alt="Бункер"
+          width="280"
+          height="280"
+          decoding="async"
+        >
+      </div>
+      <p class="intro__logo-caption">Инициализация протокола</p>
+    </section>
+
+    <!-- Экран 2: заставка БУНКЕР -->
+    <section id="screenTitle" class="intro__screen intro__title-screen" aria-label="Бункер">
+      <div class="intro__scanline-bar" aria-hidden="true"></div>
+      <span class="intro__badge">Протокол выживания №7</span>
+      <h1 class="intro__title">БУНКЕР</h1>
+      <p class="intro__subtitle">Система убежища активирована</p>
+      <span class="intro__radiation" aria-hidden="true">☢</span>
+    </section>
+
+    <div id="introProgress" class="intro__progress" aria-hidden="true"></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="intro.js"></script>
+</body>
+</html>

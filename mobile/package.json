@@ -1,0 +1,23 @@
+{
+  "name": "bunker-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Мобильное приложение Бункер (Android)",
+  "scripts": {
+    "sync": "npx cap sync",
+    "open:android": "npx cap open android",
+    "build:android": "npx cap sync android && cd android && .\\gradlew assembleDebug",
+    "assets": "npx @capacitor/assets generate --android --iconBackgroundColor \"#0a0c0a\" --iconBackgroundColorDark \"#0a0c0a\" --splashBackgroundColor \"#0a0c0a\" --splashBackgroundColorDark \"#0a0c0a\""
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.2.0",
+    "@capacitor/app": "^7.0.1",
+    "@capacitor/core": "^7.2.0",
+    "@capacitor/splash-screen": "^7.0.1",
+    "@capacitor/status-bar": "^7.0.1"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.2.0"
+  }
+}

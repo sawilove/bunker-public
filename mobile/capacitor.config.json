@@ -1,0 +1,30 @@
+{
+  "appId": "ru.bunker.app",
+  "appName": "Бункер",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": [
+      "bunker-public.onrender.com",
+      "*.onrender.com",
+      "pay.cloudtips.ru",
+      "challenges.cloudflare.com"
+    ]
+  },
+  "android": {
+    "backgroundColor": "#0a0c0a"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0,
+      "launchAutoHide": true,
+      "backgroundColor": "#0a0c0a",
+      "androidSplashResourceName": "splash",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0a0c0a"
+    }
+  }
+}

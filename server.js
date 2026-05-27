@@ -51,6 +51,7 @@ mountSocialRoutes(app, io);
 app.use(express.static("public"));
 app.use("/scenarios", express.static(path.join(__dirname, "public", "scenarios")));
 app.use("/scenarios", express.static(path.join(__dirname, "resources", "scenarios")));
+app.use("/stickers", express.static(path.join(__dirname, "resources", "stickers")));
 
 app.get("/api/qr.png", async (req, res) => {
   const data = req.query.data;

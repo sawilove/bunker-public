@@ -1,0 +1,292 @@
+@import url("https://fonts.googleapis.com/css2?family=Russo+One&family=Share+Tech+Mono&display=swap");
+
+:root {
+  --bg-deep: #0a0c0a;
+  --amber: #e8a838;
+  --amber-glow: rgba(232, 168, 56, 0.45);
+  --green: #6b9e4a;
+  --text-dim: #7a8a72;
+  --font-display: "Russo One", sans-serif;
+  --font-mono: "Share Tech Mono", monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-deep);
+  color: #c8d4bc;
+  font-family: var(--font-mono);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.intro {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-deep);
+  z-index: 10;
+}
+
+.intro::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(107, 158, 74, 0.1), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(196, 74, 58, 0.08), transparent 50%);
+  pointer-events: none;
+}
+
+.intro::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.12) 2px,
+    rgba(0, 0, 0, 0.12) 4px
+  );
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.intro__screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.65s ease, visibility 0.65s ease;
+}
+
+.intro__screen.is-active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.intro__screen.is-leaving {
+  opacity: 0;
+  visibility: visible;
+}
+
+/* —— Экран 1: логотип —— */
+.intro__logo-wrap {
+  position: relative;
+  width: min(72vw, 280px);
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.intro__logo-glow {
+  position: absolute;
+  inset: -20%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--amber-glow) 0%, transparent 70%);
+  opacity: 0;
+  animation: logo-glow 2.2s ease-in-out infinite;
+}
+
+.intro__logo {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 18%;
+  box-shadow:
+    0 0 40px rgba(232, 168, 56, 0.15),
+    0 8px 32px rgba(0, 0, 0, 0.5);
+  transform: scale(0.85);
+  opacity: 0;
+  animation: logo-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.intro__logo-caption {
+  margin-top: 2rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  opacity: 0;
+  animation: fade-up 0.8s ease 0.5s forwards;
+}
+
+/* —— Экран 2: БУНКЕР —— */
+.intro__title-screen {
+  text-align: center;
+}
+
+.intro__badge {
+  display: inline-block;
+  margin-bottom: 1.25rem;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid rgba(107, 158, 74, 0.5);
+  border-radius: 2px;
+  font-size: 0.65rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--green);
+  opacity: 0;
+  animation: fade-up 0.6s ease 0.1s forwards;
+}
+
+.intro__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.8rem, 14vw, 4.5rem);
+  letter-spacing: 0.12em;
+  color: var(--amber);
+  text-shadow:
+    0 0 30px var(--amber-glow),
+    0 0 60px rgba(232, 168, 56, 0.2);
+  opacity: 0;
+  transform: scale(1.08);
+  animation: title-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
+}
+
+.intro__subtitle {
+  margin: 1rem 0 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  opacity: 0;
+  animation: fade-up 0.7s ease 0.55s forwards;
+}
+
+.intro__scanline-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--amber), transparent);
+  opacity: 0.6;
+  animation: scan 2.4s linear infinite;
+}
+
+.intro__radiation {
+  position: absolute;
+  bottom: 2.5rem;
+  font-size: 2rem;
+  color: var(--amber);
+  opacity: 0;
+  animation: pulse-rad 1.8s ease-in-out 0.4s infinite, fade-up 0.6s ease 0.7s forwards;
+}
+
+.intro__progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 0;
+  background: linear-gradient(90deg, var(--green), var(--amber));
+  box-shadow: 0 0 12px var(--amber-glow);
+  transition: width linear;
+}
+
+/* —— Переход к сайту —— */
+.intro.is-done {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+@keyframes logo-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes logo-glow {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes title-in {
+  from {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scan {
+  0% {
+    top: 15%;
+  }
+  100% {
+    top: 85%;
+  }
+}
+
+@keyframes pulse-rad {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro__logo,
+  .intro__logo-glow,
+  .intro__logo-caption,
+  .intro__badge,
+  .intro__title,
+  .intro__subtitle,
+  .intro__radiation,
+  .intro__scanline-bar {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
