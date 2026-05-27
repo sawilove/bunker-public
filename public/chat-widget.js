@@ -234,11 +234,7 @@
       img.alt = sticker.title;
       img.loading = "lazy";
       img.decoding = "async";
-      const label = document.createElement("span");
-      label.className = "chat-widget__sticker-label";
-      label.textContent = sticker.title;
       el.appendChild(img);
-      el.appendChild(label);
     } else {
       el.textContent = msg.body;
     }
@@ -266,15 +262,15 @@
     const text = String(body || "");
     if (!text.startsWith(STICKER_PREFIX) || !text.endsWith(STICKER_SUFFIX)) return null;
     const raw = text.slice(STICKER_PREFIX.length, -STICKER_SUFFIX.length);
-    const [key, title] = raw.split("|");
-    if (!key || !title) return null;
+    const [key] = raw.split("|");
+    if (!key) return null;
     const [packId, file] = key.split("/");
     if (!packId || !file) return null;
     const pack = STICKER_PACKS.find((item) => item.id === packId);
     if (!pack || !pack.stickers.some((s) => s.file === file)) return null;
     return {
       src: `/stickers/${packId}/${file}`,
-      title: title.slice(0, 80),
+      title: "Стикер",
     };
   }
 
@@ -338,9 +334,8 @@
     if (!btn || !activePeerId) return;
     const packId = btn.dataset.chatStickerPack;
     const file = btn.dataset.chatStickerFile;
-    const title = btn.dataset.chatStickerTitle || "Стикер";
     if (!packId || !file) return;
-    const body = `${STICKER_PREFIX}${packId}/${file}|${title}${STICKER_SUFFIX}`;
+    const body = `${STICKER_PREFIX}${packId}/${file}${STICKER_SUFFIX}`;
     BunkerSocial.sendChat(activePeerId, body);
     hidePanels();
   }
@@ -357,6 +352,7 @@
     } else {
       activePeerId = null;
       hidePanels();
+      root.classList.remove("chat-widget--messenger");
     }
   }
 
@@ -369,5 +365,11 @@
     }
   }
 
-  window.BunkerChatWidget = { showForLoggedIn, open, toggle: togglePanel };
+  function openMessenger() {
+    ensureWidget();
+    root.classList.add("chat-widget--messenger");
+    togglePanel(true);
+  }
+
+  window.BunkerChatWidget = { showForLoggedIn, open, toggle: togglePanel, openMessenger };
 })();

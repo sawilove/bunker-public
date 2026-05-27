@@ -14,6 +14,22 @@ const inviteToast = document.getElementById("inviteToast");
 
 let friendsData = { friends: [], incoming: [], outgoing: [] };
 let activePeerId = null;
+const STICKER_PREFIX = "[[sticker:";
+const STICKER_SUFFIX = "]]";
+
+function parseSticker(body) {
+  const text = String(body || "");
+  if (!text.startsWith(STICKER_PREFIX) || !text.endsWith(STICKER_SUFFIX)) return null;
+  const raw = text.slice(STICKER_PREFIX.length, -STICKER_SUFFIX.length);
+  const [key] = raw.split("|");
+  if (!key) return null;
+  const [packId, file] = key.split("/");
+  if (!packId || !file) return null;
+  return {
+    src: `/stickers/${packId}/${file}`,
+    alt: "Стикер",
+  };
+}
 
 function showMsg(el, msg, isError = true) {
   el.textContent = msg || "";
@@ -94,7 +110,19 @@ async function loadFriends() {
 function appendChatMessage(msg) {
   const el = document.createElement("div");
   el.className = `friends-chat__msg ${msg.mine ? "friends-chat__msg--mine" : ""}`;
-  el.textContent = msg.body;
+  const sticker = parseSticker(msg.body);
+  if (sticker) {
+    el.classList.add("friends-chat__msg--sticker");
+    const img = document.createElement("img");
+    img.className = "friends-chat__sticker";
+    img.src = sticker.src;
+    img.alt = sticker.alt;
+    img.loading = "lazy";
+    img.decoding = "async";
+    el.appendChild(img);
+  } else {
+    el.textContent = msg.body;
+  }
   chatMessages.appendChild(el);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }

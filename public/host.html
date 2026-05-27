@@ -123,6 +123,14 @@
   <script src="/chat-widget.js"></script>
   <script src="/bunker-runtime.js"></script>
   <script src="/scenario-theme.js"></script>
+  <script>
+    (function () {
+      const isMobileViewport = window.matchMedia("(max-width: 900px)").matches;
+      if (!isMobileViewport) return;
+      const target = `${location.origin}${BunkerRuntime.pageUrl("player.html")}`;
+      location.replace(target);
+    })();
+  </script>
   <script src="/host.js"></script>
 </body>
 </html>
