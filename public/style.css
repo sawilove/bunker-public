@@ -4067,6 +4067,14 @@ body.host .chat-widget {
   box-shadow: var(--shadow);
 }
 
+body.mobile-app-shell .mobile-dock {
+  display: grid;
+}
+
+body.mobile-app-shell.host .mobile-dock {
+  display: none;
+}
+
 .mobile-dock__btn {
   display: inline-flex;
   align-items: center;
@@ -4087,6 +4095,14 @@ body.host .chat-widget {
   border-color: var(--amber);
   background: rgba(232, 168, 56, 0.15);
   color: var(--amber);
+}
+
+body.mobile-app-shell .page--with-topbar {
+  padding-bottom: 4.9rem;
+}
+
+body.mobile-app-shell .chat-widget__fab {
+  display: none;
 }
 
 body.mobile-compact-ui .mobile-dock__btn {

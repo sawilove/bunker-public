@@ -11,6 +11,18 @@
     menu: `<svg class="site-topbar__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>`,
   };
 
+  function detectMobileAppShell() {
+    const ua = navigator.userAgent || "";
+    const byUa = /(Android|iPhone|iPad|iPod|Mobile|wv)/i.test(ua);
+    const byCapacitor = !!window.Capacitor?.isNativePlatform?.();
+    return byUa || byCapacitor;
+  }
+
+  if (detectMobileAppShell()) {
+    document.documentElement.classList.add("mobile-app-shell");
+    document.body?.classList.add("mobile-app-shell");
+  }
+
   function bindCompactMenu() {
     const toggle = mount.querySelector("[data-topbar-menu-toggle]");
     const menu = mount.querySelector("[data-topbar-menu]");
