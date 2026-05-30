@@ -278,26 +278,48 @@ function classicScenarioCardHtml(b) {
     </button>`;
 }
 
+function authorAvatarSrc(b) {
+  if (b.authorAvatarUrl) return playerAvatarUrl(b.authorAvatarUrl);
+  return BunkerRuntime.assetUrl("icons/default-avatar.svg");
+}
+
+function communityAuthorHtml(b) {
+  if (!b.authorNickname) return "";
+  const profileHref = b.authorProfileId
+    ? BunkerAuth.profileUrl(b.authorProfileId)
+    : b.authorId
+      ? BunkerAuth.profileUrl(b.authorId)
+      : "";
+  if (!profileHref) return "";
+  const av = authorAvatarSrc(b);
+  return `<span class="scenario-card__author" onclick="event.stopPropagation()">
+      <a href="${escapeHtml(profileHref)}" class="scenario-card__author-link" title="Профиль автора">
+        <img class="scenario-card__author-avatar" src="${escapeHtml(av)}" alt="" loading="lazy">
+        <span class="scenario-card__author-name">@${escapeHtml(b.authorNickname)}</span>
+      </a>
+    </span>`;
+}
+
 function communityScenarioCardHtml(b) {
-  const author = b.authorNickname ? `@${escapeHtml(b.authorNickname)}` : "";
   const published = formatScenarioDate(b.publishedAt || b.reviewedAt);
   const games = pluralGames(b.playCount || 0);
-  return `<button type="button" class="scenario-catalog-card scenario-card" data-id="${escapeHtml(b.id)}" aria-selected="false"
+  const meta =
+    published || b.playCount
+      ? `<span class="scenario-card__meta">${published ? `<time>${escapeHtml(published)}</time>` : ""}${b.playCount != null ? `<span>${escapeHtml(games)}</span>` : ""}</span>`
+      : "";
+  return `<button type="button" class="scenario-card scenario-card--community" data-id="${escapeHtml(b.id)}" aria-selected="false"
       title="${escapeHtml(b.title)}">
-      <span class="scenario-catalog-card__media">${scenarioCardImgHtml(b)}${scenarioTagsHtml(b.tags)}</span>
-      <span class="scenario-catalog-card__body">
-        <span class="scenario-catalog-card__title">${escapeHtml(b.title)}</span>
-        ${author ? `<span class="scenario-catalog-card__author">${author}</span>` : ""}
-        <span class="scenario-catalog-card__meta">
-          ${published ? `<time>${escapeHtml(published)}</time>` : ""}
-          <span class="scenario-catalog-card__plays">${escapeHtml(games)}</span>
-        </span>
+      <span class="scenario-card__media">${scenarioCardImgHtml(b)}${scenarioTagsHtml(b.tags)}</span>
+      <span class="scenario-card__label">
+        <span class="scenario-card__label-title">${escapeHtml(b.title)}</span>
+        ${communityAuthorHtml(b)}
+        ${meta}
       </span>
     </button>`;
 }
 
 function bindScenarioCards(root) {
-  root.querySelectorAll(".scenario-card, .scenario-catalog-card").forEach((card) => {
+  root.querySelectorAll(".scenario-card").forEach((card) => {
     card.addEventListener("click", () => {
       if (card.dataset.random === "true") {
         selectScenario(null, true);
@@ -336,9 +358,7 @@ function buildScenarioGrid(backstories) {
   } else if (!communityList.length) {
     communityPanel = `<p class="scenario-grid__hint">Пока нет одобренных пользовательских катастроф.</p>`;
   } else {
-    communityPanel = `<div class="scenario-community-list">${communityList
-      .map((b) => communityScenarioCardHtml(b))
-      .join("")}</div>`;
+    communityPanel = communityList.map((b) => communityScenarioCardHtml(b)).join("");
   }
 
   const mineBtn = canManageDisasters()
@@ -360,7 +380,7 @@ function buildScenarioGrid(backstories) {
     <div class="scenario-grid scenario-picker__panel${scenarioTab === "classic" ? "" : " hidden"}" data-tab-panel="classic" role="tabpanel">
       ${classicCards}${randomCard}
     </div>
-    <div class="scenario-picker__panel${scenarioTab === "community" ? "" : " hidden"}" data-tab-panel="community" role="tabpanel">
+    <div class="scenario-grid scenario-picker__panel${scenarioTab === "community" ? "" : " hidden"}" data-tab-panel="community" role="tabpanel">
       ${communityPanel}
     </div>
     <div class="scenario-picker__tools">${mineBtn}${devTools}</div>`;

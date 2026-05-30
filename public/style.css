@@ -1174,6 +1174,58 @@ input[type="range"]::-moz-range-thumb {
   background: var(--bg-card);
 }
 
+.scenario-card--community .scenario-card__label {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  text-align: left;
+}
+
+.scenario-card__label-title {
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.scenario-card__author-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-decoration: none;
+  max-width: 100%;
+}
+
+.scenario-card__author-link:hover {
+  color: var(--amber);
+}
+
+.scenario-card__author-avatar {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+
+.scenario-card__author-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scenario-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
 .scenario-card--random .scenario-card__random-mark {
   display: flex;
   align-items: center;
@@ -1396,6 +1448,43 @@ input[type="range"]::-moz-range-thumb {
   width: min(520px, 100%);
   max-height: min(90vh, 720px);
   overflow-y: auto;
+}
+
+.scenario-editor__card--wide {
+  width: min(580px, 100%);
+}
+
+.scenario-editor__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.scenario-editor__tab {
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.scenario-editor__tab--active {
+  border-color: var(--amber);
+  color: var(--amber);
+  background: rgba(232, 168, 56, 0.08);
+}
+
+.scenario-editor__panel.hidden {
+  display: none;
+}
+
+.scenario-editor__panel .scenario-editor__scroll {
+  max-height: 42vh;
 }
 
 .scenario-editor__close {

@@ -67,6 +67,24 @@ function sanitizeTags(raw) {
     .slice(0, 8);
 }
 
+function authorAvatarUrlFromRow(row) {
+  if (!row?.author_avatar_webp && !row?.avatar_webp) return null;
+  const authorId = row.author_id;
+  if (!authorId) return null;
+  const updated = row.author_avatar_updated_at || row.avatar_updated_at;
+  const v =
+    updated instanceof Date
+      ? updated.getTime()
+      : updated
+        ? new Date(updated).getTime()
+        : Date.now();
+  return `/api/avatars/${authorId}?v=${v}`;
+}
+
+function authorProfileIdFromRow(row) {
+  return row?.author_profile_id || row?.profile_id || row?.author_id || null;
+}
+
 function bunkerRollIdForEntry(entry) {
   if (entry.cardPoolPreset === "18plus") return "vulgar";
   return "nuclear";
@@ -102,6 +120,8 @@ function rowToEntry(row) {
     tags: Array.isArray(row.tags) ? row.tags : [],
     playCount: row.play_count != null ? Number(row.play_count) : 0,
     authorNickname: row.author_nickname || null,
+    authorProfileId: authorProfileIdFromRow(row),
+    authorAvatarUrl: authorAvatarUrlFromRow(row),
     publishedAt: row.reviewed_at || row.updated_at || null,
   };
   if (entry.cardPoolPreset === "18plus") entry.badge = "Сценарий 18+";
@@ -124,6 +144,8 @@ function entryToBackstory(entry) {
     tags: entry.tags || [],
     playCount: entry.playCount || 0,
     authorNickname: entry.authorNickname || null,
+    authorProfileId: entry.authorProfileId || null,
+    authorAvatarUrl: entry.authorAvatarUrl || null,
     publishedAt: entry.publishedAt || entry.reviewedAt || null,
     reviewedAt: entry.reviewedAt || null,
   };
@@ -132,7 +154,8 @@ function entryToBackstory(entry) {
 async function refreshPublishedCache() {
   try {
     const { rows } = await getPool().query(
-      `SELECT sc.*, u.nickname AS author_nickname
+      `SELECT sc.*, u.nickname AS author_nickname, u.profile_id AS author_profile_id,
+              u.avatar_webp AS author_avatar_webp, u.avatar_updated_at AS author_avatar_updated_at
        FROM scenario_catalog sc
        JOIN users u ON u.id = sc.author_id
        WHERE sc.status = 'published'
@@ -330,6 +353,22 @@ async function setCoverWebp(authorId, id, webpBuffer) {
   return { ok: true, entry: await getEntryById(id) };
 }
 
+async function clearCoverWebp(authorId, id) {
+  const entry = await getEntryById(id);
+  if (!entry || entry.authorId !== authorId) {
+    return { ok: false, error: "Сценарий не найден." };
+  }
+  if (entry.status === "pending") {
+    return { ok: false, error: "Нельзя менять обложку во время модерации." };
+  }
+  await getPool().query(
+    `UPDATE scenario_catalog SET cover_webp = NULL, updated_at = NOW() WHERE id = $1`,
+    [id]
+  );
+  if (entry.status === "published") await refreshPublishedCache();
+  return { ok: true, entry: await getEntryById(id) };
+}
+
 async function getCoverBuffer(catalogId) {
   const { rows } = await getPool().query(
     `SELECT cover_webp FROM scenario_catalog WHERE id = $1`,
@@ -422,6 +461,7 @@ module.exports = {
   approveScenario,
   rejectScenario,
   setCoverWebp,
+  clearCoverWebp,
   getCoverBuffer,
   processCoverUpload,
   deleteByAuthor,

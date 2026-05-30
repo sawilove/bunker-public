@@ -318,6 +318,10 @@
     });
   }
 
+  async function clearScenarioCover(id) {
+    return api(`/api/scenarios/${encodeURIComponent(id)}/cover`, { method: "DELETE" });
+  }
+
   async function getDevPendingScenarios() {
     return api("/api/dev/scenarios/pending");
   }
@@ -432,6 +436,7 @@
     submitScenario,
     deleteScenario,
     uploadScenarioCover,
+    clearScenarioCover,
     getDevPendingScenarios,
     approveScenario,
     rejectScenario,

@@ -23,6 +23,7 @@
 
   function close() {
     overlay?.classList.add("hidden");
+    overlay?.querySelector(".scenario-editor__card")?.classList.remove("scenario-editor__card--wide");
   }
 
   function openModal(title, bodyHtml, onSave) {
@@ -173,7 +174,7 @@
     "scene8",
   ];
 
-  function renderScenePicker(selected, coverPreviewUrl) {
+  function renderScenePicker(selected, coverPreviewUrl, hasCustomCover) {
     const tiles = SCENE_KEYS.map((s) => {
       const src = BunkerRuntime.assetUrl(`scenarios/${s}.png`);
       const sel = selected === s ? " scenario-editor__scene--selected" : "";
@@ -181,17 +182,26 @@
         <img src="${src}" alt="" loading="lazy">
       </button>`;
     }).join("");
-    const preview = coverPreviewUrl
-      ? `<img class="scenario-editor__cover-preview" src="${esc(coverPreviewUrl)}" alt="">`
-      : `<span class="scenario-editor__cover-placeholder">Превью обложки</span>`;
+    let preview;
+    if (coverPreviewUrl) {
+      preview = `<img class="scenario-editor__cover-preview" src="${esc(coverPreviewUrl)}" alt="">`;
+    } else if (selected) {
+      preview = `<img class="scenario-editor__cover-preview" src="${esc(BunkerRuntime.assetUrl(`scenarios/${selected}.png`))}" alt="">`;
+    } else {
+      preview = `<span class="scenario-editor__cover-placeholder">Превью обложки</span>`;
+    }
+    const clearBtn = hasCustomCover
+      ? `<button type="button" class="btn btn--small" data-clear-cover>Убрать свою обложку</button>`
+      : "";
     return `
-      <p class="scenario-editor__hint">Выберите фон карточки как у классических сценариев (4:3).</p>
+      <p class="scenario-editor__hint">Выберите фон карточки как у классических сценариев (4:3) или загрузите свою обложку.</p>
       <div class="scenario-editor__scene-grid">${tiles}</div>
       <label class="field">
         <span class="field__label">Своя обложка (опционально)</span>
         <input type="file" accept="image/*" data-cover-file>
       </label>
       <div class="scenario-editor__cover-preview-wrap">${preview}</div>
+      ${clearBtn}
       <input type="hidden" data-scene-selected value="${esc(selected || "")}">`;
   }
 
@@ -206,18 +216,50 @@
     return { x: 0, y: (1 - h) / 2, w: 1, h };
   }
 
-  function bindScenePicker(card) {
+  function updateCoverPreview(card, src) {
+    const previewWrap = card.querySelector(".scenario-editor__cover-preview-wrap");
+    if (!previewWrap || !src) return;
+    const img = document.createElement("img");
+    img.className = "scenario-editor__cover-preview";
+    img.alt = "";
+    img.src = src;
+    previewWrap.replaceChildren(img);
+  }
+
+  function bindScenePicker(card, initialHadCover) {
+    if (initialHadCover) card.dataset.hadCover = "1";
     const hidden = card.querySelector("[data-scene-selected]");
+    const fileInput = card.querySelector("[data-cover-file]");
+    const previewWrap = card.querySelector(".scenario-editor__cover-preview-wrap");
+
     card.querySelectorAll(".scenario-editor__scene").forEach((btn) => {
       btn.addEventListener("click", () => {
         card.querySelectorAll(".scenario-editor__scene").forEach((b) => {
           b.classList.toggle("scenario-editor__scene--selected", b === btn);
         });
-        if (hidden) hidden.value = btn.dataset.sceneKey;
+        const key = btn.dataset.sceneKey;
+        if (hidden) hidden.value = key;
+        delete card.dataset.coverDataUrl;
+        delete card.dataset.coverCrop;
+        if (fileInput) fileInput.value = "";
+        if (card.dataset.hadCover === "1") card.dataset.coverCleared = "1";
+        updateCoverPreview(card, BunkerRuntime.assetUrl(`scenarios/${key}.png`));
       });
     });
-    const fileInput = card.querySelector("[data-cover-file]");
-    const previewWrap = card.querySelector(".scenario-editor__cover-preview-wrap");
+
+    card.querySelector("[data-clear-cover]")?.addEventListener("click", () => {
+      delete card.dataset.coverDataUrl;
+      delete card.dataset.coverCrop;
+      if (fileInput) fileInput.value = "";
+      card.dataset.coverCleared = "1";
+      const key = hidden?.value;
+      if (key) {
+        updateCoverPreview(card, BunkerRuntime.assetUrl(`scenarios/${key}.png`));
+      } else if (previewWrap) {
+        previewWrap.innerHTML = `<span class="scenario-editor__cover-placeholder">Превью обложки</span>`;
+      }
+    });
+
     if (!fileInput || !previewWrap) return;
     fileInput.addEventListener("change", () => {
       const file = fileInput.files?.[0];
@@ -225,15 +267,51 @@
       const reader = new FileReader();
       reader.onload = () => {
         card.dataset.coverDataUrl = reader.result;
+        delete card.dataset.coverCleared;
         const img = new Image();
         img.onload = () => {
           card.dataset.coverCrop = JSON.stringify(centerCrop43(img.width, img.height));
-          previewWrap.innerHTML = `<img class="scenario-editor__cover-preview" src="${reader.result}" alt="">`;
+          card.querySelectorAll(".scenario-editor__scene").forEach((b) => {
+            b.classList.remove("scenario-editor__scene--selected");
+          });
+          if (hidden) hidden.value = "";
+          card.dataset.hadCover = "1";
+          delete card.dataset.coverCleared;
+          updateCoverPreview(card, reader.result);
         };
         img.src = reader.result;
       };
       reader.readAsDataURL(file);
     });
+  }
+
+  function bindEditorTabs(card) {
+    const panels = card.querySelectorAll("[data-editor-panel]");
+    card.querySelectorAll("[data-editor-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const tab = btn.dataset.editorTab;
+        card.querySelectorAll("[data-editor-tab]").forEach((b) => {
+          const active = b.dataset.editorTab === tab;
+          b.classList.toggle("scenario-editor__tab--active", active);
+          b.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        panels.forEach((panel) => {
+          panel.classList.toggle("hidden", panel.dataset.editorPanel !== tab);
+        });
+      });
+    });
+  }
+
+  async function applyCoverChanges(card, catalogId) {
+    if (card.dataset.coverDataUrl) {
+      const crop = JSON.parse(card.dataset.coverCrop || "{}");
+      await BunkerAuth.uploadScenarioCover(catalogId, card.dataset.coverDataUrl, crop);
+      delete card.dataset.coverCleared;
+      return;
+    }
+    if (card.dataset.coverCleared === "1") {
+      await BunkerAuth.clearScenarioCover(catalogId);
+    }
   }
 
   function renderPoolPresetSection(preset, cardTypes, pools, customPools) {
@@ -326,28 +404,42 @@
     const deleteBtn = initial?.catalogId
       ? `<button type="button" class="btn btn--danger" data-delete-scenario>Удалить катастрофу</button>`
       : "";
+    const sceneKey = initial?.sceneKey || initial?.scene || "";
+    const hasCustomCover = !!(initial?.coverUrl || initial?.hasCover);
+    const coverPreview = hasCustomCover ? BunkerAuth.scenarioCoverUrl(initial.coverUrl) : "";
+    const poolSection = renderPoolPresetSection(
+      initial?.cardPoolPreset,
+      catalog.cardTypes,
+      catalog.cardPools,
+      initial?.cardPoolCustom
+    );
     const body = `
       <p class="scenario-editor__hint">Черновик можно отправить на модерацию. После одобления сценарий появится в каталоге.</p>
       ${publishedHint}
-      <label class="field"><span class="field__label">Название</span>
-        <input type="text" data-pub-title maxlength="80" value="${esc(initial?.title || "")}"></label>
-      <label class="field"><span class="field__label">Описание</span>
-        <textarea data-pub-text rows="5" maxlength="4000">${esc(initial?.text || "")}</textarea></label>
-      <label class="field"><span class="field__label">Подпись срока / места</span>
-        <input type="text" data-pub-location maxlength="80" value="${esc(initial?.locationLabel || "В бункере")}"></label>
-      <label class="field"><span class="field__label">Теги</span>
-        <input type="text" data-pub-tags maxlength="200" placeholder="через запятую, до 8 тегов" value="${esc(tagsValue)}"></label>
-      ${renderScenePicker(initial?.sceneKey || initial?.scene, initial?.coverUrl ? BunkerAuth.scenarioCoverUrl(initial.coverUrl) : "")}
-      ${renderPoolPresetSection(
-        initial?.cardPoolPreset,
-        catalog.cardTypes,
-        catalog.cardPools,
-        initial?.cardPoolCustom
-      )}
+      <div class="scenario-editor__tabs" role="tablist" aria-label="Редактор катастрофы">
+        <button type="button" class="scenario-editor__tab scenario-editor__tab--active" data-editor-tab="scenario" role="tab" aria-selected="true">Катастрофа</button>
+        <button type="button" class="scenario-editor__tab" data-editor-tab="pools" role="tab" aria-selected="false">Пак характеристик</button>
+      </div>
+      <div data-editor-panel="scenario" class="scenario-editor__panel">
+        <label class="field"><span class="field__label">Название</span>
+          <input type="text" data-pub-title maxlength="80" value="${esc(initial?.title || "")}"></label>
+        <label class="field"><span class="field__label">Описание</span>
+          <textarea data-pub-text rows="5" maxlength="4000">${esc(initial?.text || "")}</textarea></label>
+        <label class="field"><span class="field__label">Подпись срока / места</span>
+          <input type="text" data-pub-location maxlength="80" value="${esc(initial?.locationLabel || "В бункере")}"></label>
+        <label class="field"><span class="field__label">Теги</span>
+          <input type="text" data-pub-tags maxlength="200" placeholder="через запятую, до 8 тегов" value="${esc(tagsValue)}"></label>
+        ${renderScenePicker(sceneKey, coverPreview, hasCustomCover)}
+      </div>
+      <div data-editor-panel="pools" class="scenario-editor__panel hidden">
+        <p class="scenario-editor__hint">Стандартный и 18+ — встроенные паки. «Свой» — ваши списки значений по категориям карт.</p>
+        ${poolSection}
+      </div>
       <input type="hidden" data-scenario-id value="${esc(initial?.catalogId || "")}">`;
 
     const el = ensureOverlay();
     const card = el.querySelector(".scenario-editor__card");
+    card.classList.add("scenario-editor__card--wide");
     card.innerHTML = `
       <button type="button" class="scenario-editor__close" aria-label="Закрыть">×</button>
       <h2 class="scenario-editor__title">Публикация в каталог</h2>
@@ -361,8 +453,9 @@
         <button type="button" class="btn" data-editor-cancel>Отмена</button>
       </div>`;
     el.classList.remove("hidden");
-    bindScenePicker(card);
+    bindScenePicker(card, hasCustomCover);
     bindPoolPreset(card);
+    bindEditorTabs(card);
     card.querySelector(".scenario-editor__close").addEventListener("click", close);
     card.querySelector("[data-editor-cancel]").addEventListener("click", close);
 
@@ -389,10 +482,7 @@
         tags: form.tags,
       });
       card.querySelector("[data-scenario-id]").value = scenario.catalogId;
-      if (card.dataset.coverDataUrl) {
-        const crop = JSON.parse(card.dataset.coverCrop || "{}");
-        await BunkerAuth.uploadScenarioCover(scenario.catalogId, card.dataset.coverDataUrl, crop);
-      }
+      await applyCoverChanges(card, scenario.catalogId);
       if (submit) {
         await BunkerAuth.submitScenario(scenario.catalogId);
         okEl.textContent = "Отправлено на модерацию.";
