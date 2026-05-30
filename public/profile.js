@@ -114,7 +114,7 @@
     }
   }
 
-  function renderProfileHero(user, publishedScenarioCount = 0, displayedAchievements = []) {
+  function renderProfileHero(user, publishedScenarioCount = 0, displayedAchievements = [], achievementsUnlockedCount = 0) {
 
     const av = BunkerAuth.assetUrl(user.avatarUrl || "/icons/default-avatar.svg");
 
@@ -168,6 +168,8 @@
               <span class="profile-stat">Игр: <strong>${user.gamesPlayed ?? 0}</strong></span>
 
               <span class="profile-stat">Выживаний: <strong>${user.bunkerSurvivals ?? 0}</strong></span>
+
+              <span class="profile-stat">Достижений: <strong>${achievementsUnlockedCount}</strong></span>
 
               ${publishedScenarioCount > 0 ? `<span class="profile-stat">Катастроф в каталоге: <strong>${publishedScenarioCount}</strong></span>` : ""}
 
@@ -331,7 +333,7 @@
 
             <span class="field__label">Медали на баннере</span>
 
-            <p class="field__hint">Выберите до 5 полученных достижений — они отображаются справа от аватарки.</p>
+            <p class="field__hint">Выберите до 3 полученных достижений — они отображаются справа от аватарки в ряд.</p>
 
             <div id="achievementPicker" class="achievement-picker">Загрузка…</div>
 
@@ -499,9 +501,9 @@
 
           }
 
-          if (editDisplayedAchievementIds.length >= 5) {
+          if (editDisplayedAchievementIds.length >= 3) {
 
-            showEditError("Можно показать не более 5 медалей.");
+            showEditError("Можно показать не более 3 медалей.");
 
             return;
 
@@ -781,6 +783,8 @@
 
     const displayedAchievements = meta.displayedAchievements || [];
 
+    const achievementsUnlockedCount = meta.achievementsUnlockedCount ?? 0;
+
 
 
     document.title = `Бункер — ${user.nickname}`;
@@ -811,7 +815,7 @@
 
         : `
 
-          ${renderProfileHero(user, publishedScenarioCount, displayedAchievements)}
+          ${renderProfileHero(user, publishedScenarioCount, displayedAchievements, achievementsUnlockedCount)}
 
           <div class="profile-view__actions">
 
@@ -897,6 +901,8 @@
       publishedScenarioCount: data.publishedScenarioCount ?? 0,
 
       displayedAchievements: data.displayedAchievements || [],
+
+      achievementsUnlockedCount: data.achievementsUnlockedCount ?? 0,
 
     }, mode);
 
@@ -1026,6 +1032,7 @@
         friendsHidden: data.friendsHidden,
         publishedScenarioCount: data.publishedScenarioCount ?? 0,
         displayedAchievements: data.displayedAchievements || [],
+        achievementsUnlockedCount: data.achievementsUnlockedCount ?? 0,
       }, mode);
     } catch (err) {
       if (err?.status === 401 && !me) {

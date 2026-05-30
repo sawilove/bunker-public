@@ -1,17 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img">
   <defs>
-    <linearGradient id="gdqnfk5" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#353540"/>
+    <linearGradient id="ggoldstar" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4a4018"/>
       <stop offset="100%" stop-color="#0a0c0a"/>
     </linearGradient>
-    <filter id="shgdqnfk5">
+    <filter id="shggoldstar">
       <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000" flood-opacity="0.6"/>
     </filter>
   </defs>
-  <path d="M16 50 L24 42 L40 42 L48 50 L40 58 L24 58 Z" fill="#5a1818" filter="url(#shgdqnfk5)"/>
-  <path d="M20 50 L32 44 L44 50 L32 55 Z" fill="#e0e0e8" opacity="0.75"/>
-  <circle cx="32" cy="28" r="23" fill="#1a1f18" stroke="#a8a8b0" stroke-width="2.5"/>
-  <circle cx="32" cy="28" r="18" fill="url(#gdqnfk5)" stroke="#a8a8b0" stroke-width="1.5" opacity="0.95"/>
-  <circle cx="32" cy="28" r="14" fill="none" stroke="#e0e0e8" stroke-width="0.8" opacity="0.5"/>
-  <polygon points="32,19 34.5,27 43,27 36,32 38.5,40 32,35 25.5,40 28,32 21,27 29.5,27" fill="#e0e0e8" opacity="0.9"/>
+  <path d="M16 50 L24 42 L40 42 L48 50 L40 58 L24 58 Z" fill="#5a1818" filter="url(#shggoldstar)"/>
+  <path d="M20 50 L32 44 L44 50 L32 55 Z" fill="#ffe066" opacity="0.75"/>
+  <circle cx="32" cy="28" r="23" fill="#1a1f18" stroke="#d4af37" stroke-width="2.5"/>
+  <circle cx="32" cy="28" r="18" fill="url(#ggoldstar)" stroke="#d4af37" stroke-width="1.5" opacity="0.95"/>
+  <circle cx="32" cy="28" r="14" fill="none" stroke="#ffe066" stroke-width="0.8" opacity="0.5"/>
+  <g transform="translate(32, 27.5)"><polygon points="0.00,-9.00 2.23,-3.07 8.56,-2.78 3.61,1.17 5.29,7.28 0.00,3.80 -5.29,7.28 -3.61,1.17 -8.56,-2.78 -2.23,-3.07" fill="#ffe066" opacity="0.9"/></g>
 </svg>

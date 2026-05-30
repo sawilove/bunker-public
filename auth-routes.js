@@ -21,7 +21,7 @@ const {
 } = require("./user-store");
 const catalogRuntime = require("./catalog-runtime");
 const { enrichPublicUser, getFriendship, listFriends } = require("./social-store");
-const { getDisplayedAchievementsPublic, syncAchievementsForUser } = require("./achievement-store");
+const { getDisplayedAchievementsPublic, syncAchievementsForUser, getUnlockedCount } = require("./achievement-store");
 
 const GUEST_AVATAR = "/icons/guest-avatar.svg";
 const DEFAULT_AVATAR = "/icons/default-avatar.svg";
@@ -212,6 +212,7 @@ function mountAuthRoutes(app) {
       const publishedScenarioCount = await scenarioCatalog.countPublishedByAuthor(user.id);
       await syncAchievementsForUser(user.id);
       const displayedAchievements = await getDisplayedAchievementsPublic(user.id);
+      const achievementsUnlockedCount = await getUnlockedCount(user.id);
       res.json({
         user: await enrichPublicUser(user),
         friendship,
@@ -220,6 +221,7 @@ function mountAuthRoutes(app) {
         friendsHidden: !!user.friendsHidden,
         publishedScenarioCount,
         displayedAchievements,
+        achievementsUnlockedCount,
       });
     } catch (err) {
       console.error("user profile error", err);

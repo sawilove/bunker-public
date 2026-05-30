@@ -1,17 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img">
   <defs>
-    <linearGradient id="gxz3hgz" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="gbronzestar" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#4a3520"/>
       <stop offset="100%" stop-color="#0a0c0a"/>
     </linearGradient>
-    <filter id="shgxz3hgz">
+    <filter id="shgbronzestar">
       <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000" flood-opacity="0.6"/>
     </filter>
   </defs>
-  <path d="M16 50 L24 42 L40 42 L48 50 L40 58 L24 58 Z" fill="#5a1818" filter="url(#shgxz3hgz)"/>
+  <path d="M16 50 L24 42 L40 42 L48 50 L40 58 L24 58 Z" fill="#5a1818" filter="url(#shgbronzestar)"/>
   <path d="M20 50 L32 44 L44 50 L32 55 Z" fill="#d4a574" opacity="0.75"/>
   <circle cx="32" cy="28" r="23" fill="#1a1f18" stroke="#b87333" stroke-width="2.5"/>
-  <circle cx="32" cy="28" r="18" fill="url(#gxz3hgz)" stroke="#b87333" stroke-width="1.5" opacity="0.95"/>
+  <circle cx="32" cy="28" r="18" fill="url(#gbronzestar)" stroke="#b87333" stroke-width="1.5" opacity="0.95"/>
   <circle cx="32" cy="28" r="14" fill="none" stroke="#d4a574" stroke-width="0.8" opacity="0.5"/>
-  <rect x="24" y="22" width="16" height="16" rx="2" fill="#1a1f18" stroke="#d4a574" stroke-width="1.2"/><circle cx="28" cy="26" r="1.5" fill="#d4a574"/><circle cx="36" cy="34" r="1.5" fill="#d4a574"/>
+  <g transform="translate(32, 27.5)"><polygon points="0.00,-9.00 2.23,-3.07 8.56,-2.78 3.61,1.17 5.29,7.28 0.00,3.80 -5.29,7.28 -3.61,1.17 -8.56,-2.78 -2.23,-3.07" fill="#d4a574" opacity="0.9"/></g>
 </svg>

@@ -238,11 +238,21 @@ async function setDisplayedAchievements(userId, ids) {
   return { ok: true, displayed: normalized };
 }
 
+async function getUnlockedCount(userId) {
+  await syncAchievementsForUser(userId);
+  const ctx = await buildAchievementContext(userId);
+  const unlockedMap = await getUnlockedMap(userId);
+  return ACHIEVEMENT_LIST.filter(
+    (ach) => unlockedMap.has(ach.id) || (ctx && isAchievementUnlocked(ach, ctx, unlockedMap))
+  ).length;
+}
+
 module.exports = {
   syncAchievementsForUser,
   getAchievementsForUser,
   getDisplayedAchievementsPublic,
   setDisplayedAchievements,
   grantAchievement,
+  getUnlockedCount,
   MAX_DISPLAYED_ACHIEVEMENTS,
 };

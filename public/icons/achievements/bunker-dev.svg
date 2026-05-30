@@ -1,17 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img">
   <defs>
-    <linearGradient id="gh7hd6e" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="gdevcode" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#3a1515"/>
       <stop offset="100%" stop-color="#0a0c0a"/>
     </linearGradient>
-    <filter id="shgh7hd6e">
+    <filter id="shgdevcode">
       <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000" flood-opacity="0.6"/>
     </filter>
   </defs>
-  <path d="M16 50 L24 42 L40 42 L48 50 L40 58 L24 58 Z" fill="#5a1818" filter="url(#shgh7hd6e)"/>
+  <path d="M16 50 L24 42 L40 42 L48 50 L40 58 L24 58 Z" fill="#5a1818" filter="url(#shgdevcode)"/>
   <path d="M20 50 L32 44 L44 50 L32 55 Z" fill="#ff6060" opacity="0.75"/>
   <circle cx="32" cy="28" r="23" fill="#1a1f18" stroke="#c03030" stroke-width="2.5"/>
-  <circle cx="32" cy="28" r="18" fill="url(#gh7hd6e)" stroke="#c03030" stroke-width="1.5" opacity="0.95"/>
+  <circle cx="32" cy="28" r="18" fill="url(#gdevcode)" stroke="#c03030" stroke-width="1.5" opacity="0.95"/>
   <circle cx="32" cy="28" r="14" fill="none" stroke="#ff6060" stroke-width="0.8" opacity="0.5"/>
-  <text x="32" y="34" text-anchor="middle" font-size="14" font-family="monospace" fill="#ff6060">&lt;/&gt;</text>
+  <g transform="translate(32, 27.5)"><text x="0" y="4" text-anchor="middle" font-size="13" font-family="monospace" fill="#ff6060">&lt;/&gt;</text></g>
 </svg>
