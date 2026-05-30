@@ -314,11 +314,10 @@ function communityScenarioCardHtml(b) {
       : "";
   return `<button type="button" class="scenario-card scenario-card--community" data-id="${escapeHtml(b.id)}" aria-selected="false"
       title="${escapeHtml(b.title)}">
-      <span class="scenario-card__media">${scenarioCardImgHtml(b)}${scenarioTagsHtml(b.tags)}</span>
+      <span class="scenario-card__media">${scenarioCardImgHtml(b)}${scenarioTagsHtml(b.tags)}${BunkerScenarioCatalogUi?.socialHoverHtml?.(b.id) || ""}</span>
       <span class="scenario-card__label">
         <span class="scenario-card__label-title">${escapeHtml(b.title)}</span>
         ${communityAuthorHtml(b)}
-        ${BunkerScenarioCatalogUi?.socialButtonsHtml?.(b.id) || ""}
         ${meta}
       </span>
     </button>`;

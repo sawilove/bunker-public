@@ -18,11 +18,14 @@ async function recordActivity(userId, type, payload = {}) {
   return id;
 }
 
+const GLOBAL_TYPES = ["scenario_published", "survival_milestone"];
+const FRIENDS_TYPES = [...PUBLIC_TYPES];
+
 async function listActivity({ scope = "global", userId = null, limit = 30, before = null }) {
   const cap = Math.min(Math.max(1, limit), 50);
   const params = [];
   let where = "WHERE ae.type = ANY($1::text[])";
-  params.push([...PUBLIC_TYPES]);
+  params.push(scope === "friends" ? FRIENDS_TYPES : GLOBAL_TYPES);
 
   if (scope === "friends" && userId) {
     params.push(userId);

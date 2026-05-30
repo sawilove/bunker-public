@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img">
+  <defs>
+    <linearGradient id="gtopten" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5b21b6"/>
+      <stop offset="100%" stop-color="#1e1033"/>
+    </linearGradient>
+    <filter id="shtopten">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+  <path d="M16 50 L24 42 L40 42 L48 50 L40 58 L24 58 Z" fill="#4c1d95" filter="url(#shtopten)"/>
+  <path d="M20 50 L32 44 L44 50 L32 55 Z" fill="#c4b5fd" opacity="0.75"/>
+  <circle cx="32" cy="28" r="23" fill="#1a1028" stroke="#a78bfa" stroke-width="2.5"/>
+  <circle cx="32" cy="28" r="18" fill="url(#gtopten)" stroke="#a78bfa" stroke-width="1.5" opacity="0.95"/>
+  <circle cx="32" cy="28" r="14" fill="none" stroke="#ddd6fe" stroke-width="0.8" opacity="0.55"/>
+  <text x="32" y="33" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#ede9fe">10</text>
+</svg>

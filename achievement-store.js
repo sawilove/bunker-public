@@ -55,7 +55,7 @@ async function countPublishedScenarios(userId) {
 
 async function getUniqueAchievementFlags(userId) {
   const p = getPool();
-  const [{ rows: rankRows }, { rows: newsRows }, { rows: ratingRows }, { rows: modRows }, globalRank, friendsRank] =
+  const [{ rows: rankRows }, { rows: newsRows }, { rows: ratingRows }, { rows: modRows }, globalRank] =
     await Promise.all([
       p.query(
         `SELECT COUNT(*)::int AS rank FROM users
@@ -74,18 +74,6 @@ async function getUniqueAchievementFlags(userId) {
          WHERE bunker_survivals > (SELECT bunker_survivals FROM users WHERE id = $1)`,
         [userId]
       ),
-      p.query(
-        `WITH friend_ids AS (
-           SELECT CASE WHEN fp.user_a = $1 THEN fp.user_b ELSE fp.user_a END AS fid
-           FROM friend_pairs fp
-           WHERE (fp.user_a = $1 OR fp.user_b = $1) AND fp.status = 'accepted'
-           UNION SELECT $1
-         )
-         SELECT COUNT(*)::int AS better FROM users u
-         JOIN friend_ids f ON f.fid = u.id
-         WHERE u.bunker_survivals > (SELECT bunker_survivals FROM users WHERE id = $1)`,
-        [userId]
-      ),
     ]);
   return {
     registrationRank: rankRows[0]?.rank || 9999,
@@ -93,7 +81,6 @@ async function getUniqueAchievementFlags(userId) {
     maxScenarioRatings: ratingRows[0]?.max_ratings || 0,
     hasReviewedScenario: modRows.length > 0,
     globalSurvivalRank: globalRank.rows[0]?.rank || 9999,
-    friendsSurvivalRank: (friendsRank.rows[0]?.better || 0) + 1,
   };
 }
 
@@ -116,7 +103,6 @@ async function buildAchievementContext(userId) {
     premium: hasPremiumAccess(user),
     dev: !!user.dev,
     globalSurvivalRank: uniqueFlags.globalSurvivalRank,
-    friendsSurvivalRank: uniqueFlags.friendsSurvivalRank,
     ...uniqueFlags,
   };
 }
@@ -136,10 +122,8 @@ function isAchievementUnlocked(ach, ctx, unlockedMap) {
         return ctx.maxScenarioRatings >= CATALOG_STAR_MIN_RATINGS;
       case "catalog_editor":
         return ctx.hasReviewedScenario;
-      case "leaderboard_top10":
+      case "top_ten":
         return ctx.globalSurvivalRank > 0 && ctx.globalSurvivalRank <= 10;
-      case "friends_champion":
-        return ctx.friendsSurvivalRank === 1 && ctx.bunkerSurvivals >= 1;
       default:
         return false;
     }

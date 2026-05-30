@@ -1093,6 +1093,52 @@ input[type="range"]::-moz-range-thumb {
 .scenario-card__media {
   position: relative;
   display: block;
+  overflow: hidden;
+}
+
+.scenario-card__hover-actions {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  display: flex;
+  gap: 0.35rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 3;
+}
+
+.scenario-card:hover .scenario-card__hover-actions,
+.scenario-card:focus-within .scenario-card__hover-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.scenario-card__hover-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(8, 10, 8, 0.72);
+  color: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.scenario-card__hover-btn:hover {
+  background: rgba(20, 24, 18, 0.92);
+  border-color: rgba(232, 168, 56, 0.55);
+  color: #fff;
+}
+
+.scenario-card__hover-btn--on {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.65);
 }
 
 .scenario-card__tags {
@@ -2872,9 +2918,48 @@ input[type="range"]::-moz-range-thumb {
   z-index: 1;
   display: flex;
   align-items: flex-end;
+  justify-content: space-between;
   gap: 1rem;
   padding: 1.25rem;
   flex-wrap: wrap;
+}
+
+.profile-hero__main {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-hero__rank {
+  flex-shrink: 0;
+  align-self: flex-start;
+  text-align: right;
+  padding-top: 0.15rem;
+}
+
+.profile-hero__rank-label {
+  display: block;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.62);
+  letter-spacing: 0.02em;
+  margin-bottom: 0.15rem;
+}
+
+.profile-hero__rank-value {
+  display: block;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  font-family: var(--font-mono);
+}
+
+.profile-hero__rank-total {
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .profile-hero__avatar-block {
@@ -5718,6 +5803,20 @@ body.mobile-compact-ui .mobile-dock__btn--play {
     flex-wrap: wrap;
   }
 
+  .profile-hero__body {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .profile-hero__rank {
+    align-self: flex-end;
+    margin-top: -0.25rem;
+  }
+
+  .profile-hero__rank-value {
+    font-size: 1.65rem;
+  }
+
   .achievement-medal--md .achievement-medal__img {
     width: 32px;
     height: 32px;
@@ -5826,23 +5925,15 @@ body.mobile-compact-ui .mobile-dock__btn--play {
 }
 
 .scenario-card__social {
-  display: flex;
-  gap: 0.25rem;
-  margin-top: 0.25rem;
+  display: none;
 }
 
 .scenario-card__social-btn {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-  padding: 0.1rem 0.35rem;
-  cursor: pointer;
-  color: inherit;
+  display: none;
 }
 
 .scenario-card__social-btn--on {
-  color: #f87171;
-  border-color: #f87171;
+  display: none;
 }
 
 .scenario-comments-modal {

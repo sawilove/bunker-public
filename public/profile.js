@@ -114,7 +114,7 @@
     }
   }
 
-  function renderProfileHero(user, publishedScenarioCount = 0, displayedAchievements = [], achievementsUnlockedCount = 0) {
+  function renderProfileHero(user, publishedScenarioCount = 0, displayedAchievements = [], achievementsUnlockedCount = 0, survivalRank = null) {
 
     const av = BunkerAuth.assetUrl(user.avatarUrl || "/icons/default-avatar.svg");
 
@@ -134,6 +134,14 @@
       displayed: true,
     }) || "";
 
+    const rankHtml =
+      survivalRank?.rank && survivalRank?.total
+        ? `<div class="profile-hero__rank">
+            <span class="profile-hero__rank-label">Место в топе</span>
+            <span class="profile-hero__rank-value">#${survivalRank.rank}<span class="profile-hero__rank-total">/ ${survivalRank.total}</span></span>
+          </div>`
+        : "";
+
 
 
     return `
@@ -144,41 +152,47 @@
 
         <div class="profile-hero__body">
 
-          <div class="profile-hero__avatar-block">
+          <div class="profile-hero__main">
 
-            <div class="profile-avatar-wrap ${frame}">
+            <div class="profile-hero__avatar-block">
 
-              <img class="profile-avatar" src="${av}" alt="">
+              <div class="profile-avatar-wrap ${frame}">
 
-            </div>
+                <img class="profile-avatar" src="${av}" alt="">
 
-            ${medalsHtml}
+              </div>
 
-          </div>
-
-          <div class="profile-header__info">
-
-            <h2 class="profile-nickname">${BunkerUserBadges.escapeHtml(user.nickname)}</h2>
-
-            <div class="profile-badges">${BunkerUserBadges.roleBadgesHtml(user)}</div>
-
-            ${BunkerUserBadges.statusHtml(user)}
-
-            <div class="profile-stats">
-
-              <span class="profile-stat">Игр: <strong>${user.gamesPlayed ?? 0}</strong></span>
-
-              <span class="profile-stat">Выживаний: <strong>${user.bunkerSurvivals ?? 0}</strong></span>
-
-              <span class="profile-stat">Достижений: <strong>${achievementsUnlockedCount}</strong></span>
-
-              ${publishedScenarioCount > 0 ? `<span class="profile-stat">Катастроф в каталоге: <strong>${publishedScenarioCount}</strong></span>` : ""}
+              ${medalsHtml}
 
             </div>
 
-            ${user.bio?.trim() ? `<p class="profile-hero__bio">${BunkerUserBadges.escapeHtml(user.bio)}</p>` : ""}
+            <div class="profile-header__info">
+
+              <h2 class="profile-nickname">${BunkerUserBadges.escapeHtml(user.nickname)}</h2>
+
+              <div class="profile-badges">${BunkerUserBadges.roleBadgesHtml(user)}</div>
+
+              ${BunkerUserBadges.statusHtml(user)}
+
+              <div class="profile-stats">
+
+                <span class="profile-stat">Игр: <strong>${user.gamesPlayed ?? 0}</strong></span>
+
+                <span class="profile-stat">Выживаний: <strong>${user.bunkerSurvivals ?? 0}</strong></span>
+
+                <span class="profile-stat">Достижений: <strong>${achievementsUnlockedCount}</strong></span>
+
+                ${publishedScenarioCount > 0 ? `<span class="profile-stat">Катастроф в каталоге: <strong>${publishedScenarioCount}</strong></span>` : ""}
+
+              </div>
+
+              ${user.bio?.trim() ? `<p class="profile-hero__bio">${BunkerUserBadges.escapeHtml(user.bio)}</p>` : ""}
+
+            </div>
 
           </div>
+
+          ${rankHtml}
 
         </div>
 
@@ -818,6 +832,7 @@
     const displayedAchievements = meta.displayedAchievements || [];
 
     const achievementsUnlockedCount = meta.achievementsUnlockedCount ?? 0;
+    const survivalRank = meta.survivalRank ?? null;
 
 
 
@@ -849,7 +864,7 @@
 
         : `
 
-          ${renderProfileHero(user, publishedScenarioCount, displayedAchievements, achievementsUnlockedCount)}
+          ${renderProfileHero(user, publishedScenarioCount, displayedAchievements, achievementsUnlockedCount, survivalRank)}
 
           <div class="profile-view__actions">
 
@@ -937,6 +952,8 @@
       displayedAchievements: data.displayedAchievements || [],
 
       achievementsUnlockedCount: data.achievementsUnlockedCount ?? 0,
+
+      survivalRank: data.survivalRank ?? null,
 
     }, mode);
 
@@ -1067,6 +1084,7 @@
         publishedScenarioCount: data.publishedScenarioCount ?? 0,
         displayedAchievements: data.displayedAchievements || [],
         achievementsUnlockedCount: data.achievementsUnlockedCount ?? 0,
+        survivalRank: data.survivalRank ?? null,
       }, mode);
     } catch (err) {
       if (err?.status === 401 && !me) {

@@ -218,6 +218,8 @@ function mountAuthRoutes(app) {
       await syncAchievementsForUser(user.id);
       const displayedAchievements = await getDisplayedAchievementsPublic(user.id);
       const achievementsUnlockedCount = await getUnlockedCount(user.id);
+      const { getSurvivalRankInfo } = require("./leaderboard-store");
+      const survivalRank = await getSurvivalRankInfo(user.id);
       res.json({
         user: await enrichPublicUser(user),
         friendship,
@@ -227,6 +229,7 @@ function mountAuthRoutes(app) {
         publishedScenarioCount,
         displayedAchievements,
         achievementsUnlockedCount,
+        survivalRank,
       });
     } catch (err) {
       console.error("user profile error", err);

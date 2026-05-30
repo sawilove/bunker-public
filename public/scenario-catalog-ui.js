@@ -122,12 +122,16 @@
     return String(backstoryId).slice("catalog:".length);
   }
 
-  function socialButtonsHtml(backstoryId) {
+  function socialHoverHtml(backstoryId) {
     const id = parseCatalogId(backstoryId);
     if (!id) return "";
-    return `<span class="scenario-card__social">
-      <button type="button" class="scenario-card__social-btn" data-scenario-fav="${id}" title="В избранное">♡</button>
-      <button type="button" class="scenario-card__social-btn" data-scenario-comments="${id}" title="Комментарии">💬</button>
+    return `<span class="scenario-card__hover-actions">
+      <button type="button" class="scenario-card__hover-btn" data-scenario-fav="${id}" title="В избранное" aria-label="В избранное">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+      </button>
+      <button type="button" class="scenario-card__hover-btn" data-scenario-comments="${id}" title="Комментарии" aria-label="Комментарии">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </button>
     </span>`;
   }
 
@@ -207,14 +211,15 @@
     root.querySelectorAll("[data-scenario-fav]").forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
+        e.preventDefault();
         if (!window.BunkerAuth?.isLoggedIn?.()) {
           alert("Войдите в аккаунт.");
           return;
         }
         try {
           const result = await BunkerAuth.toggleScenarioFavorite(btn.dataset.scenarioFav);
-          btn.textContent = result.favorited ? "♥" : "♡";
-          btn.classList.toggle("scenario-card__social-btn--on", result.favorited);
+          btn.classList.toggle("scenario-card__hover-btn--on", result.favorited);
+          btn.querySelector("svg")?.setAttribute("fill", result.favorited ? "currentColor" : "none");
         } catch (err) {
           alert(err.message);
         }
@@ -223,6 +228,7 @@
     root.querySelectorAll("[data-scenario-comments]").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
+        e.preventDefault();
         openCommentsModal(btn.dataset.scenarioComments);
       });
     });
@@ -237,7 +243,7 @@
     renderStarRating,
     bindStarRating,
     ratingAvgFromScenario,
-    socialButtonsHtml,
+    socialHoverHtml,
     bindScenarioSocial,
     openCommentsModal,
   };

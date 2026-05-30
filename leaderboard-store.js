@@ -86,9 +86,36 @@ async function getUserRank(userId, metric = "survivals", scope = "global") {
   return board[idx];
 }
 
+async function getSurvivalRankInfo(userId) {
+  const p = getPool();
+  const { rows: userRows } = await p.query(
+    `SELECT bunker_survivals, nickname_lower FROM users WHERE id = $1`,
+    [userId]
+  );
+  const user = userRows[0];
+  if (!user || user.bunker_survivals <= 0) return null;
+
+  const [{ rows: rankRows }, { rows: totalRows }] = await Promise.all([
+    p.query(
+      `SELECT COUNT(*)::int + 1 AS rank FROM users u
+       WHERE u.bunker_survivals > $1
+          OR (u.bunker_survivals = $1 AND u.nickname_lower < $2)`,
+      [user.bunker_survivals, user.nickname_lower]
+    ),
+    p.query(`SELECT COUNT(*)::int AS total FROM users WHERE bunker_survivals > 0`),
+  ]);
+
+  return {
+    rank: rankRows[0]?.rank || null,
+    total: totalRows[0]?.total || 0,
+    metric: "survivals",
+  };
+}
+
 module.exports = {
   VALID_METRICS,
   VALID_SCOPES,
   getLeaderboard,
   getUserRank,
+  getSurvivalRankInfo,
 };
