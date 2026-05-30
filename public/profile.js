@@ -152,43 +152,39 @@
 
         <div class="profile-hero__body">
 
-          <div class="profile-hero__main">
+          <div class="profile-hero__avatar-block">
 
-            <div class="profile-hero__avatar-block">
+            <div class="profile-avatar-wrap ${frame}">
 
-              <div class="profile-avatar-wrap ${frame}">
-
-                <img class="profile-avatar" src="${av}" alt="">
-
-              </div>
-
-              ${medalsHtml}
+              <img class="profile-avatar" src="${av}" alt="">
 
             </div>
 
-            <div class="profile-header__info">
+            ${medalsHtml}
 
-              <h2 class="profile-nickname">${BunkerUserBadges.escapeHtml(user.nickname)}</h2>
+          </div>
 
-              <div class="profile-badges">${BunkerUserBadges.roleBadgesHtml(user)}</div>
+          <div class="profile-header__info">
 
-              ${BunkerUserBadges.statusHtml(user)}
+            <h2 class="profile-nickname">${BunkerUserBadges.escapeHtml(user.nickname)}</h2>
 
-              <div class="profile-stats">
+            <div class="profile-badges">${BunkerUserBadges.roleBadgesHtml(user)}</div>
 
-                <span class="profile-stat">Игр: <strong>${user.gamesPlayed ?? 0}</strong></span>
+            ${BunkerUserBadges.statusHtml(user)}
 
-                <span class="profile-stat">Выживаний: <strong>${user.bunkerSurvivals ?? 0}</strong></span>
+            <div class="profile-stats">
 
-                <span class="profile-stat">Достижений: <strong>${achievementsUnlockedCount}</strong></span>
+              <span class="profile-stat">Игр: <strong>${user.gamesPlayed ?? 0}</strong></span>
 
-                ${publishedScenarioCount > 0 ? `<span class="profile-stat">Катастроф в каталоге: <strong>${publishedScenarioCount}</strong></span>` : ""}
+              <span class="profile-stat">Выживаний: <strong>${user.bunkerSurvivals ?? 0}</strong></span>
 
-              </div>
+              <span class="profile-stat">Достижений: <strong>${achievementsUnlockedCount}</strong></span>
 
-              ${user.bio?.trim() ? `<p class="profile-hero__bio">${BunkerUserBadges.escapeHtml(user.bio)}</p>` : ""}
+              ${publishedScenarioCount > 0 ? `<span class="profile-stat">Катастроф в каталоге: <strong>${publishedScenarioCount}</strong></span>` : ""}
 
             </div>
+
+            ${user.bio?.trim() ? `<p class="profile-hero__bio">${BunkerUserBadges.escapeHtml(user.bio)}</p>` : ""}
 
           </div>
 
