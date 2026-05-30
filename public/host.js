@@ -68,6 +68,7 @@ let suppressSettingsEmit = false;
 let selectedBackstoryId = "nuclear";
 let backstoryRandom = false;
 let scenarioTab = "classic";
+let communitySort = "relevance";
 let pendingScenarioSelection = null;
 let pendingSelectionUntil = 0;
 const backstoriesById = {};
@@ -303,9 +304,12 @@ function communityAuthorHtml(b) {
 function communityScenarioCardHtml(b) {
   const published = formatScenarioDate(b.publishedAt || b.reviewedAt);
   const games = pluralGames(b.playCount || 0);
+  const rating =
+    window.BunkerScenarioCatalogUi?.formatRatingBadge?.(b) ||
+    "";
   const meta =
-    published || b.playCount
-      ? `<span class="scenario-card__meta">${published ? `<time>${escapeHtml(published)}</time>` : ""}${b.playCount != null ? `<span>${escapeHtml(games)}</span>` : ""}</span>`
+    published || b.playCount || rating
+      ? `<span class="scenario-card__meta">${rating}${published ? `<time>${escapeHtml(published)}</time>` : ""}${b.playCount != null ? `<span>${escapeHtml(games)}</span>` : ""}</span>`
       : "";
   return `<button type="button" class="scenario-card scenario-card--community" data-id="${escapeHtml(b.id)}" aria-selected="false"
       title="${escapeHtml(b.title)}">
@@ -341,6 +345,38 @@ function setScenarioTab(tab) {
   scenarioGrid.querySelector('[data-tab-panel="community"]')?.classList.toggle("hidden", tab !== "community");
 }
 
+function getSortedCommunityList() {
+  const list = Object.values(communityBackstoriesById);
+  if (!window.BunkerScenarioCatalogUi?.sortScenarios) return list;
+  return BunkerScenarioCatalogUi.sortScenarios(list, communitySort);
+}
+
+function renderCommunityPanelInner() {
+  if (!hostAccess.loggedIn) {
+    return `<p class="scenario-grid__hint">Войдите в аккаунт, чтобы выбирать пользовательские катастрофы.</p>`;
+  }
+  const communityList = getSortedCommunityList();
+  if (!communityList.length) {
+    return `<p class="scenario-grid__hint">Пока нет одобренных пользовательских катастроф.</p>`;
+  }
+  const sortHtml = BunkerScenarioCatalogUi?.sortSelectHtml?.(communitySort, "scenario-catalog-sort--host") || "";
+  return `${sortHtml}<div class="scenario-catalog-cards">${communityList
+    .map((b) => communityScenarioCardHtml(b))
+    .join("")}</div>`;
+}
+
+function refreshCommunityPanel() {
+  const panel = scenarioGrid?.querySelector('[data-tab-panel="community"]');
+  if (!panel) return;
+  panel.innerHTML = renderCommunityPanelInner();
+  BunkerScenarioCatalogUi?.bindSortSelect?.(panel, (sort) => {
+    communitySort = sort;
+    refreshCommunityPanel();
+  });
+  bindScenarioCards(panel);
+  syncScenarioSelection();
+}
+
 function buildScenarioGrid(backstories) {
   const classicCards = backstories.map((b) => classicScenarioCardHtml(b)).join("");
 
@@ -351,15 +387,7 @@ function buildScenarioGrid(backstories) {
       <span class="scenario-card__label">Случайный</span>
     </button>`;
 
-  const communityList = Object.values(communityBackstoriesById);
-  let communityPanel = "";
-  if (!hostAccess.loggedIn) {
-    communityPanel = `<p class="scenario-grid__hint">Войдите в аккаунт, чтобы выбирать пользовательские катастрофы.</p>`;
-  } else if (!communityList.length) {
-    communityPanel = `<p class="scenario-grid__hint">Пока нет одобренных пользовательских катастроф.</p>`;
-  } else {
-    communityPanel = communityList.map((b) => communityScenarioCardHtml(b)).join("");
-  }
+  const communityPanel = renderCommunityPanelInner();
 
   const mineBtn = canManageDisasters()
     ? `<button type="button" class="btn btn--small" data-my-disasters>Моя катастрофа</button>`
@@ -380,7 +408,7 @@ function buildScenarioGrid(backstories) {
     <div class="scenario-grid scenario-picker__panel${scenarioTab === "classic" ? "" : " hidden"}" data-tab-panel="classic" role="tabpanel">
       ${classicCards}${randomCard}
     </div>
-    <div class="scenario-grid scenario-picker__panel${scenarioTab === "community" ? "" : " hidden"}" data-tab-panel="community" role="tabpanel">
+    <div class="scenario-picker__panel scenario-picker__panel--community${scenarioTab === "community" ? "" : " hidden"}" data-tab-panel="community" role="tabpanel">
       ${communityPanel}
     </div>
     <div class="scenario-picker__tools">${mineBtn}${devTools}</div>`;
@@ -390,7 +418,12 @@ function buildScenarioGrid(backstories) {
   });
 
   bindScenarioCards(scenarioGrid.querySelector('[data-tab-panel="classic"]') || scenarioGrid);
-  bindScenarioCards(scenarioGrid.querySelector('[data-tab-panel="community"]') || scenarioGrid);
+  const communityPanelEl = scenarioGrid.querySelector('[data-tab-panel="community"]');
+  BunkerScenarioCatalogUi?.bindSortSelect?.(communityPanelEl, (sort) => {
+    communitySort = sort;
+    refreshCommunityPanel();
+  });
+  bindScenarioCards(communityPanelEl || scenarioGrid);
 
   scenarioGrid.querySelector("[data-dev-edit-scenarios]")?.addEventListener("click", () => {
     BunkerScenarioEditor.openDevScenariosEditor();

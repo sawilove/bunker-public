@@ -16,6 +16,7 @@ const votingInfo = document.getElementById("votingInfo");
 const voteButtons = document.getElementById("voteButtons");
 const endedSection = document.getElementById("endedSection");
 const endedMessage = document.getElementById("endedMessage");
+const catalogRateWrap = document.getElementById("catalogRateWrap");
 const turnSection = document.getElementById("turnSection");
 const gameSection = document.getElementById("gameSection");
 const joinForm = document.getElementById("joinForm");
@@ -256,6 +257,52 @@ function renderCards(cards, isYourTurn, round, phase, excluded) {
   });
 }
 
+function renderCatalogRating(cr) {
+  if (!catalogRateWrap) return;
+  if (!cr?.catalogId) {
+    catalogRateWrap.classList.add("hidden");
+    catalogRateWrap.innerHTML = "";
+    return;
+  }
+  catalogRateWrap.classList.remove("hidden");
+  const title = cr.title || "Сценарий катастрофы";
+  const avg =
+    cr.ratingAvg != null
+      ? `Средняя оценка: ★ ${Number(cr.ratingAvg).toFixed(1)} (${cr.ratingCount || 0})`
+      : "Пока нет оценок";
+  if (!window.BunkerAuth?.isLoggedIn?.() || !cr.canRate) {
+    catalogRateWrap.innerHTML = `<p class="scenario-rate__scene"><strong>${escapeHtml(title)}</strong></p>
+      <p class="scenario-rate__hint">${escapeHtml(avg)}. Войдите в аккаунт, чтобы поставить оценку после игры.</p>`;
+    return;
+  }
+  if (cr.yourRating != null) {
+    catalogRateWrap.innerHTML = `<p class="scenario-rate__scene"><strong>${escapeHtml(title)}</strong></p>
+      <p class="scenario-rate__hint">${escapeHtml(avg)}</p>
+      <p class="scenario-rate__thanks">Ваша оценка: ★ ${cr.yourRating}</p>`;
+    return;
+  }
+  catalogRateWrap.innerHTML = `<p class="scenario-rate__scene"><strong>${escapeHtml(title)}</strong></p>
+    <p class="scenario-rate__hint">${escapeHtml(avg)}</p>
+    ${BunkerScenarioCatalogUi.renderStarRating(cr.catalogId, null, false)}`;
+  BunkerScenarioCatalogUi.bindStarRating(catalogRateWrap, async (rating) => {
+    if (socket?.connected) {
+      return new Promise((resolve, reject) => {
+        const t = setTimeout(() => reject(new Error("Нет ответа сервера.")), 8000);
+        const onState = (st) => {
+          if (st?.catalogRating?.yourRating != null) {
+            clearTimeout(t);
+            socket.off("gameState", onState);
+            resolve();
+          }
+        };
+        socket.on("gameState", onState);
+        socket.emit("rateCatalogScenario", { rating });
+      });
+    }
+    await BunkerAuth.rateCatalogScenario(cr.catalogId, rating);
+  });
+}
+
 function renderVoting(voting) {
   if (!voting?.canVote) {
     voteButtons.innerHTML = "<p class='round-info'>Вы не участвуете в голосовании.</p>";
@@ -317,6 +364,7 @@ function applyState(state) {
   waitingModal.classList.toggle("hidden", !inLobby);
   votingSection.classList.toggle("hidden", !inVoting);
   endedSection.classList.toggle("hidden", !inEnded);
+  if (!inEnded) renderCatalogRating(null);
   turnSection.classList.toggle("hidden", !inGame || state.you.excluded);
   gameSection.classList.toggle("hidden", inLobby);
 
@@ -373,6 +421,7 @@ function applyState(state) {
     endedMessage.textContent = survived
       ? "Вы в бункере! Все характеристики открыты."
       : "Вы исключены. Все характеристики открыты для разбора.";
+    renderCatalogRating(state.catalogRating);
     renderCards(state.you.cards, false, null, state.phase, state.you.excluded);
     return;
   }

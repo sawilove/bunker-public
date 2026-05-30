@@ -1220,10 +1220,178 @@ input[type="range"]::-moz-range-thumb {
 .scenario-card__meta {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.45rem;
   font-size: 0.68rem;
   font-weight: 500;
   color: var(--text-dim);
+}
+
+.scenario-card__rating {
+  color: var(--amber);
+  font-weight: 700;
+}
+
+.scenario-card__rating--empty {
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.scenario-card__rating-count {
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.scenario-picker__panel--community {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.scenario-catalog-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(256px, 1fr));
+  gap: 1rem;
+}
+
+.scenario-catalog-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+}
+
+.scenario-catalog-sort__label {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.scenario-catalog-sort select {
+  font-family: inherit;
+  font-size: 0.82rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+}
+
+.catalog-rate-wrap {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.scenario-rate__scene {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+.scenario-rate__label {
+  margin: 0 0 0.45rem;
+  font-weight: 600;
+}
+
+.scenario-rate__stars {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.scenario-rate__star {
+  border: none;
+  background: none;
+  font-size: 1.65rem;
+  line-height: 1;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0.1rem;
+}
+
+.scenario-rate__star--on {
+  color: var(--amber);
+}
+
+.scenario-rate__star:disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.scenario-rate__hint,
+.scenario-rate__thanks {
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.scenario-rate__thanks {
+  color: var(--amber);
+}
+
+.profile-scenarios {
+  margin-top: 1rem;
+}
+
+.profile-scenarios__title {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
+}
+
+.profile-scenarios__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+
+.profile-scenario-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-card);
+}
+
+.profile-scenario-card__media {
+  aspect-ratio: 4 / 3;
+  background: var(--bg-deep);
+}
+
+.profile-scenario-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.profile-scenario-card__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 2rem;
+  color: var(--text-dim);
+}
+
+.profile-scenario-card__body {
+  padding: 0.55rem 0.65rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.profile-scenario-card__title {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.25;
+}
+
+.profile-scenario-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
 }
 
 .scenario-card--random .scenario-card__random-mark {

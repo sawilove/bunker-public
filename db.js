@@ -187,6 +187,26 @@ async function initDatabase() {
   await p.query(`
     ALTER TABLE scenario_catalog ADD COLUMN IF NOT EXISTS play_count INTEGER NOT NULL DEFAULT 0;
   `);
+  await p.query(`
+    ALTER TABLE scenario_catalog ADD COLUMN IF NOT EXISTS rating_sum INTEGER NOT NULL DEFAULT 0;
+  `);
+  await p.query(`
+    ALTER TABLE scenario_catalog ADD COLUMN IF NOT EXISTS rating_count INTEGER NOT NULL DEFAULT 0;
+  `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS scenario_ratings (
+      catalog_id TEXT NOT NULL REFERENCES scenario_catalog(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      rating SMALLINT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (catalog_id, user_id)
+    );
+  `);
+  await p.query(`
+    CREATE INDEX IF NOT EXISTS scenario_ratings_catalog_idx
+    ON scenario_ratings (catalog_id);
+  `);
 }
 
 function rowToUser(row) {

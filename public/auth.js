@@ -288,8 +288,21 @@
     return base ? `${base}${coverPath}` : coverPath;
   }
 
-  async function getScenarioCatalog() {
-    return api("/api/scenarios/catalog");
+  async function getScenarioCatalog(sort) {
+    const q = sort ? `?sort=${encodeURIComponent(sort)}` : "";
+    return api(`/api/scenarios/catalog${q}`);
+  }
+
+  async function getUserScenarios(userId, sort) {
+    const q = sort ? `?sort=${encodeURIComponent(sort)}` : "";
+    return api(`/api/users/${encodeURIComponent(userId)}/scenarios${q}`);
+  }
+
+  async function rateCatalogScenario(catalogId, rating) {
+    return api(`/api/scenarios/${encodeURIComponent(catalogId)}/rate`, {
+      method: "POST",
+      body: JSON.stringify({ rating }),
+    });
   }
 
   async function getMyScenarios() {
@@ -431,6 +444,8 @@
     saveCustomScenario,
     scenarioCoverUrl,
     getScenarioCatalog,
+    getUserScenarios,
+    rateCatalogScenario,
     getMyScenarios,
     saveScenarioDraft,
     submitScenario,

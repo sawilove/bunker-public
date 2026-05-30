@@ -207,12 +207,15 @@ function mountAuthRoutes(app) {
       const friendship = viewer ? await getFriendship(viewer.id, user.id) : "none";
       const { friends } = await listFriends(user.id);
       const hideList = user.friendsHidden && !isSelf;
+      const scenarioCatalog = require("./scenario-catalog-store");
+      const publishedScenarioCount = await scenarioCatalog.countPublishedByAuthor(user.id);
       res.json({
         user: await enrichPublicUser(user),
         friendship,
         friends: hideList ? [] : friends,
         friendsCount: friends.length,
         friendsHidden: !!user.friendsHidden,
+        publishedScenarioCount,
       });
     } catch (err) {
       console.error("user profile error", err);

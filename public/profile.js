@@ -15,6 +15,7 @@
   let cachedFriends = [];
 
   let cachedMeta = {};
+  let profileScenarioSort = "relevance";
 
   let editUser = null;
 
@@ -64,7 +65,54 @@
 
 
 
-  function renderProfileHero(user) {
+  function profileCatalogCoverSrc(b) {
+    if (!b?.coverUrl) return null;
+    const base = (BunkerAuth.apiBase?.() || "").replace(/\/$/, "");
+    return base ? `${base}${b.coverUrl}` : b.coverUrl;
+  }
+
+  function profileScenarioCardHtml(b) {
+    const coverSrc = profileCatalogCoverSrc(b);
+    const img = coverSrc
+      ? `<img class="profile-scenario-card__img" src="${BunkerUserBadges.escapeHtml(coverSrc)}" alt="" loading="lazy">`
+      : b.scene
+        ? `<img class="profile-scenario-card__img" src="${BunkerUserBadges.escapeHtml(BunkerRuntime.assetUrl(`scenarios/${b.scene}.png`))}" alt="" loading="lazy">`
+        : `<span class="profile-scenario-card__placeholder">?</span>`;
+    const rating = BunkerScenarioCatalogUi?.formatRatingBadge?.(b) || "";
+    const plays = b.playCount != null ? `${b.playCount} игр` : "";
+    const hostHref = BunkerAuth.pageUrl("host.html");
+    return `<article class="profile-scenario-card">
+      <div class="profile-scenario-card__media">${img}</div>
+      <div class="profile-scenario-card__body">
+        <h4 class="profile-scenario-card__title">${BunkerUserBadges.escapeHtml(b.title)}</h4>
+        <p class="profile-scenario-card__meta">${rating}${plays ? `<span>${BunkerUserBadges.escapeHtml(plays)}</span>` : ""}</p>
+        <a href="${BunkerUserBadges.escapeHtml(hostHref)}" class="btn btn--small">Играть на ведущем</a>
+      </div>
+    </article>`;
+  }
+
+  async function loadProfileScenarios(userId, publishedCount) {
+    const body = content.querySelector("[data-profile-scenarios-body]");
+    if (!body || !publishedCount) return;
+    try {
+      const data = await BunkerAuth.getUserScenarios(userId, profileScenarioSort);
+      const list = data.scenarios || [];
+      if (!list.length) {
+        body.innerHTML = `<p class="profile-scenarios__empty">Нет опубликованных катастроф.</p>`;
+        return;
+      }
+      const sortHtml = BunkerScenarioCatalogUi?.sortSelectHtml?.(profileScenarioSort, "scenario-catalog-sort--profile") || "";
+      body.innerHTML = `${sortHtml}<div class="profile-scenarios__grid">${list.map(profileScenarioCardHtml).join("")}</div>`;
+      BunkerScenarioCatalogUi?.bindSortSelect?.(body, (sort) => {
+        profileScenarioSort = sort;
+        loadProfileScenarios(userId, publishedCount);
+      });
+    } catch (err) {
+      body.innerHTML = `<p class="form-error">${BunkerUserBadges.escapeHtml(err.message)}</p>`;
+    }
+  }
+
+  function renderProfileHero(user, publishedScenarioCount = 0) {
 
     const av = BunkerAuth.assetUrl(user.avatarUrl || "/icons/default-avatar.svg");
 
@@ -107,6 +155,8 @@
               <span class="profile-stat">Игр: <strong>${user.gamesPlayed ?? 0}</strong></span>
 
               <span class="profile-stat">Выживаний: <strong>${user.bunkerSurvivals ?? 0}</strong></span>
+
+              ${publishedScenarioCount > 0 ? `<span class="profile-stat">Катастроф в каталоге: <strong>${publishedScenarioCount}</strong></span>` : ""}
 
             </div>
 
@@ -600,6 +650,8 @@
 
     const friendsHidden = meta.friendsHidden ?? user.friendsHidden;
 
+    const publishedScenarioCount = meta.publishedScenarioCount ?? 0;
+
 
 
     document.title = `Бункер — ${user.nickname}`;
@@ -630,7 +682,7 @@
 
         : `
 
-          ${renderProfileHero(user)}
+          ${renderProfileHero(user, publishedScenarioCount)}
 
           <div class="profile-view__actions">
 
@@ -641,6 +693,11 @@
             <a href="${BunkerAuth.pageUrl("friends.html")}" class="btn">К друзьям</a>
 
           </div>
+
+          ${publishedScenarioCount > 0 ? `<section class="profile-scenarios panel" data-profile-scenarios>
+            <h3 class="profile-scenarios__title">Катастрофы в каталоге</h3>
+            <div data-profile-scenarios-body><p class="profile-scenarios__loading">Загрузка…</p></div>
+          </section>` : ""}
 
           <p id="profileFriendError" class="form-error hidden"></p>`;
 
@@ -669,6 +726,10 @@
     } else {
 
       bindViewHandlers(user);
+
+      if (publishedScenarioCount > 0) {
+        loadProfileScenarios(user.profileId || user.id, publishedScenarioCount);
+      }
 
     }
 
@@ -703,6 +764,8 @@
       friendsCount: data.friendsCount,
 
       friendsHidden: data.friendsHidden,
+
+      publishedScenarioCount: data.publishedScenarioCount ?? 0,
 
     }, mode);
 
@@ -830,6 +893,7 @@
       renderProfile(data.user, data.friends || [], {
         friendsCount: data.friendsCount,
         friendsHidden: data.friendsHidden,
+        publishedScenarioCount: data.publishedScenarioCount ?? 0,
       }, mode);
     } catch (err) {
       if (err?.status === 401 && !me) {

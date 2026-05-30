@@ -15,8 +15,9 @@ function mountScenarioCatalogRoutes(app, { verifyToken, requireUser }) {
         res.status(401).json({ error: "Войдите в аккаунт." });
         return;
       }
-      const scenarios = await scenarioCatalog.listPublished();
-      res.json({ scenarios });
+      const sort = scenarioCatalog.sanitizeSort(req.query.sort);
+      const scenarios = await scenarioCatalog.listPublished(sort);
+      res.json({ scenarios, sort });
     } catch (err) {
       console.error("scenarios catalog list", err);
       res.status(500).json({ error: "Ошибка сервера." });
@@ -36,6 +37,53 @@ function mountScenarioCatalogRoutes(app, { verifyToken, requireUser }) {
     } catch (err) {
       console.error("scenario cover", err);
       res.status(500).end();
+    }
+  });
+
+  app.get("/api/users/:userId/scenarios", async (req, res) => {
+    try {
+      const { getUserByPublicId } = require("./user-store");
+      const user = await getUserByPublicId(req.params.userId);
+      if (!user) {
+        res.status(404).json({ error: "Игрок не найден." });
+        return;
+      }
+      const sort = scenarioCatalog.sanitizeSort(req.query.sort);
+      const scenarios = await scenarioCatalog.listPublishedByAuthor(user.id, sort);
+      const publishedCount = await scenarioCatalog.countPublishedByAuthor(user.id);
+      res.json({
+        author: {
+          id: user.id,
+          profileId: user.profileId || user.id,
+          nickname: user.nickname,
+        },
+        scenarios,
+        publishedCount,
+        sort,
+      });
+    } catch (err) {
+      console.error("user scenarios list", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
+  app.post("/api/scenarios/:id/rate", async (req, res) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      const result = await scenarioCatalog.rateScenario(
+        user.id,
+        req.params.id,
+        req.body?.rating
+      );
+      if (!result.ok) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+      res.json(result);
+    } catch (err) {
+      console.error("scenarios rate", err);
+      res.status(500).json({ error: "Ошибка сервера." });
     }
   });
 

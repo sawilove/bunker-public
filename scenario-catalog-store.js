@@ -17,8 +17,71 @@ const VALID_SCENES = [
 ];
 const VALID_PRESETS = ["standard", "18plus", "custom"];
 const VALID_STATUSES = ["draft", "pending", "published", "rejected"];
+const VALID_SORTS = ["relevance", "rating", "plays", "newest", "oldest"];
 
 let publishedCache = [];
+
+function sanitizeSort(raw) {
+  const s = raw ? String(raw).trim().toLowerCase() : "relevance";
+  return VALID_SORTS.includes(s) ? s : "relevance";
+}
+
+function ratingAvgFromRow(row) {
+  const count = Number(row?.rating_count) || 0;
+  if (!count) return null;
+  const sum = Number(row?.rating_sum) || 0;
+  return Math.round((sum / count) * 10) / 10;
+}
+
+function attachRatingFields(entry) {
+  entry.ratingSum = Number(entry.ratingSum) || 0;
+  entry.ratingCount = Number(entry.ratingCount) || 0;
+  entry.ratingAvg =
+    entry.ratingCount > 0
+      ? Math.round((entry.ratingSum / entry.ratingCount) * 10) / 10
+      : null;
+  return entry;
+}
+
+function publishedTimestamp(entry) {
+  const t = entry.publishedAt || entry.reviewedAt || entry.updatedAt;
+  if (!t) return 0;
+  return new Date(t).getTime() || 0;
+}
+
+function relevanceScore(entry) {
+  const plays = entry.playCount || 0;
+  const avg = entry.ratingAvg || 0;
+  const votes = entry.ratingCount || 0;
+  const ageMs = Date.now() - publishedTimestamp(entry);
+  const days = Math.max(0, ageMs / (86400000));
+  const recency = Math.exp(-days / 60);
+  const ratingPart = votes > 0 ? avg * Math.log1p(votes) : 0;
+  return Math.log1p(plays) * 1.4 + ratingPart * 0.9 + recency * 2.5;
+}
+
+function sortPublishedEntries(entries, sortRaw) {
+  const sort = sanitizeSort(sortRaw);
+  const list = [...entries].map((e) => attachRatingFields({ ...e }));
+  list.sort((a, b) => {
+    if (sort === "rating") {
+      const avgDiff = (b.ratingAvg || 0) - (a.ratingAvg || 0);
+      if (avgDiff !== 0) return avgDiff;
+      return (b.ratingCount || 0) - (a.ratingCount || 0);
+    }
+    if (sort === "plays") {
+      return (b.playCount || 0) - (a.playCount || 0);
+    }
+    if (sort === "newest") {
+      return publishedTimestamp(b) - publishedTimestamp(a);
+    }
+    if (sort === "oldest") {
+      return publishedTimestamp(a) - publishedTimestamp(b);
+    }
+    return relevanceScore(b) - relevanceScore(a);
+  });
+  return list;
+}
 
 function catalogBackstoryId(rowId) {
   return `${CATALOG_PREFIX}${rowId}`;
@@ -119,6 +182,8 @@ function rowToEntry(row) {
     updatedAt: row.updated_at,
     tags: Array.isArray(row.tags) ? row.tags : [],
     playCount: row.play_count != null ? Number(row.play_count) : 0,
+    ratingSum: row.rating_sum != null ? Number(row.rating_sum) : 0,
+    ratingCount: row.rating_count != null ? Number(row.rating_count) : 0,
     authorNickname: row.author_nickname || null,
     authorProfileId: authorProfileIdFromRow(row),
     authorAvatarUrl: authorAvatarUrlFromRow(row),
@@ -126,7 +191,7 @@ function rowToEntry(row) {
   };
   if (entry.cardPoolPreset === "18plus") entry.badge = "Сценарий 18+";
   entry.cardPools = cardPoolsForEntry(entry);
-  return entry;
+  return attachRatingFields(entry);
 }
 
 function entryToBackstory(entry) {
@@ -143,6 +208,8 @@ function entryToBackstory(entry) {
     cardPoolPreset: entry.cardPoolPreset,
     tags: entry.tags || [],
     playCount: entry.playCount || 0,
+    ratingAvg: entry.ratingAvg ?? null,
+    ratingCount: entry.ratingCount || 0,
     authorNickname: entry.authorNickname || null,
     authorProfileId: entry.authorProfileId || null,
     authorAvatarUrl: entry.authorAvatarUrl || null,
@@ -169,8 +236,8 @@ async function refreshPublishedCache() {
   return publishedCache;
 }
 
-function getPublishedCache() {
-  return publishedCache.map(entryToBackstory);
+function getPublishedCache(sortRaw) {
+  return sortPublishedEntries(publishedCache, sortRaw).map(entryToBackstory);
 }
 
 function getPublishedEntry(backstoryId) {
@@ -191,9 +258,78 @@ async function getEntryById(id) {
   return rowToEntry(rows[0]);
 }
 
-async function listPublished() {
+async function listPublished(sortRaw) {
   if (!publishedCache.length) await refreshPublishedCache();
-  return publishedCache.map(entryToBackstory);
+  return getPublishedCache(sortRaw);
+}
+
+async function countPublishedByAuthor(authorId) {
+  const { rows } = await getPool().query(
+    `SELECT COUNT(*)::int AS c FROM scenario_catalog WHERE author_id = $1 AND status = 'published'`,
+    [authorId]
+  );
+  return rows[0]?.c || 0;
+}
+
+async function listPublishedByAuthor(authorId, sortRaw) {
+  const { rows } = await getPool().query(
+    `SELECT sc.*, u.nickname AS author_nickname, u.profile_id AS author_profile_id,
+            u.avatar_webp AS author_avatar_webp, u.avatar_updated_at AS author_avatar_updated_at
+     FROM scenario_catalog sc
+     JOIN users u ON u.id = sc.author_id
+     WHERE sc.author_id = $1 AND sc.status = 'published'`,
+    [authorId]
+  );
+  return sortPublishedEntries(rows.map(rowToEntry), sortRaw).map(entryToBackstory);
+}
+
+async function getUserRating(userId, catalogId) {
+  const { rows } = await getPool().query(
+    `SELECT rating FROM scenario_ratings WHERE catalog_id = $1 AND user_id = $2`,
+    [catalogId, userId]
+  );
+  return rows[0]?.rating != null ? Number(rows[0].rating) : null;
+}
+
+async function syncRatingAggregates(catalogId) {
+  await getPool().query(
+    `UPDATE scenario_catalog SET
+      rating_sum = COALESCE((SELECT SUM(rating) FROM scenario_ratings WHERE catalog_id = $1), 0),
+      rating_count = COALESCE((SELECT COUNT(*)::int FROM scenario_ratings WHERE catalog_id = $1), 0),
+      updated_at = NOW()
+     WHERE id = $1`,
+    [catalogId]
+  );
+}
+
+async function rateScenario(userId, catalogId, ratingRaw) {
+  const rating = Math.round(Number(ratingRaw));
+  if (rating < 1 || rating > 5) {
+    return { ok: false, error: "Оценка от 1 до 5." };
+  }
+  const entry = await getEntryById(catalogId);
+  if (!entry || entry.status !== "published") {
+    return { ok: false, error: "Сценарий не найден или не опубликован." };
+  }
+  await getPool().query(
+    `INSERT INTO scenario_ratings (catalog_id, user_id, rating, created_at, updated_at)
+     VALUES ($1, $2, $3, NOW(), NOW())
+     ON CONFLICT (catalog_id, user_id) DO UPDATE SET
+       rating = EXCLUDED.rating,
+       updated_at = NOW()`,
+    [catalogId, userId, rating]
+  );
+  await syncRatingAggregates(catalogId);
+  if (entry.status === "published") await refreshPublishedCache();
+  const updated = await getEntryById(catalogId);
+  return {
+    ok: true,
+    yourRating: rating,
+    ratingAvg: updated.ratingAvg,
+    ratingCount: updated.ratingCount,
+    catalogId,
+    backstoryId: updated.id,
+  };
 }
 
 async function listByAuthor(authorId) {
@@ -466,6 +602,13 @@ module.exports = {
   processCoverUpload,
   deleteByAuthor,
   incrementPlayCount,
+  rateScenario,
+  getUserRating,
+  countPublishedByAuthor,
+  listPublishedByAuthor,
+  sanitizeSort,
+  sortPublishedEntries,
+  VALID_SORTS,
   sanitizeTags,
   entryToBackstory,
   bunkerRollIdForEntry,

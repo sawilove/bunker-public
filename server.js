@@ -278,10 +278,53 @@ function revealAllCards() {
   }
 }
 
+function buildCatalogRatingState(forUserId) {
+  if (game.phase !== "ended") return null;
+  if (!catalogRuntime.isCatalogBackstoryId(game.settings.backstoryId)) return null;
+  const catalogId = game.catalogRateCatalogId || scenarioCatalog.parseCatalogUuid(game.settings.backstoryId);
+  if (!catalogId) return null;
+  const entry = scenarioCatalog.getPublishedEntry(game.settings.backstoryId);
+  const yourRating =
+    forUserId && game.catalogRatingsByUser ? game.catalogRatingsByUser[forUserId] ?? null : null;
+  return {
+    catalogId,
+    backstoryId: game.settings.backstoryId,
+    title: game.activeBackstory?.title || entry?.title || "Катастрофа",
+    ratingAvg: entry?.ratingAvg ?? null,
+    ratingCount: entry?.ratingCount || 0,
+    canRate: !!forUserId,
+    yourRating,
+  };
+}
+
+async function preloadCatalogRatingsForPlayers() {
+  const catalogId = game.catalogRateCatalogId;
+  if (!catalogId) return;
+  game.catalogRatingsByUser = game.catalogRatingsByUser || {};
+  for (const id of playerIds()) {
+    const uid = game.players[id]?.userId;
+    if (!uid) continue;
+    try {
+      game.catalogRatingsByUser[uid] = await scenarioCatalog.getUserRating(uid, catalogId);
+    } catch (err) {
+      console.error("preloadCatalogRatings", err.message);
+    }
+  }
+}
+
 function endGame() {
   game.phase = "ended";
   game.currentTurn = null;
   revealAllCards();
+  game.catalogRatingsByUser = {};
+  if (catalogRuntime.isCatalogBackstoryId(game.settings.backstoryId)) {
+    game.catalogRateCatalogId = scenarioCatalog.parseCatalogUuid(game.settings.backstoryId);
+    preloadCatalogRatingsForPlayers()
+      .then(() => broadcast())
+      .catch((err) => console.error("preloadCatalogRatings error", err));
+  } else {
+    game.catalogRateCatalogId = null;
+  }
 
   const playerUserIds = playerIds().map((id) => game.players[id].userId);
   const survivorUserIds = activePlayerIds()
@@ -450,6 +493,8 @@ function resetToSetup() {
   game.turnOrder = [];
   game.votes = {};
   game.lastExcludedName = null;
+  game.catalogRateCatalogId = null;
+  game.catalogRatingsByUser = {};
   syncInGameFromPlayers(game.players, game.phase);
 }
 
@@ -515,6 +560,7 @@ function buildPlayerState(playerId) {
         ? { ...buildRoundInfo(), myReveals, remaining: Math.max(0, quota - myReveals) }
         : null,
     voting: game.phase === "voting" ? buildVotingInfo(playerId) : null,
+    catalogRating: buildCatalogRatingState(me?.userId || null),
     settings: { mode: game.settings.mode },
     you: me
       ? {
@@ -898,6 +944,32 @@ io.on("connection", (socket) => {
     if (Object.keys(game.votes).length >= votersNeeded) {
       resolveVoting();
     }
+    broadcast();
+  });
+
+  socket.on("rateCatalogScenario", async (payload) => {
+    if (game.phase !== "ended") return;
+    const playerId = getPlayerIdBySocket(socket.id);
+    const player = playerId ? game.players[playerId] : null;
+    if (!player?.userId) {
+      socket.emit("actionError", "Войдите в аккаунт, чтобы оценить сценарий.");
+      return;
+    }
+    const catalogId =
+      game.catalogRateCatalogId ||
+      scenarioCatalog.parseCatalogUuid(game.settings.backstoryId);
+    if (!catalogId) return;
+    const result = await scenarioCatalog.rateScenario(
+      player.userId,
+      catalogId,
+      payload?.rating
+    );
+    if (!result.ok) {
+      socket.emit("actionError", result.error);
+      return;
+    }
+    game.catalogRatingsByUser = game.catalogRatingsByUser || {};
+    game.catalogRatingsByUser[player.userId] = result.yourRating;
     broadcast();
   });
 
