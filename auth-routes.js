@@ -449,6 +449,7 @@ async function resolvePlayerIdentity(payload) {
 module.exports = {
   mountAuthRoutes,
   resolvePlayerIdentity,
+  requireUser,
   GUEST_AVATAR,
   DEFAULT_AVATAR,
 };

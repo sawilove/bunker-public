@@ -150,6 +150,37 @@ async function initDatabase() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS scenario_catalog (
+      id TEXT PRIMARY KEY,
+      author_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      text TEXT NOT NULL,
+      location_label TEXT NOT NULL DEFAULT 'В бункере',
+      scene_key TEXT,
+      cover_webp BYTEA,
+      card_pool_preset TEXT NOT NULL DEFAULT 'standard',
+      card_pool_custom JSONB,
+      status TEXT NOT NULL DEFAULT 'draft',
+      review_note TEXT,
+      reviewed_at TIMESTAMPTZ,
+      reviewed_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await p.query(`
+    CREATE INDEX IF NOT EXISTS scenario_catalog_status_idx
+    ON scenario_catalog (status);
+  `);
+  await p.query(`
+    CREATE INDEX IF NOT EXISTS scenario_catalog_author_idx
+    ON scenario_catalog (author_id);
+  `);
+  await p.query(`
+    CREATE INDEX IF NOT EXISTS scenario_catalog_published_idx
+    ON scenario_catalog (status, updated_at DESC);
+  `);
 }
 
 function rowToUser(row) {

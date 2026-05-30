@@ -18,6 +18,7 @@
         <div class="dev-panel__actions">
           <button type="button" class="btn btn--small btn--amber" data-dev-catalog-scenarios>Редактировать сценарии</button>
           <button type="button" class="btn btn--small btn--amber" data-dev-catalog-pools>Паки характеристик</button>
+          <button type="button" class="btn btn--small btn--amber" data-dev-scenario-mod>Модерация каталога</button>
         </div>
         <p id="devPanelError" class="form-error hidden"></p>
         <p id="devPanelSuccess" class="form-success hidden"></p>
@@ -35,6 +36,10 @@
     panel.querySelector("[data-dev-catalog-pools]")?.addEventListener("click", () => {
       close();
       BunkerScenarioEditor?.openDevCardPoolsEditor?.();
+    });
+    panel.querySelector("[data-dev-scenario-mod]")?.addEventListener("click", () => {
+      close();
+      BunkerScenarioEditor?.openDevScenarioModeration?.();
     });
     return panel;
   }

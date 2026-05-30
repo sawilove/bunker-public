@@ -68,13 +68,21 @@ let suppressSettingsEmit = false;
 let selectedBackstoryId = "nuclear";
 let backstoryRandom = false;
 const backstoriesById = {};
-let hostAccess = { premium: false, dev: false };
+let hostAccess = { premium: false, dev: false, loggedIn: false };
 let savedCustomBackstory = null;
+const communityBackstoriesById = {};
+const catalogCardPoolsById = {};
 const CUSTOM_BACKSTORY_ID = BunkerScenarioEditor.CUSTOM_ID;
+
+function authTokenPayload() {
+  const token = BunkerAuth.getToken?.() || "";
+  return token ? { authToken: token } : {};
+}
 
 function emitHostJoin(extra = {}) {
   socket.emit("hostJoin", {
     hostId: BunkerRuntime.getHostId(),
+    ...authTokenPayload(),
     ...extra,
   });
 }
@@ -144,12 +152,18 @@ function formatCardValue(c) {
 
 function currentSettingsPayload() {
   const payload = {
-    backstoryId: selectedBackstoryId,
     backstoryRandom,
-    authToken: BunkerAuth.getToken() || undefined,
+    ...authTokenPayload(),
   };
+  if (backstoryRandom) {
+    return payload;
+  }
+  payload.backstoryId = selectedBackstoryId;
   if (selectedBackstoryId === CUSTOM_BACKSTORY_ID && savedCustomBackstory) {
     payload.customBackstory = savedCustomBackstory;
+  }
+  if (selectedBackstoryId?.startsWith?.("catalog:")) {
+    payload.catalogCardPools = catalogCardPoolsById[selectedBackstoryId] || null;
   }
   return payload;
 }
@@ -160,9 +174,7 @@ function syncScenarioSelection() {
     const cardId = card.dataset.id;
     const selected = isRandom
       ? backstoryRandom
-      : !backstoryRandom &&
-        (cardId === selectedBackstoryId ||
-          (cardId === CUSTOM_BACKSTORY_ID && selectedBackstoryId === CUSTOM_BACKSTORY_ID));
+      : !backstoryRandom && cardId === selectedBackstoryId;
     card.classList.toggle("scenario-card--selected", selected);
     card.setAttribute("aria-selected", selected ? "true" : "false");
   });
@@ -193,7 +205,8 @@ function getLocalScenarioPreview() {
       bunkerParamsPending: true,
     };
   }
-  const story = backstoriesById[selectedBackstoryId];
+  const story =
+    backstoriesById[selectedBackstoryId] || communityBackstoriesById[selectedBackstoryId];
   return story ? enrichScenarioFromCatalog(story) : null;
 }
 
@@ -236,17 +249,53 @@ function rebuildScenarioGrid() {
   if (stories.length) buildScenarioGrid(stories);
 }
 
+function catalogCoverSrc(b) {
+  if (!b?.coverUrl) return null;
+  const base = (BunkerAuth.apiBase?.() || "").replace(/\/$/, "");
+  return base ? `${base}${b.coverUrl}` : b.coverUrl;
+}
+
+function scenarioCardImgHtml(b) {
+  const coverSrc = catalogCoverSrc(b);
+  if (coverSrc) {
+    return `<img class="scenario-card__img" src="${escapeHtml(coverSrc)}" alt="${escapeHtml(b.title)}" loading="lazy">`;
+  }
+  if (b.scene) {
+    return `<img class="scenario-card__img" src="${BunkerRuntime.assetUrl(`scenarios/${b.scene}.png`)}" alt="${escapeHtml(b.title)}" loading="lazy">`;
+  }
+  return `<span class="scenario-card__random-mark" aria-hidden="true">18+</span>`;
+}
+
 function buildScenarioGrid(backstories) {
-  const cards = backstories
+  const classicCards = backstories
     .map(
       (b) => `
     <button type="button" class="scenario-card" data-id="${b.id}" aria-selected="false"
       title="${escapeHtml(b.title)}">
-      ${b.scene ? `<img class="scenario-card__img" src="${BunkerRuntime.assetUrl(`scenarios/${b.scene}.png`)}" alt="${escapeHtml(b.title)}" loading="lazy">` : `<span class="scenario-card__random-mark" aria-hidden="true">18+</span>`}
+      ${scenarioCardImgHtml(b)}
       <span class="scenario-card__label">${escapeHtml(b.title)}</span>
     </button>`
     )
     .join("");
+
+  const communityList = Object.values(communityBackstoriesById);
+  const catalogSection =
+    hostAccess.loggedIn && communityList.length
+      ? `<p class="scenario-grid__section-title">Каталог</p>${communityList
+          .map(
+            (b) => `
+    <button type="button" class="scenario-card scenario-card--catalog" data-id="${escapeHtml(b.id)}" aria-selected="false"
+      title="${escapeHtml(b.title)}">
+      ${scenarioCardImgHtml(b)}
+      <span class="scenario-card__label">${escapeHtml(b.title)}</span>
+    </button>`
+          )
+          .join("")}`
+      : hostAccess.loggedIn
+        ? `<p class="scenario-grid__hint">В каталоге пока нет одобренных сценариев.</p>`
+        : `<p class="scenario-grid__hint">Войдите в аккаунт, чтобы выбирать сценарии из каталога.</p>`;
+
+  const cards = classicCards;
 
   const randomCard = `
     <button type="button" class="scenario-card scenario-card--random" data-random="true" aria-selected="false"
@@ -256,6 +305,9 @@ function buildScenarioGrid(backstories) {
     </button>`;
 
   const customCard = BunkerScenarioEditor.customScenarioCardHtml(canUseCustomScenario());
+  const mineBtn = canUseCustomScenario()
+    ? `<button type="button" class="btn btn--small" data-my-scenarios>Мои сценарии</button>`
+    : "";
   const devTools = hostAccess.dev
     ? `<div class="host-dev-tools">
         <button type="button" class="btn btn--small" data-dev-edit-scenarios>Редактировать сценарии</button>
@@ -263,7 +315,8 @@ function buildScenarioGrid(backstories) {
       </div>`
     : "";
 
-  scenarioGrid.innerHTML = cards + customCard + randomCard + devTools;
+  scenarioGrid.innerHTML =
+    cards + catalogSection + customCard + randomCard + mineBtn + devTools;
 
   scenarioGrid.querySelectorAll(".scenario-card").forEach((card) => {
     card.addEventListener("click", () => {
@@ -301,6 +354,9 @@ function buildScenarioGrid(backstories) {
   scenarioGrid.querySelector("[data-dev-edit-pools]")?.addEventListener("click", () => {
     BunkerScenarioEditor.openDevCardPoolsEditor();
   });
+  scenarioGrid.querySelector("[data-my-scenarios]")?.addEventListener("click", () => {
+    BunkerScenarioEditor.openMyScenarios?.();
+  });
 }
 
 function emitSettings() {
@@ -326,9 +382,24 @@ function fillCatalog(catalog, settings) {
     });
   }
 
+  if (catalog.communityBackstories) {
+    for (const key of Object.keys(communityBackstoriesById)) {
+      delete communityBackstoriesById[key];
+    }
+    catalog.communityBackstories.forEach((b) => {
+      communityBackstoriesById[b.id] = b;
+      if (b.cardPools) catalogCardPoolsById[b.id] = b.cardPools;
+    });
+    if (catalogReady) rebuildScenarioGrid();
+  }
+
   suppressSettingsEmit = true;
-  selectedBackstoryId = settings.backstoryId;
-  backstoryRandom = settings.backstoryRandom;
+  backstoryRandom = !!settings.backstoryRandom;
+  if (backstoryRandom) {
+    selectedBackstoryId = settings.backstoryId || selectedBackstoryId;
+  } else {
+    selectedBackstoryId = settings.backstoryId || selectedBackstoryId;
+  }
   if (settings.customBackstory) savedCustomBackstory = settings.customBackstory;
   syncScenarioSelection();
   updateHostScenarioTheme(getLocalScenarioPreview());
@@ -524,20 +595,43 @@ socket.on("hostError", (msg) => {
   alert(msg || "Не удалось подключиться как ведущий.");
 });
 
-(async function loadHostAccess() {
-  if (!BunkerAuth.apiBase() || !BunkerAuth.getToken()) return;
+async function loadHostAccess() {
+  if (!BunkerAuth.apiBase?.()) {
+    hostAccess = { premium: false, dev: false, loggedIn: false };
+    rebuildScenarioGrid();
+    syncScenarioSelection();
+    return;
+  }
+  if (!BunkerAuth.getToken?.()) {
+    hostAccess = { premium: false, dev: false, loggedIn: false };
+    rebuildScenarioGrid();
+    syncScenarioSelection();
+    return;
+  }
   try {
-    const { user } = await BunkerAuth.fetchMe();
-    hostAccess = { premium: !!user?.premium, dev: !!user?.dev };
-    if (hostAccess.premium || hostAccess.dev) {
-      const data = await BunkerAuth.getCustomScenario();
-      savedCustomBackstory = data.customBackstory || null;
-    }
-    if (catalogReady) {
-      rebuildScenarioGrid();
-      syncScenarioSelection();
+    const user = await BunkerAuth.fetchMe();
+    if (!user) {
+      hostAccess = { premium: false, dev: false, loggedIn: false };
+    } else {
+      hostAccess = {
+        premium: !!user.premium,
+        dev: !!user.dev,
+        loggedIn: true,
+      };
+      if (hostAccess.premium || hostAccess.dev) {
+        const data = await BunkerAuth.getCustomScenario();
+        savedCustomBackstory = data.customBackstory || null;
+      }
     }
   } catch {
-    /* гость или офлайн API */
+    hostAccess = { premium: false, dev: false, loggedIn: false };
   }
-})();
+  rebuildScenarioGrid();
+  syncScenarioSelection();
+  emitHostJoin();
+}
+
+loadHostAccess();
+window.addEventListener("bunker:auth-ready", () => {
+  loadHostAccess();
+});

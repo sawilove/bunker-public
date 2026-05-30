@@ -33,6 +33,8 @@ async function loadSiteSettings() {
     );
     maintenanceEnabled = rows[0]?.value === "true";
     await catalogRuntime.loadCatalogOverrides(pool);
+    const scenarioCatalog = require("./scenario-catalog-store");
+    await scenarioCatalog.refreshPublishedCache();
   } catch (err) {
     if (err.code !== "42P01") console.error("site settings load:", err.message);
   }
@@ -164,6 +166,8 @@ function maintenanceMiddleware(req, res, next) {
     p.startsWith("/api/friends") ||
     p.startsWith("/api/chat/") ||
     p.startsWith("/api/game/") ||
+    p.startsWith("/api/scenarios/") ||
+    p.startsWith("/api/dev/scenarios") ||
     p.startsWith("/socket.io") ||
     isStaticAsset(p)
   ) {

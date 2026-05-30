@@ -1,4 +1,5 @@
 const gameData = require("./game-data");
+const scenarioCatalog = require("./scenario-catalog-store");
 
 const CUSTOM_BACKSTORY_ID = "custom";
 
@@ -89,12 +90,38 @@ function getEffectiveBackstories() {
 
 function findBackstory(id) {
   if (id === CUSTOM_BACKSTORY_ID) return null;
+  if (scenarioCatalog.isCatalogBackstoryId(id)) {
+    const entry = scenarioCatalog.getPublishedEntry(id);
+    return entry ? scenarioCatalog.entryToBackstory(entry) : null;
+  }
   return getEffectiveBackstories().find((b) => b.id === id) || null;
 }
 
-function isValidBackstoryId(id, settings) {
+function isValidBackstoryId(id, settings, opts = {}) {
   if (id === CUSTOM_BACKSTORY_ID) return !!sanitizeCustomBackstory(settings?.customBackstory);
+  if (scenarioCatalog.isCatalogBackstoryId(id)) {
+    return opts.loggedIn && !!scenarioCatalog.getPublishedEntry(id);
+  }
   return !!findBackstory(id);
+}
+
+function sessionCardPoolsForSettings(settings) {
+  if (settings?.customCardPools && typeof settings.customCardPools === "object") {
+    return settings.customCardPools;
+  }
+  if (scenarioCatalog.isCatalogBackstoryId(settings?.backstoryId)) {
+    const entry = scenarioCatalog.getPublishedEntry(settings.backstoryId);
+    if (entry) return scenarioCatalog.cardPoolsForEntry(entry);
+  }
+  return null;
+}
+
+function dealScenarioIdForSettings(settings) {
+  if (scenarioCatalog.isCatalogBackstoryId(settings?.backstoryId)) {
+    const entry = scenarioCatalog.getPublishedEntry(settings.backstoryId);
+    if (entry) return scenarioCatalog.bunkerRollIdForEntry(entry);
+  }
+  return settings?.backstoryId;
 }
 
 function mergeCardPools(scenarioId, sessionPools) {
@@ -157,6 +184,7 @@ function getScenarioPreview(settings) {
     text: story.text,
     badge: story.badge,
     locationLabel: story.locationLabel,
+    coverUrl: story.coverUrl || null,
     bunkerParamsPending: true,
     bunkerParamsNote: gameData.BUNKER_PARAMS_PENDING_NOTE,
   };
@@ -173,7 +201,12 @@ function buildActiveBackstory(settings, playerCount) {
     story = findBackstory(settings.backstoryId) || getEffectiveBackstories()[0];
   }
   const spots = gameData.getBunkerSpots(playerCount);
-  const bunker = gameData.rollBunkerProfile(story.id);
+  const rollId = scenarioCatalog.isCatalogBackstoryId(story.id)
+    ? scenarioCatalog.bunkerRollIdForEntry(
+        scenarioCatalog.getPublishedEntry(story.id) || { cardPoolPreset: "standard" }
+      )
+    : story.id;
+  const bunker = gameData.rollBunkerProfile(rollId);
   return {
     id: story.id,
     scene: story.scene,
@@ -188,35 +221,54 @@ function buildActiveBackstory(settings, playerCount) {
   };
 }
 
-function applySettingsPayload(game, payload) {
+function applySettingsPayload(game, payload, opts = {}) {
   if (payload?.mode && gameData.MODES.some((m) => m.id === payload.mode)) {
     game.settings.mode = payload.mode;
   }
-  if (typeof payload?.backstoryRandom === "boolean") {
-    game.settings.backstoryRandom = payload.backstoryRandom;
-  }
-  if (payload?.backstoryId && isValidBackstoryId(payload.backstoryId, payload)) {
-    game.settings.backstoryId = payload.backstoryId;
-    game.settings.backstoryRandom = false;
+  if (payload?.backstoryRandom === true) {
+    game.settings.backstoryRandom = true;
+  } else {
+    if (typeof payload?.backstoryRandom === "boolean") {
+      game.settings.backstoryRandom = payload.backstoryRandom;
+    }
+    if (payload?.backstoryId && isValidBackstoryId(payload.backstoryId, payload, opts)) {
+      game.settings.backstoryId = payload.backstoryId;
+      game.settings.backstoryRandom = false;
+    }
   }
   if (payload?.customBackstory !== undefined) {
     const custom = sanitizeCustomBackstory(payload.customBackstory);
     game.settings.customBackstory = custom;
   }
-  if (payload?.customCardPools !== undefined && payload.customCardPools) {
-    game.settings.customCardPools =
-      typeof payload.customCardPools === "object" ? payload.customCardPools : null;
+  const pools =
+    payload?.catalogCardPools ||
+    (payload?.customCardPools && typeof payload.customCardPools === "object"
+      ? payload.customCardPools
+      : null);
+  if (pools) {
+    game.settings.customCardPools = pools;
+  } else if (
+    game.settings.backstoryId &&
+    scenarioCatalog.isCatalogBackstoryId(game.settings.backstoryId)
+  ) {
+    const entry = scenarioCatalog.getPublishedEntry(game.settings.backstoryId);
+    game.settings.customCardPools = entry ? scenarioCatalog.cardPoolsForEntry(entry) : null;
+  } else if (payload?.customCardPools !== undefined) {
+    game.settings.customCardPools = null;
   }
 }
 
-function getCatalogForHost() {
-  return {
+function getCatalogForHost(opts = {}) {
+  const catalog = {
     modes: gameData.MODES,
     backstories: getEffectiveBackstories(),
+    communityBackstories: opts.loggedIn ? scenarioCatalog.getPublishedCache() : [],
     customBackstoryId: CUSTOM_BACKSTORY_ID,
     cardTypes: gameData.CARD_TYPES,
     cardPools: mergeCardPools("nuclear", null),
+    sceneKeys: scenarioCatalog.VALID_SCENES,
   };
+  return catalog;
 }
 
 module.exports = {
@@ -228,6 +280,9 @@ module.exports = {
   getEffectiveBackstories,
   sanitizeCustomBackstory,
   isValidBackstoryId,
+  isCatalogBackstoryId: scenarioCatalog.isCatalogBackstoryId,
+  sessionCardPoolsForSettings,
+  dealScenarioIdForSettings,
   mergeCardPools,
   dealPlayerCards,
   getScenarioPreview,

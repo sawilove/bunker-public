@@ -40,6 +40,9 @@ const { mountSocialRoutes, mountSocialSockets, purgeOldChatMessages, syncInGameF
 const { loadSiteSettings, mountDevRoutes, maintenanceMiddleware, initDatabase } =
   require("./backend/core");
 const { mountNewsRoutes, seedNewsIfEmpty } = require("./backend/news");
+const { mountScenarioCatalogRoutes } = require("./scenario-catalog-routes");
+const { requireUser } = require("./auth-routes");
+const scenarioCatalog = require("./scenario-catalog-store");
 
 const app = express();
 const server = http.createServer(app);
@@ -47,6 +50,7 @@ const server = http.createServer(app);
 app.use(express.json({ limit: "6mb" }));
 app.use(maintenanceMiddleware);
 mountAuthRoutes(app);
+mountScenarioCatalogRoutes(app, { verifyToken, requireUser });
 mountDevRoutes(app);
 mountNewsRoutes(app);
 
@@ -109,6 +113,7 @@ app.get("/game/:code", (req, res) => {
 
 let hostId = null;
 let hostSocketId = null;
+let hostAuthUser = null;
 let sessionCode = null;
 
 /** socket.id -> playerId */
@@ -463,7 +468,7 @@ function handleAllPlayersLeft() {
   }
 }
 
-function buildHostState() {
+function buildHostState(hostUser = null) {
   const n = playerIds().length;
   const active = activeCount();
   return {
@@ -471,7 +476,7 @@ function buildHostState() {
     phase: game.phase,
     hostId,
     sessionCode,
-    catalog: getCatalogForHost(),
+    catalog: getCatalogForHost({ loggedIn: !!hostUser }),
     settings: { ...game.settings },
     backstory: ["playing", "voting", "ended"].includes(game.phase)
       ? game.activeBackstory
@@ -543,7 +548,7 @@ function buildPlayerState(playerId) {
 
 function emitHostState() {
   if (hostSocketId) {
-    io.to(hostSocketId).emit("gameState", buildHostState());
+    io.to(hostSocketId).emit("gameState", buildHostState(hostAuthUser));
   }
 }
 
@@ -627,21 +632,43 @@ mountSocialSockets(io, {
   getSessionInvitePayload: resolveSessionInvite,
 });
 
+async function resolveHostUser(payload) {
+  const user = payload?.authToken ? await verifyToken(payload.authToken) : null;
+  if (user) hostAuthUser = user;
+  return user;
+}
+
 async function applyHostSettings(payload) {
   if (!payload || typeof payload !== "object") return;
-  const user = payload.authToken ? await verifyToken(payload.authToken) : null;
+  const user = await resolveHostUser(payload);
   const premium = hasPremiumAccess(user);
+  const loggedIn = !!user;
   const safe = { ...payload };
   if (!premium) {
     if (safe.backstoryId === CUSTOM_BACKSTORY_ID) return;
     delete safe.customBackstory;
     delete safe.customCardPools;
   }
-  applySettingsPayload(game, safe);
+  if (
+    safe.backstoryId &&
+    catalogRuntime.isCatalogBackstoryId(safe.backstoryId) &&
+    !loggedIn
+  ) {
+    return;
+  }
+  if (
+    safe.backstoryId &&
+    catalogRuntime.isCatalogBackstoryId(safe.backstoryId) &&
+    !catalogRuntime.isValidBackstoryId(safe.backstoryId, safe)
+  ) {
+    return;
+  }
+  applySettingsPayload(game, safe, { loggedIn, premium });
 }
 
 io.on("connection", (socket) => {
-  socket.on("hostJoin", (payload) => {
+  socket.on("hostJoin", async (payload) => {
+    await resolveHostUser(payload || {});
     const requestedHostId = payload?.hostId || null;
     const forceNew = !!payload?.newSession;
 
@@ -665,7 +692,7 @@ io.on("connection", (socket) => {
       bindHostSocket(socket.id);
     }
 
-    socket.emit("gameState", buildHostState());
+    socket.emit("gameState", buildHostState(hostAuthUser));
   });
 
   socket.on("newSession", () => {
@@ -833,9 +860,13 @@ io.on("connection", (socket) => {
     game.activeBackstory = buildActiveBackstory(game.settings, n);
     game.round = 1;
 
-    const scenarioId = game.activeBackstory.id;
+    const scenarioId =
+      catalogRuntime.dealScenarioIdForSettings(game.settings) || game.activeBackstory.id;
+    const sessionPools =
+      catalogRuntime.sessionCardPoolsForSettings(game.settings) ||
+      game.settings.customCardPools;
     for (const id of playerIds()) {
-      game.players[id].cards = dealPlayerCards(scenarioId, game.settings.customCardPools);
+      game.players[id].cards = dealPlayerCards(scenarioId, sessionPools);
       game.players[id].excluded = false;
     }
     initRevealsThisRound();
@@ -927,6 +958,7 @@ const PORT = process.env.PORT || 3000;
 
 initDatabase()
   .then(() => loadSiteSettings())
+  .then(() => scenarioCatalog.refreshPublishedCache())
   .then(() => seedNewsIfEmpty())
   .then(() => purgeOldChatMessages())
   .then(() => {

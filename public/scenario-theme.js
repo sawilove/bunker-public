@@ -34,17 +34,33 @@ function clearScenarioBackground() {
   if (bg) bg.style.removeProperty("--scenario-bg-image");
 }
 
+function resolveScenarioBgUrl(data) {
+  if (!data) return null;
+  if (data.coverUrl) {
+    const path = data.coverUrl;
+    const base = (window.BUNKER_CONFIG?.apiUrl || window.BUNKER_CONFIG?.wsUrl || "").replace(
+      /\/$/,
+      ""
+    );
+    return base ? `${base}${path}` : path;
+  }
+  if (data.scene) {
+    return window.BunkerRuntime
+      ? BunkerRuntime.assetUrl(`scenarios/${data.scene}.png`)
+      : `/scenarios/${data.scene}.png`;
+  }
+  return null;
+}
+
 function applyScenarioBackground(data) {
-  if (!data || data.isRandom || !data.scene) {
+  const img = resolveScenarioBgUrl(data);
+  if (!data || data.isRandom || !img) {
     clearScenarioBackground();
     return;
   }
   const bg = document.getElementById("scenarioBg");
   if (!bg) return;
   document.body.classList.add("has-scenario-bg");
-  const img = window.BunkerRuntime
-    ? BunkerRuntime.assetUrl(`scenarios/${data.scene}.png`)
-    : `/scenarios/${data.scene}.png`;
   bg.style.setProperty("--scenario-bg-image", `url(${img})`);
 }
 

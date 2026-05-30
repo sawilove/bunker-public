@@ -282,6 +282,56 @@
     });
   }
 
+  function scenarioCoverUrl(coverPath) {
+    if (!coverPath) return "";
+    const base = apiBase();
+    return base ? `${base}${coverPath}` : coverPath;
+  }
+
+  async function getScenarioCatalog() {
+    return api("/api/scenarios/catalog");
+  }
+
+  async function getMyScenarios() {
+    return api("/api/scenarios/mine");
+  }
+
+  async function saveScenarioDraft(data) {
+    return api("/api/scenarios", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async function submitScenario(id) {
+    return api(`/api/scenarios/${encodeURIComponent(id)}/submit`, { method: "POST" });
+  }
+
+  async function uploadScenarioCover(id, image, crop) {
+    return api(`/api/scenarios/${encodeURIComponent(id)}/cover`, {
+      method: "POST",
+      body: JSON.stringify({ image, crop }),
+    });
+  }
+
+  async function getDevPendingScenarios() {
+    return api("/api/dev/scenarios/pending");
+  }
+
+  async function approveScenario(id, note) {
+    return api(`/api/dev/scenarios/${encodeURIComponent(id)}/approve`, {
+      method: "POST",
+      body: JSON.stringify({ note: note || "" }),
+    });
+  }
+
+  async function rejectScenario(id, note) {
+    return api(`/api/dev/scenarios/${encodeURIComponent(id)}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ note: note || "" }),
+    });
+  }
+
   async function getDevGameCatalog() {
     return api("/api/dev/game-catalog");
   }
@@ -371,6 +421,15 @@
     setMaintenance,
     getCustomScenario,
     saveCustomScenario,
+    scenarioCoverUrl,
+    getScenarioCatalog,
+    getMyScenarios,
+    saveScenarioDraft,
+    submitScenario,
+    uploadScenarioCover,
+    getDevPendingScenarios,
+    approveScenario,
+    rejectScenario,
     getDevGameCatalog,
     saveDevGameCatalog,
     getNews,

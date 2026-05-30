@@ -268,6 +268,7 @@
     } else {
       renderGuest();
     }
+    window.dispatchEvent(new CustomEvent("bunker:auth-ready"));
   }
 
   window.BunkerSiteAuth = { refresh: init };
