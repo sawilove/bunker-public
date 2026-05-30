@@ -6,6 +6,13 @@
     return path;
   }
 
+  function shineClass(ach, locked) {
+    if (locked) return "";
+    if (ach.type === "unique") return " achievement-medal--shine achievement-medal--shine-unique";
+    if (ach.tier === "platinum") return " achievement-medal--shine achievement-medal--shine-platinum";
+    return "";
+  }
+
   function medalHtml(ach, opts = {}) {
     if (!ach) return "";
     const esc = window.BunkerUserBadges?.escapeHtml || ((s) => String(s));
@@ -16,8 +23,10 @@
     const titleAttr = opts.showTitle !== false ? ` title="${esc(name)}"` : "";
     const lockedClass = locked ? " achievement-medal--locked" : "";
     const selectedClass = opts.selected ? " achievement-medal--selected" : "";
+    const displayedClass = opts.displayed ? " achievement-medal--displayed" : "";
     const interactiveClass = opts.interactive ? " achievement-medal--interactive" : "";
-    return `<span class="achievement-medal achievement-medal--${size}${lockedClass}${selectedClass}${interactiveClass}"${titleAttr} data-achievement-id="${esc(ach.id || "")}">
+    const shine = shineClass(ach, locked);
+    return `<span class="achievement-medal achievement-medal--${size}${lockedClass}${selectedClass}${displayedClass}${interactiveClass}${shine}"${titleAttr} data-achievement-id="${esc(ach.id || "")}">
       <img class="achievement-medal__img" src="${esc(icon)}" alt="" loading="lazy">
     </span>`;
   }
@@ -42,7 +51,10 @@
     const locked = !ach.unlocked;
     const typeLabels = { once: "Разовое", unique: "Уникальное", goal: "Целевое" };
     const typeLabel = typeLabels[ach.type] || ach.type;
-    return `<article class="achievement-card${locked ? " achievement-card--locked" : ""}" data-achievement-id="${esc(ach.id)}">
+    const cardShine = !locked && (ach.type === "unique" || ach.tier === "platinum")
+      ? ` achievement-card--shine achievement-card--shine-${ach.type === "unique" ? "unique" : "platinum"}`
+      : "";
+    return `<article class="achievement-card${locked ? " achievement-card--locked" : ""}${cardShine}" data-achievement-id="${esc(ach.id)}">
       ${medalHtml(ach, { size: "lg", locked, showTitle: false })}
       <div class="achievement-card__body">
         <span class="achievement-card__type">${esc(typeLabel)}</span>

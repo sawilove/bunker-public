@@ -114,6 +114,8 @@ async function createNewsPost(authorId, data) {
      RETURNING *`,
     [id, title, body, category, JSON.stringify(media), published, authorId]
   );
+  const { syncAchievementsForUser } = require("./achievement-store");
+  syncAchievementsForUser(authorId).catch(() => {});
   return { ok: true, post: rowToPost(rows[0]) };
 }
 

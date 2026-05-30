@@ -130,7 +130,8 @@
 
     const medalsHtml = window.BunkerAchievementsUi?.medalsRowHtml?.(displayedAchievements, {
       className: "profile-hero__medals",
-      size: "md",
+      size: "profile",
+      displayed: true,
     }) || "";
 
 

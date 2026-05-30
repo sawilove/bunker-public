@@ -14,6 +14,10 @@ const TIERS = {
   teal: { rim: "#4a9e8e", fill: "#1e3d36", accent: "#7ed4c4" },
   ember: { rim: "#c45a30", fill: "#4a2818", accent: "#ff9050" },
   dev: { rim: "#c03030", fill: "#3a1515", accent: "#ff6060" },
+  pioneer: { rim: "#c04040", fill: "#4a1818", accent: "#ff9090" },
+  broadcast: { rim: "#5080c0", fill: "#1a2840", accent: "#90c0ff" },
+  legend: { rim: "#9060c0", fill: "#2a1840", accent: "#d0a0ff" },
+  editor: { rim: "#408878", fill: "#183830", accent: "#70d0b0" },
 };
 
 /** Центр иконки на медали — чуть ниже геометрического центра круга */
@@ -43,6 +47,10 @@ function innerSvg(kind, accent) {
     burst: `<path d="M0,-10 L2,0 L10,0 L4,4 L6,12 L0,8 L-6,12 L-4,4 L-10,0 L-2,0 Z" fill="${accent}" opacity="0.85"/>`,
     crown3: `<g transform="translate(0,-3)"><path d="M-10 6 L-8 -4 L-3 0 L0 -6 L3 0 L8 -4 L10 6 Z" fill="${accent}" opacity="0.95"/><rect x="-10" y="6" width="20" height="4" rx="1" fill="${accent}"/></g>`,
     code: `<text x="0" y="4" text-anchor="middle" font-size="13" font-family="monospace" fill="${accent}">&lt;/&gt;</text>`,
+    pioneer: `<g transform="translate(0,-1.5)"><polygon points="${starPoints(9, 3.6)}" fill="${accent}" opacity="0.95"/><rect x="-7" y="6.5" width="14" height="3" rx="0.5" fill="${accent}" opacity="0.8"/></g>`,
+    mic: `<g transform="translate(0,-1)"><rect x="-3.5" y="-8" width="7" height="11" rx="3.5" fill="#1a1f18" stroke="${accent}" stroke-width="1.4"/><path d="M-8 0 Q-8 8 0 8 Q8 8 8 0" fill="none" stroke="${accent}" stroke-width="1.4"/><line x1="0" y1="8" x2="0" y2="11" stroke="${accent}" stroke-width="1.4"/><line x1="-4.5" y1="11" x2="4.5" y2="11" stroke="${accent}" stroke-width="1.4"/></g>`,
+    starburst: `<polygon points="${starPoints(10, 4.5)}" fill="${accent}" opacity="0.95"/><circle cx="0" cy="0" r="3" fill="#1a1f18" stroke="${accent}" stroke-width="0.8"/>`,
+    stamp: `<circle cx="0" cy="0" r="9" fill="none" stroke="${accent}" stroke-width="1.5"/><path d="M-4 0 L-1 3 L5 -4" fill="none" stroke="${accent}" stroke-width="1.8" stroke-linecap="round"/>`,
   };
   const body = icons[kind] || icons.star;
   return `<g transform="translate(32, ${ICON_CY})">${body}</g>`;
@@ -80,6 +88,10 @@ const MEDALS = [
   { file: "scenario-published.svg", tier: "bronze", inner: "books" },
   { file: "premium-member.svg", tier: "gold", inner: "crown3" },
   { file: "bunker-dev.svg", tier: "dev", inner: "code" },
+  { file: "pioneer-bunker.svg", tier: "pioneer", inner: "star" },
+  { file: "news-voice.svg", tier: "broadcast", inner: "mic" },
+  { file: "catalog-star.svg", tier: "legend", inner: "starburst" },
+  { file: "catalog-editor.svg", tier: "editor", inner: "stamp" },
   { file: "games-10.svg", tier: "silver", inner: "star" },
   { file: "games-50.svg", tier: "gold", inner: "star" },
   { file: "games-100.svg", tier: "platinum", inner: "star" },

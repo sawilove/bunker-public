@@ -4,6 +4,8 @@ const {
   ACHIEVEMENTS,
   ACHIEVEMENT_LIST,
   MAX_DISPLAYED_ACHIEVEMENTS,
+  PIONEER_MAX_RANK,
+  CATALOG_STAR_MIN_RATINGS,
   achievementIconPath,
 } = require("./achievement-data");
 
@@ -51,12 +53,38 @@ async function countPublishedScenarios(userId) {
   return rows[0]?.c || 0;
 }
 
+async function getUniqueAchievementFlags(userId) {
+  const p = getPool();
+  const [{ rows: rankRows }, { rows: newsRows }, { rows: ratingRows }, { rows: modRows }] =
+    await Promise.all([
+      p.query(
+        `SELECT COUNT(*)::int AS rank FROM users
+         WHERE created_at <= (SELECT created_at FROM users WHERE id = $1)`,
+        [userId]
+      ),
+      p.query(`SELECT 1 FROM news_posts WHERE author_id = $1 LIMIT 1`, [userId]),
+      p.query(
+        `SELECT COALESCE(MAX(rating_count), 0)::int AS max_ratings
+         FROM scenario_catalog WHERE author_id = $1 AND status = 'published'`,
+        [userId]
+      ),
+      p.query(`SELECT 1 FROM scenario_catalog WHERE reviewed_by = $1 LIMIT 1`, [userId]),
+    ]);
+  return {
+    registrationRank: rankRows[0]?.rank || 9999,
+    hasNewsPost: newsRows.length > 0,
+    maxScenarioRatings: ratingRows[0]?.max_ratings || 0,
+    hasReviewedScenario: modRows.length > 0,
+  };
+}
+
 async function buildAchievementContext(userId) {
   const user = await getUserById(userId);
   if (!user) return null;
-  const [friendsCount, publishedScenarios] = await Promise.all([
+  const [friendsCount, publishedScenarios, uniqueFlags] = await Promise.all([
     countFriends(userId),
     countPublishedScenarios(userId),
+    getUniqueAchievementFlags(userId),
   ]);
   return {
     user,
@@ -68,6 +96,7 @@ async function buildAchievementContext(userId) {
     hasBio: !!(user.bio || "").trim(),
     premium: hasPremiumAccess(user),
     dev: !!user.dev,
+    ...uniqueFlags,
   };
 }
 
@@ -75,8 +104,20 @@ function isAchievementUnlocked(ach, ctx, unlockedMap) {
   if (unlockedMap.has(ach.id)) return true;
 
   if (ach.type === "unique") {
-    if (ach.id === "bunker_dev") return ctx.dev;
-    return false;
+    switch (ach.id) {
+      case "bunker_dev":
+        return ctx.dev;
+      case "pioneer_bunker":
+        return ctx.registrationRank > 0 && ctx.registrationRank <= PIONEER_MAX_RANK;
+      case "news_voice":
+        return ctx.hasNewsPost;
+      case "catalog_star":
+        return ctx.maxScenarioRatings >= CATALOG_STAR_MIN_RATINGS;
+      case "catalog_editor":
+        return ctx.hasReviewedScenario;
+      default:
+        return false;
+    }
   }
 
   if (ach.type === "once") {
@@ -140,6 +181,7 @@ function achievementToPublic(ach, unlockedMap, ctx) {
   return {
     id: ach.id,
     type: ach.type,
+    tier: ach.tier || null,
     name: ach.name,
     description: ach.description,
     iconUrl: achievementIconPath(ach.id),
@@ -197,6 +239,8 @@ async function getDisplayedAchievementsPublic(userId) {
     const ach = ACHIEVEMENTS[id];
     return {
       id,
+      type: ach.type,
+      tier: ach.tier || null,
       name: ach.name,
       iconUrl: achievementIconPath(id),
     };

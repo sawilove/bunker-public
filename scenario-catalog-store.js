@@ -322,6 +322,8 @@ async function rateScenario(userId, catalogId, ratingRaw) {
   await syncRatingAggregates(catalogId);
   if (entry.status === "published") await refreshPublishedCache();
   const updated = await getEntryById(catalogId);
+  const { syncAchievementsForUser } = require("./achievement-store");
+  syncAchievementsForUser(entry.authorId).catch(() => {});
   return {
     ok: true,
     yourRating: rating,
@@ -456,6 +458,7 @@ async function approveScenario(reviewerId, id, note) {
   await refreshPublishedCache();
   const { syncAchievementsForUser } = require("./achievement-store");
   syncAchievementsForUser(entry.authorId).catch(() => {});
+  syncAchievementsForUser(reviewerId).catch(() => {});
   return { ok: true, entry: await getEntryById(id) };
 }
 
