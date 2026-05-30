@@ -42,6 +42,7 @@ const { loadSiteSettings, mountDevRoutes, maintenanceMiddleware, initDatabase } 
 const { mountNewsRoutes, seedNewsIfEmpty } = require("./backend/news");
 const { mountScenarioCatalogRoutes } = require("./scenario-catalog-routes");
 const { mountAchievementRoutes } = require("./achievement-routes");
+const { mountSocialPlatformRoutes } = require("./social-platform-routes");
 const { requireUser } = require("./auth-routes");
 const scenarioCatalog = require("./scenario-catalog-store");
 
@@ -65,6 +66,7 @@ const io = new Server(server, {
 });
 
 mountSocialRoutes(app, io);
+mountSocialPlatformRoutes(app, io);
 
 app.use(express.static("public"));
 app.use("/scenarios", express.static(path.join(__dirname, "public", "scenarios")));

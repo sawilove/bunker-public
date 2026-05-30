@@ -164,6 +164,7 @@
     const newsUrl = BunkerAuth.pageUrl("news.html");
     const friendsUrl = BunkerAuth.pageUrl("friends.html");
     const achievementsUrl = BunkerAuth.pageUrl("achievements.html");
+    const leaderboardUrl = BunkerAuth.pageUrl("leaderboard.html");
     const menuUserChip = `
       <a href="${profileHref}" class="site-topbar__menu-profile">
         <img class="site-topbar__menu-profile-avatar" src="${BunkerAuth.assetUrl(user.avatarUrl || "/icons/default-avatar.svg")}" alt="">
@@ -201,6 +202,7 @@
             </div>
           </div>
           <a href="${friendsUrl}" class="site-topbar__icon-btn" title="Друзья">${ICONS.friends}</a>
+          <a href="${leaderboardUrl}" class="site-topbar__icon-btn" title="Рейтинг">🏆</a>
           <a href="${achievementsUrl}" class="site-topbar__icon-btn" title="Достижения">${ICONS.achievements}</a>
           ${chip}
         </div>
@@ -211,6 +213,7 @@
           <button type="button" class="site-topbar__menu-item" data-mobile-settings>${ICONS.menu}<span>Настройки приложения</span></button>
           <button type="button" class="site-topbar__menu-item" data-premium-modal>${ICONS.premium}<span>Премиум</span></button>
           <a href="${friendsUrl}" class="site-topbar__menu-item">${ICONS.friends}<span>Друзья</span></a>
+          <a href="${leaderboardUrl}" class="site-topbar__menu-item"><span>🏆 Рейтинг</span></a>
           <a href="${achievementsUrl}" class="site-topbar__menu-item">${ICONS.achievements}<span>Достижения</span></a>
           <a href="${newsUrl}" class="site-topbar__menu-item">${ICONS.news}<span>Новости</span></a>
         </div>

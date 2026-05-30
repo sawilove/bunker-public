@@ -19,6 +19,8 @@
           <button type="button" class="btn btn--small btn--amber" data-dev-catalog-scenarios>Редактировать сценарии</button>
           <button type="button" class="btn btn--small btn--amber" data-dev-catalog-pools>Паки характеристик</button>
           <button type="button" class="btn btn--small btn--amber" data-dev-scenario-mod>Модерация каталога</button>
+          <button type="button" class="btn btn--small" data-dev-reports>Жалобы</button>
+          <button type="button" class="btn btn--small" data-dev-payments>Платежи</button>
         </div>
         <p id="devPanelError" class="form-error hidden"></p>
         <p id="devPanelSuccess" class="form-success hidden"></p>
@@ -41,7 +43,56 @@
       close();
       BunkerScenarioEditor?.openDevScenarioModeration?.();
     });
+    panel.querySelector("[data-dev-reports]")?.addEventListener("click", openReportsModal);
+    panel.querySelector("[data-dev-payments]")?.addEventListener("click", openPaymentsModal);
     return panel;
+  }
+
+  async function openReportsModal() {
+    close();
+    try {
+      const data = await BunkerAuth.getDevReports();
+      if (!data.reports?.length) {
+        alert("Нет необработанных жалоб.");
+        return;
+      }
+      const lines = data.reports
+        .map(
+          (r, i) =>
+            `${i + 1}. ${r.target.nickname} ← ${r.reporter.nickname}\n   ${r.reason}: ${r.body.slice(0, 120)}`
+        )
+        .join("\n\n");
+      const pick = window.prompt(
+        `Жалобы (введите номер для закрытия или dismiss:N):\n\n${lines}`,
+        "1"
+      );
+      if (!pick) return;
+      const dismiss = /^dismiss:/i.test(pick);
+      const num = parseInt(String(pick).replace(/^dismiss:/i, ""), 10);
+      const report = data.reports[num - 1];
+      if (!report) return;
+      await BunkerAuth.resolveDevReport(report.id, dismiss);
+      alert(dismiss ? "Жалоба отклонена." : "Жалоба обработана.");
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function openPaymentsModal() {
+    close();
+    try {
+      const data = await BunkerAuth.getDevPayments();
+      const lines = (data.payments || [])
+        .slice(0, 15)
+        .map(
+          (p) =>
+            `${p.nickname}: ${p.planDays}д, ${p.amount}₽ (${p.source}) — ${new Date(p.createdAt).toLocaleString("ru-RU")}`
+        )
+        .join("\n");
+      alert(lines || "Платежей пока нет.");
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
   function close() {

@@ -4019,6 +4019,109 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer;
 }
 
+.achievement-unlock-toast {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 920;
+  max-width: min(380px, calc(100vw - 2rem));
+  padding: 0.85rem 1rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--amber);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+  animation: achievement-unlock-toast-in 0.35s ease;
+}
+
+.achievement-unlock-toast.hidden {
+  display: none;
+}
+
+.achievement-unlock-toast__inner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-right: 1.25rem;
+}
+
+.achievement-unlock-toast__medal {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+}
+
+.achievement-unlock-toast__text {
+  min-width: 0;
+  flex: 1;
+}
+
+.achievement-unlock-toast__label {
+  margin: 0 0 0.15rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--amber);
+}
+
+.achievement-unlock-toast__name {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.achievement-unlock-toast__close {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+}
+
+.achievement-unlock-toast__close:hover {
+  color: var(--text);
+}
+
+@keyframes achievement-unlock-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.notif-panel__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.notif-panel__content {
+  min-width: 0;
+  flex: 1;
+}
+
+.notif-panel__medal {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
+}
+
+.notif-panel__item--achievement .notif-panel__title {
+  color: var(--amber);
+}
+
 /* —— Profile view / edit —— */
 .profile-view__actions {
   display: flex;
@@ -5326,9 +5429,9 @@ body.mobile-compact-ui .mobile-dock__btn--play {
 
 @keyframes achievement-shine-sweep {
   0% { background-position: 130% 0; opacity: 0; }
-  25% { opacity: 0.45; }
-  55% { opacity: 0.45; }
-  75% { opacity: 0; }
+  20% { opacity: 0.95; }
+  55% { opacity: 0.95; }
+  80% { opacity: 0; }
   100% { background-position: -30% 0; opacity: 0; }
 }
 
@@ -5374,13 +5477,39 @@ body.mobile-compact-ui .mobile-dock__btn--play {
   mask-position: center;
   background: linear-gradient(
     105deg,
-    transparent 42%,
-    rgba(255, 255, 255, 0.3) 50%,
-    transparent 58%
+    transparent 34%,
+    rgba(255, 255, 255, 0.55) 44%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(255, 255, 255, 0.55) 56%,
+    transparent 66%
   );
-  background-size: 220% 100%;
-  mix-blend-mode: soft-light;
+  background-size: 200% 100%;
+  mix-blend-mode: screen;
   animation: achievement-shine-sweep 3.6s ease-in-out infinite;
+}
+
+.achievement-medal--shine-platinum::after {
+  background: linear-gradient(
+    105deg,
+    transparent 34%,
+    rgba(200, 235, 255, 0.6) 44%,
+    rgba(240, 252, 255, 1) 50%,
+    rgba(200, 235, 255, 0.6) 56%,
+    transparent 66%
+  );
+  background-size: 200% 100%;
+}
+
+.achievement-medal--shine-unique::after {
+  background: linear-gradient(
+    105deg,
+    transparent 34%,
+    rgba(255, 220, 140, 0.6) 44%,
+    rgba(255, 248, 220, 1) 50%,
+    rgba(255, 220, 140, 0.6) 56%,
+    transparent 66%
+  );
+  background-size: 200% 100%;
 }
 
 .achievement-medal--shine .achievement-medal__img {
@@ -5598,4 +5727,152 @@ body.mobile-compact-ui .mobile-dock__btn--play {
     width: 48px;
     height: 48px;
   }
+}
+
+.user-status--looking_for_game {
+  color: var(--amber);
+}
+
+.leaderboard-controls__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: flex-end;
+}
+
+.leaderboard-controls__row label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.leaderboard-my-rank {
+  margin-top: 0.75rem;
+  color: var(--amber);
+  font-family: var(--font-mono);
+}
+
+.leaderboard-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.leaderboard-list__item {
+  display: grid;
+  grid-template-columns: 2.5rem 2.5rem 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.leaderboard-list__rank {
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+}
+
+.leaderboard-list__avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.leaderboard-list__score {
+  font-family: var(--font-mono);
+  color: var(--green);
+}
+
+.activity-feed {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+}
+
+.activity-feed__item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.activity-feed__time {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.friends-lfg__row,
+.friends-groups__form {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.friends-groups__list {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+}
+
+.friends-groups__item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.scenario-card__social {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.scenario-card__social-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  cursor: pointer;
+  color: inherit;
+}
+
+.scenario-card__social-btn--on {
+  color: #f87171;
+  border-color: #f87171;
+}
+
+.scenario-comments-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 1rem;
+}
+
+.scenario-comments-modal.hidden {
+  display: none;
+}
+
+.scenario-comments-modal__card {
+  width: min(480px, 100%);
+  max-height: 80vh;
+  overflow: auto;
+}
+
+.scenario-comments-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0;
+}
+
+.scenario-comment-form textarea {
+  width: 100%;
+  margin-bottom: 0.5rem;
 }

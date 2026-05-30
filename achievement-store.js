@@ -55,7 +55,7 @@ async function countPublishedScenarios(userId) {
 
 async function getUniqueAchievementFlags(userId) {
   const p = getPool();
-  const [{ rows: rankRows }, { rows: newsRows }, { rows: ratingRows }, { rows: modRows }] =
+  const [{ rows: rankRows }, { rows: newsRows }, { rows: ratingRows }, { rows: modRows }, globalRank, friendsRank] =
     await Promise.all([
       p.query(
         `SELECT COUNT(*)::int AS rank FROM users
@@ -69,12 +69,31 @@ async function getUniqueAchievementFlags(userId) {
         [userId]
       ),
       p.query(`SELECT 1 FROM scenario_catalog WHERE reviewed_by = $1 LIMIT 1`, [userId]),
+      p.query(
+        `SELECT COUNT(*)::int + 1 AS rank FROM users
+         WHERE bunker_survivals > (SELECT bunker_survivals FROM users WHERE id = $1)`,
+        [userId]
+      ),
+      p.query(
+        `WITH friend_ids AS (
+           SELECT CASE WHEN fp.user_a = $1 THEN fp.user_b ELSE fp.user_a END AS fid
+           FROM friend_pairs fp
+           WHERE (fp.user_a = $1 OR fp.user_b = $1) AND fp.status = 'accepted'
+           UNION SELECT $1
+         )
+         SELECT COUNT(*)::int AS better FROM users u
+         JOIN friend_ids f ON f.fid = u.id
+         WHERE u.bunker_survivals > (SELECT bunker_survivals FROM users WHERE id = $1)`,
+        [userId]
+      ),
     ]);
   return {
     registrationRank: rankRows[0]?.rank || 9999,
     hasNewsPost: newsRows.length > 0,
     maxScenarioRatings: ratingRows[0]?.max_ratings || 0,
     hasReviewedScenario: modRows.length > 0,
+    globalSurvivalRank: globalRank.rows[0]?.rank || 9999,
+    friendsSurvivalRank: (friendsRank.rows[0]?.better || 0) + 1,
   };
 }
 
@@ -96,6 +115,8 @@ async function buildAchievementContext(userId) {
     hasBio: !!(user.bio || "").trim(),
     premium: hasPremiumAccess(user),
     dev: !!user.dev,
+    globalSurvivalRank: uniqueFlags.globalSurvivalRank,
+    friendsSurvivalRank: uniqueFlags.friendsSurvivalRank,
     ...uniqueFlags,
   };
 }
@@ -115,6 +136,10 @@ function isAchievementUnlocked(ach, ctx, unlockedMap) {
         return ctx.maxScenarioRatings >= CATALOG_STAR_MIN_RATINGS;
       case "catalog_editor":
         return ctx.hasReviewedScenario;
+      case "leaderboard_top10":
+        return ctx.globalSurvivalRank > 0 && ctx.globalSurvivalRank <= 10;
+      case "friends_champion":
+        return ctx.friendsSurvivalRank === 1 && ctx.bunkerSurvivals >= 1;
       default:
         return false;
     }
@@ -169,10 +194,41 @@ async function syncAchievementsForUser(userId) {
     if (unlockedMap.has(ach.id)) continue;
     if (!isAchievementUnlocked(ach, ctx, unlockedMap)) continue;
     const granted = await grantAchievement(userId, ach.id);
-    if (granted) newlyUnlocked.push(ach.id);
+    if (granted) {
+      newlyUnlocked.push(ach.id);
+      const pub = newlyUnlockedPublic([ach.id])[0];
+      if (pub) {
+        const {
+          pushAchievementUnlockNotification,
+        } = require("./notification-store");
+        const { recordAchievementActivity } = require("./activity-store");
+        pushAchievementUnlockNotification(userId, pub).catch(() => {});
+        recordAchievementActivity(userId, ach.id, ach.name).catch(() => {});
+      }
+    }
   }
 
   return newlyUnlocked;
+}
+
+function newlyUnlockedPublic(ids) {
+  return ids
+    .filter((id) => ACHIEVEMENTS[id])
+    .map((id) => {
+      const ach = ACHIEVEMENTS[id];
+      return {
+        id,
+        type: ach.type,
+        tier: ach.tier || null,
+        name: ach.name,
+        iconUrl: achievementIconPath(id),
+      };
+    });
+}
+
+async function syncAndGetNewUnlocks(userId) {
+  const ids = await syncAchievementsForUser(userId);
+  return newlyUnlockedPublic(ids);
 }
 
 function achievementToPublic(ach, unlockedMap, ctx) {
@@ -192,7 +248,7 @@ function achievementToPublic(ach, unlockedMap, ctx) {
 }
 
 async function getAchievementsForUser(userId) {
-  await syncAchievementsForUser(userId);
+  const newlyUnlocked = await syncAndGetNewUnlocks(userId);
   const ctx = await buildAchievementContext(userId);
   const unlockedMap = await getUnlockedMap(userId);
   const achievements = ACHIEVEMENT_LIST.map((ach) =>
@@ -203,7 +259,7 @@ async function getAchievementsForUser(userId) {
     [userId]
   );
   const displayed = normalizeDisplayedIds(rows[0]?.displayed_achievements, unlockedMap, ctx);
-  return { achievements, displayed };
+  return { achievements, displayed, newlyUnlocked };
 }
 
 function normalizeDisplayedIds(raw, unlockedMap, ctx) {
@@ -293,6 +349,8 @@ async function getUnlockedCount(userId) {
 
 module.exports = {
   syncAchievementsForUser,
+  syncAndGetNewUnlocks,
+  newlyUnlockedPublic,
   getAchievementsForUser,
   getDisplayedAchievementsPublic,
   setDisplayedAchievements,

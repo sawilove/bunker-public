@@ -1,7 +1,8 @@
-/** In-memory presence: offline | online | in_game */
+/** In-memory presence: offline | online | in_game | looking_for_game overlay */
 
 const socialSockets = new Map();
 const inGameUsers = new Set();
+const lookingForGame = new Set();
 
 function addSocialSocket(userId, socketId) {
   if (!socialSockets.has(userId)) socialSockets.set(userId, new Set());
@@ -12,13 +13,26 @@ function removeSocialSocket(userId, socketId) {
   const set = socialSockets.get(userId);
   if (!set) return;
   set.delete(socketId);
-  if (set.size === 0) socialSockets.delete(userId);
+  if (set.size === 0) {
+    socialSockets.delete(userId);
+    lookingForGame.delete(userId);
+  }
 }
 
 function setUserInGame(userId, inGame) {
   if (!userId) return;
   if (inGame) inGameUsers.add(userId);
   else inGameUsers.delete(userId);
+}
+
+function setLookingForGame(userId, enabled) {
+  if (!userId) return;
+  if (enabled) lookingForGame.add(userId);
+  else lookingForGame.delete(userId);
+}
+
+function getLookingForGame(userId) {
+  return lookingForGame.has(userId);
 }
 
 function getUserStatus(userId) {
@@ -30,7 +44,8 @@ function getUserStatus(userId) {
   return "offline";
 }
 
-function statusLabel(status) {
+function statusLabel(status, lfg) {
+  if (lfg && status !== "offline") return "Ищет игру";
   if (status === "in_game") return "В игре";
   if (status === "online") return "В сети";
   return "Не в сети";
@@ -48,6 +63,8 @@ module.exports = {
   addSocialSocket,
   removeSocialSocket,
   setUserInGame,
+  setLookingForGame,
+  getLookingForGame,
   getUserStatus,
   statusLabel,
   syncInGameFromPlayers,

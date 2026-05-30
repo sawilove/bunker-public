@@ -386,7 +386,11 @@
 
       return `
 
-        <button type="button" class="btn btn--danger" data-remove-friend="${userId}">Удалить из друзей</button>`;
+        <button type="button" class="btn btn--danger" data-remove-friend="${userId}">Удалить из друзей</button>
+
+        <button type="button" class="btn btn--small" data-block-user="${userId}">Заблокировать</button>
+
+        <button type="button" class="btn btn--small" data-report-user="${userId}">Пожаловаться</button>`;
 
     }
 
@@ -406,7 +410,11 @@
 
     }
 
-    return `<button type="button" class="btn btn--amber" data-add-friend="${userId}">Добавить в друзья</button>`;
+    return `<button type="button" class="btn btn--amber" data-add-friend="${userId}">Добавить в друзья</button>
+
+      <button type="button" class="btn btn--small" data-block-user="${userId}">Заблокировать</button>
+
+      <button type="button" class="btn btn--small" data-report-user="${userId}">Пожаловаться</button>`;
 
   }
 
@@ -741,6 +749,31 @@
     content.querySelector("[data-decline-friend]")?.addEventListener("click", onDeclineFriend);
 
     content.querySelector("[data-remove-friend]")?.addEventListener("click", onRemoveFriend);
+
+    content.querySelector("[data-block-user]")?.addEventListener("click", async (e) => {
+      const id = e.currentTarget.dataset.blockUser;
+      if (!id || !confirm("Заблокировать этого игрока?")) return;
+      try {
+        await BunkerAuth.blockUser(id);
+        alert("Игрок заблокирован.");
+        location.reload();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    content.querySelector("[data-report-user]")?.addEventListener("click", async (e) => {
+      const id = e.currentTarget.dataset.reportUser;
+      if (!id) return;
+      const body = window.prompt("Опишите проблему:");
+      if (!body?.trim()) return;
+      try {
+        await BunkerAuth.reportUser(id, "other", body.trim());
+        alert("Жалоба отправлена.");
+      } catch (err) {
+        alert(err.message);
+      }
+    });
 
     content.querySelector("[data-logout]")?.addEventListener("click", () => {
 

@@ -7,6 +7,8 @@
   const chatHandlers = [];
   const presenceHandlers = [];
   const friendRequestHandlers = [];
+  const notificationHandlers = [];
+  const groupChatHandlers = [];
   const connectHandlers = [];
 
   function wsBase() {
@@ -52,6 +54,10 @@
       chatHandlers.forEach((fn) => fn(msg));
     });
 
+    socket.on("group:message", (msg) => {
+      groupChatHandlers.forEach((fn) => fn(msg));
+    });
+
     socket.on("friend:presence", (data) => {
       presenceHandlers.forEach((fn) => fn(data));
     });
@@ -68,6 +74,10 @@
       friendRequestHandlers.forEach((fn) => fn(data));
     });
 
+    socket.on("notification:new", (data) => {
+      notificationHandlers.forEach((fn) => fn(data));
+    });
+
     return socket;
   }
 
@@ -79,8 +89,16 @@
     friendRequestHandlers.push(fn);
   }
 
+  function onNotification(fn) {
+    notificationHandlers.push(fn);
+  }
+
   function onChat(fn) {
     chatHandlers.push(fn);
+  }
+
+  function onGroupChat(fn) {
+    groupChatHandlers.push(fn);
   }
 
   function onPresence(fn) {
@@ -100,6 +118,14 @@
     socket.emit("chat:send", { toUserId, body });
   }
 
+  function sendGroupChat(groupId, body) {
+    if (!socket?.connected) {
+      connect();
+      return;
+    }
+    socket.emit("group:send", { groupId, body });
+  }
+
   function inviteToSession(friendUserId) {
     if (!socket?.connected) {
       connect();
@@ -108,15 +134,27 @@
     socket.emit("session:invite", { friendUserId });
   }
 
+  function inviteGroupToSession(groupId) {
+    if (!socket?.connected) {
+      connect();
+      return;
+    }
+    socket.emit("session:invite_group", { groupId });
+  }
+
   window.BunkerSocial = {
     connect,
     onInvite,
     onFriendRequest,
+    onNotification,
     onChat,
+    onGroupChat,
     onPresence,
     onConnected,
     sendChat,
+    sendGroupChat,
     inviteToSession,
+    inviteGroupToSession,
     isConnected: () => connected,
   };
 })();

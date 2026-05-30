@@ -62,8 +62,16 @@ function renderFriendRow(user, actionsHtml) {
   const av = BunkerAuth.assetUrl(user.avatarUrl || "/icons/default-avatar.svg");
   const frame = BunkerUserBadges.frameClass(user);
   const badges = BunkerUserBadges.roleBadgesHtml(user);
-  const status = BunkerUserBadges.statusHtml(user);
+  const statusUser = { ...user };
+  if (user.lookingForGame && user.status !== "offline") {
+    statusUser.status = "looking_for_game";
+  }
+  const status = BunkerUserBadges.statusHtml(statusUser);
   const profileHref = BunkerAuth.profileUrl(user);
+  const inviteBtn =
+    user.lookingForGame && user.status !== "offline"
+      ? `<button type="button" class="btn btn--small btn--amber" data-invite="${user.id}">Пригласить</button>`
+      : "";
   return `
     <li class="friends-list__item ${frame}" data-user-id="${user.id}">
       <a href="${profileHref}" class="friends-list__avatar-link"><img class="friends-list__avatar" src="${av}" alt=""></a>
@@ -72,7 +80,7 @@ function renderFriendRow(user, actionsHtml) {
         ${status}
         <span class="friends-list__badges">${badges}</span>
       </div>
-      <div class="friends-list__actions">${actionsHtml}</div>
+      <div class="friends-list__actions">${inviteBtn}${actionsHtml}</div>
     </li>`;
 }
 
@@ -181,6 +189,9 @@ document.body.addEventListener("click", async (e) => {
   if (chatId) {
     const user = friendsData.friends.find((f) => f.id === chatId);
     if (user) openChat(user);
+  }
+  if (inviteId) {
+    BunkerSocial.inviteToSession(inviteId);
   }
   if (removeId && confirm("Удалить из друзей?")) {
     await BunkerAuth.removeFriend(removeId);
@@ -365,19 +376,100 @@ BunkerSocial.onChat((msg) => {
   }
 });
 
-BunkerSocial.onPresence(({ userId, status }) => {
+BunkerSocial.onPresence(({ userId, status, lookingForGame }) => {
   for (const list of [friendsData.friends, friendsData.incoming, friendsData.outgoing]) {
     const u = list.find((f) => f.id === userId);
-    if (u) u.status = status;
+    if (u) {
+      u.status = status;
+      u.lookingForGame = !!lookingForGame;
+    }
   }
   renderLists();
   if (activePeerId) {
     const u = friendsData.friends.find((f) => f.id === activePeerId);
-    if (u) chatSubtitle.textContent = BunkerUserBadges.STATUS_LABELS[u.status] || "";
+    if (u) {
+      const su = { ...u };
+      if (u.lookingForGame && u.status !== "offline") su.status = "looking_for_game";
+      chatSubtitle.textContent = BunkerUserBadges.STATUS_LABELS[su.status] || "";
+    }
   }
 });
 
 BunkerSocial.onInvite(showInviteToast);
+
+const lfgToggle = document.getElementById("lfgToggle");
+const groupsList = document.getElementById("groupsList");
+const createGroupForm = document.getElementById("createGroupForm");
+const groupNameInput = document.getElementById("groupNameInput");
+const groupError = document.getElementById("groupError");
+
+lfgToggle?.addEventListener("change", async (e) => {
+  try {
+    await BunkerAuth.setLookingForGame(e.target.checked);
+  } catch (err) {
+    e.target.checked = !e.target.checked;
+    alert(err.message);
+  }
+});
+
+function showGroupMsg(msg) {
+  if (!groupError) return;
+  groupError.textContent = msg || "";
+  groupError.classList.toggle("hidden", !msg);
+}
+
+async function loadGroups() {
+  if (!groupsList) return;
+  try {
+    const data = await BunkerAuth.getGroups();
+    if (!data.groups?.length) {
+      groupsList.innerHTML = '<li class="friends-groups__empty">Нет отрядов — создайте свой.</li>';
+      return;
+    }
+    groupsList.innerHTML = data.groups
+      .map(
+        (g) => `<li class="friends-groups__item" data-group-id="${g.id}">
+          <span class="friends-groups__name">${BunkerUserBadges.escapeHtml(g.name)}</span>
+          <span class="friends-groups__meta">${g.memberCount} уч.</span>
+          <button type="button" class="btn btn--small btn--amber" data-group-invite="${g.id}">В игру</button>
+          <button type="button" class="btn btn--small" data-group-members="${g.id}">Участники</button>
+        </li>`
+      )
+      .join("");
+  } catch (err) {
+    groupsList.innerHTML = `<li class="friends-groups__empty">${BunkerUserBadges.escapeHtml(err.message)}</li>`;
+  }
+}
+
+createGroupForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  showGroupMsg("");
+  try {
+    await BunkerAuth.createGroup(groupNameInput.value);
+    groupNameInput.value = "";
+    await loadGroups();
+  } catch (err) {
+    showGroupMsg(err.message);
+  }
+});
+
+groupsList?.addEventListener("click", async (e) => {
+  const inviteId = e.target.closest("[data-group-invite]")?.dataset.groupInvite;
+  if (inviteId) {
+    BunkerSocial.inviteGroupToSession(inviteId);
+    return;
+  }
+  const membersId = e.target.closest("[data-group-members]")?.dataset.groupMembers;
+  if (membersId) {
+    try {
+      const data = await BunkerAuth.getGroupMembers(membersId);
+      const names = data.members.map((m) => m.nickname).join(", ");
+      alert(`Участники «${data.group.name}»:\n${names}`);
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+});
 
 (async function init() {
   if (!BunkerAuth.apiBase() || !BunkerAuth.getToken()) {
@@ -386,4 +478,11 @@ BunkerSocial.onInvite(showInviteToast);
   }
   BunkerSocial.connect();
   await loadFriends();
+  await loadGroups();
+  try {
+    const me = await BunkerAuth.fetchMe();
+    if (lfgToggle) lfgToggle.checked = !!me?.lookingForGame;
+  } catch {
+    /* ignore */
+  }
 })();

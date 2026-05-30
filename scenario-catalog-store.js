@@ -459,6 +459,8 @@ async function approveScenario(reviewerId, id, note) {
   const { syncAchievementsForUser } = require("./achievement-store");
   syncAchievementsForUser(entry.authorId).catch(() => {});
   syncAchievementsForUser(reviewerId).catch(() => {});
+  const { recordScenarioPublishedActivity } = require("./activity-store");
+  recordScenarioPublishedActivity(entry.authorId, id, entry.title).catch(() => {});
   return { ok: true, entry: await getEntryById(id) };
 }
 
@@ -475,6 +477,8 @@ async function rejectScenario(reviewerId, id, note) {
      WHERE id = $1`,
     [id, reviewerId, reviewNote]
   );
+  const { syncAchievementsForUser } = require("./achievement-store");
+  syncAchievementsForUser(reviewerId).catch(() => {});
   return { ok: true, entry: await getEntryById(id) };
 }
 
@@ -582,6 +586,103 @@ async function incrementPlayCount(backstoryId) {
   }
 }
 
+async function listScenarioComments(catalogId, limit = 30) {
+  const { rows } = await getPool().query(
+    `SELECT c.id, c.body, c.created_at, u.id AS user_id, u.nickname, u.profile_id
+     FROM scenario_comments c
+     JOIN users u ON u.id = c.user_id
+     WHERE c.catalog_id = $1
+     ORDER BY c.created_at DESC
+     LIMIT $2`,
+    [catalogId, Math.min(limit, 50)]
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    body: r.body,
+    createdAt: r.created_at,
+    user: { id: r.user_id, profileId: r.profile_id || r.user_id, nickname: r.nickname },
+  }));
+}
+
+async function addScenarioComment(userId, catalogId, body) {
+  const entry = await getEntryById(catalogId);
+  if (!entry || entry.status !== "published") {
+    return { ok: false, error: "Сценарий не найден." };
+  }
+  const text = (body || "").trim().slice(0, 1000);
+  if (!text) return { ok: false, error: "Комментарий не может быть пустым." };
+  const id = crypto.randomBytes(12).toString("hex");
+  await getPool().query(
+    `INSERT INTO scenario_comments (id, catalog_id, user_id, body) VALUES ($1, $2, $3, $4)`,
+    [id, catalogId, userId, text]
+  );
+  return { ok: true, comment: { id, body: text, createdAt: new Date().toISOString() } };
+}
+
+async function deleteScenarioComment(userId, commentId, isDev = false) {
+  const { rows } = await getPool().query(
+    `SELECT user_id FROM scenario_comments WHERE id = $1`,
+    [commentId]
+  );
+  const row = rows[0];
+  if (!row) return { ok: false, error: "Комментарий не найден." };
+  if (!isDev && row.user_id !== userId) {
+    return { ok: false, error: "Нельзя удалить чужой комментарий." };
+  }
+  await getPool().query(`DELETE FROM scenario_comments WHERE id = $1`, [commentId]);
+  return { ok: true };
+}
+
+async function toggleScenarioFavorite(userId, catalogId) {
+  const entry = await getEntryById(catalogId);
+  if (!entry || entry.status !== "published") {
+    return { ok: false, error: "Сценарий не найден." };
+  }
+  const existing = await getPool().query(
+    `SELECT 1 FROM scenario_favorites WHERE catalog_id = $1 AND user_id = $2`,
+    [catalogId, userId]
+  );
+  if (existing.rows[0]) {
+    await getPool().query(
+      `DELETE FROM scenario_favorites WHERE catalog_id = $1 AND user_id = $2`,
+      [catalogId, userId]
+    );
+    return { ok: true, favorited: false };
+  }
+  await getPool().query(
+    `INSERT INTO scenario_favorites (catalog_id, user_id) VALUES ($1, $2)`,
+    [catalogId, userId]
+  );
+  return { ok: true, favorited: true };
+}
+
+async function listScenarioFavorites(userId) {
+  const { rows } = await getPool().query(
+    `SELECT sc.id, sc.title, sc.play_count, sc.rating_sum, sc.rating_count, sf.created_at
+     FROM scenario_favorites sf
+     JOIN scenario_catalog sc ON sc.id = sf.catalog_id
+     WHERE sf.user_id = $1 AND sc.status = 'published'
+     ORDER BY sf.created_at DESC`,
+    [userId]
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    playCount: r.play_count,
+    ratingAvg: r.rating_count ? Math.round((r.rating_sum / r.rating_count) * 10) / 10 : null,
+    favoritedAt: r.created_at,
+  }));
+}
+
+async function isScenarioFavorited(userId, catalogId) {
+  if (!userId) return false;
+  const { rows } = await getPool().query(
+    `SELECT 1 FROM scenario_favorites WHERE catalog_id = $1 AND user_id = $2`,
+    [catalogId, userId]
+  );
+  return rows.length > 0;
+}
+
 module.exports = {
   CATALOG_PREFIX,
   VALID_SCENES,
@@ -618,4 +719,10 @@ module.exports = {
   entryToBackstory,
   bunkerRollIdForEntry,
   cardPoolsForEntry,
+  listScenarioComments,
+  addScenarioComment,
+  deleteScenarioComment,
+  toggleScenarioFavorite,
+  listScenarioFavorites,
+  isScenarioFavorited,
 };

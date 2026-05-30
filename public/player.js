@@ -34,6 +34,7 @@ const roundInfoEl = document.getElementById("roundInfo");
 let joined = false;
 let validatedCode = null;
 let manualCodeFlow = false;
+let lastPlayerPhase = null;
 
 function escapeHtml(str) {
   const el = document.createElement("div");
@@ -357,6 +358,10 @@ function applyState(state) {
   const inGame = state.phase === "playing";
   const inVoting = state.phase === "voting";
   const inEnded = state.phase === "ended";
+  if (inEnded && lastPlayerPhase !== "ended" && window.BunkerAuth?.checkAchievementUnlocks) {
+    BunkerAuth.checkAchievementUnlocks().catch(() => {});
+  }
+  lastPlayerPhase = state.phase;
 
   document.body.classList.toggle("player--lobby", inLobby);
   document.body.classList.toggle("player--in-game", inGame || inVoting || inEnded);

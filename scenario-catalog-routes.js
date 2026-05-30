@@ -279,6 +279,84 @@ function mountScenarioCatalogRoutes(app, { verifyToken, requireUser }) {
       res.status(500).json({ error: "Ошибка сервера." });
     }
   });
+
+  app.get("/api/scenarios/catalog/:id/comments", async (req, res) => {
+    try {
+      const comments = await scenarioCatalog.listScenarioComments(req.params.id);
+      res.json({ comments });
+    } catch (err) {
+      console.error("scenario comments list", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
+  app.post("/api/scenarios/catalog/:id/comments", async (req, res) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      const result = await scenarioCatalog.addScenarioComment(
+        user.id,
+        req.params.id,
+        req.body?.body
+      );
+      if (!result.ok) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+      res.json(result);
+    } catch (err) {
+      console.error("scenario comment add", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
+  app.delete("/api/scenarios/comments/:commentId", async (req, res) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      const result = await scenarioCatalog.deleteScenarioComment(
+        user.id,
+        req.params.commentId,
+        !!user.dev
+      );
+      if (!result.ok) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("scenario comment delete", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
+  app.post("/api/scenarios/catalog/:id/favorite", async (req, res) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      const result = await scenarioCatalog.toggleScenarioFavorite(user.id, req.params.id);
+      if (!result.ok) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+      res.json(result);
+    } catch (err) {
+      console.error("scenario favorite", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
+  app.get("/api/scenarios/favorites", async (req, res) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      const favorites = await scenarioCatalog.listScenarioFavorites(user.id);
+      res.json({ favorites });
+    } catch (err) {
+      console.error("scenario favorites list", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
 }
 
 module.exports = { mountScenarioCatalogRoutes };

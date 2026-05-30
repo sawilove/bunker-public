@@ -16,7 +16,19 @@ const {
   addSocialSocket,
   removeSocialSocket,
   getUserStatus,
+  getLookingForGame,
 } = require("./presence");
+const {
+  pushFriendRequestNotification,
+  pushSessionInviteNotification,
+  pushFriendAcceptedNotification,
+} = require("./notification-store");
+const { getUserById } = require("./user-store");
+const {
+  sendGroupMessage,
+  listGroupMemberIds,
+  getGroupIfMember,
+} = require("./group-store");
 
 let _io = null;
 
@@ -90,6 +102,9 @@ function mountSocialRoutes(app, io) {
           fromUserId: user.id,
           fromNickname: user.nickname,
         });
+        pushFriendRequestNotification(result.toUserId, user).catch((err) => {
+          console.error("friend request notification", err);
+        });
       }
       res.json(result);
     } catch (err) {
@@ -108,6 +123,12 @@ function mountSocialRoutes(app, io) {
       if (!result.ok) {
         res.status(400).json({ error: result.error });
         return;
+      }
+      if (result.accepted && result.requesterId) {
+        const accepter = await getUserById(user.id);
+        pushFriendAcceptedNotification(result.requesterId, accepter).catch((err) => {
+          console.error("friend accepted notification", err);
+        });
       }
       res.json({ ok: true });
     } catch (err) {
@@ -187,6 +208,7 @@ function mountSocialSockets(io, deps = {}) {
         emitToUser(fid, "friend:presence", {
           userId: user.id,
           status: getUserStatus(user.id),
+          lookingForGame: getLookingForGame(user.id),
         });
       }
     });
@@ -228,7 +250,60 @@ function mountSocialSockets(io, deps = {}) {
       };
       emitToUser(friendId, "session:invite", invitePayload);
       emitToUser(friendId, "notification:session_invite", invitePayload);
+      pushSessionInviteNotification(friendId, invitePayload).catch((err) => {
+        console.error("session invite notification", err);
+      });
       socket.emit("session:inviteSent", { friendUserId: friendId });
+    });
+
+    socket.on("session:invite_group", async (payload) => {
+      const userId = socialUserBySocket.get(socket.id);
+      if (!userId) return;
+      const groupId = payload?.groupId;
+      if (!groupId) return;
+      const group = await getGroupIfMember(userId, groupId);
+      if (!group) {
+        socket.emit("social:error", { error: "Отряд не найден." });
+        return;
+      }
+      let invite = getSessionInvitePayload?.(userId, socket);
+      if (!invite?.code) {
+        socket.emit("social:error", { error: invite?.error || "Нет активной сессии." });
+        return;
+      }
+      const memberIds = await listGroupMemberIds(groupId);
+      const invitePayload = {
+        code: invite.code,
+        fromUserId: userId,
+        fromNickname: invite.nickname,
+        groupId,
+        groupName: group.name,
+      };
+      for (const memberId of memberIds) {
+        if (memberId === userId) continue;
+        emitToUser(memberId, "session:invite", invitePayload);
+        emitToUser(memberId, "notification:session_invite", invitePayload);
+        pushSessionInviteNotification(memberId, invitePayload).catch(() => {});
+      }
+      socket.emit("session:inviteGroupSent", { groupId, count: memberIds.length - 1 });
+    });
+
+    socket.on("group:send", async (payload) => {
+      const userId = socialUserBySocket.get(socket.id);
+      if (!userId) return;
+      const groupId = payload?.groupId;
+      const result = await sendGroupMessage(userId, groupId, payload?.body);
+      if (!result.ok) {
+        socket.emit("group:error", { error: result.error });
+        return;
+      }
+      const memberIds = await listGroupMemberIds(groupId);
+      for (const memberId of memberIds) {
+        emitToUser(memberId, "group:message", {
+          ...result.message,
+          mine: memberId === userId,
+        });
+      }
     });
 
     socket.on("disconnect", () => {
@@ -247,6 +322,7 @@ function mountSocialSockets(io, deps = {}) {
             emitToUser(fid, "friend:presence", {
               userId,
               status: "offline",
+              lookingForGame: false,
             });
           }
         });

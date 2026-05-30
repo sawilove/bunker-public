@@ -145,6 +145,9 @@
     if (!getToken()) return null;
     try {
       const data = await api("/api/auth/me");
+      if (data.newlyUnlocked?.length) {
+        window.BunkerAchievementUnlocks?.process(data.newlyUnlocked);
+      }
       return data.user;
     } catch (err) {
       if (err?.status === 401 || err?.status === 403) {
@@ -416,10 +419,138 @@
     return api("/api/achievements");
   }
 
+  async function checkAchievementUnlocks() {
+    const data = await api("/api/achievements/unlocks");
+    if (data.newlyUnlocked?.length) {
+      window.BunkerAchievementUnlocks?.process(data.newlyUnlocked);
+    }
+    return data.newlyUnlocked || [];
+  }
+
   async function setDisplayedAchievements(displayed) {
     return api("/api/auth/achievements/display", {
       method: "PATCH",
       body: JSON.stringify({ displayed }),
+    });
+  }
+
+  async function getNotifications() {
+    return api("/api/notifications");
+  }
+
+  async function markNotificationRead(id) {
+    return api(`/api/notifications/${encodeURIComponent(id)}/read`, { method: "PATCH" });
+  }
+
+  async function markAllNotificationsRead() {
+    return api("/api/notifications/read-all", { method: "POST" });
+  }
+
+  async function deleteNotification(id) {
+    return api(`/api/notifications/${encodeURIComponent(id)}`, { method: "DELETE" });
+  }
+
+  async function blockUser(userId) {
+    return api(`/api/users/${encodeURIComponent(userId)}/block`, { method: "POST" });
+  }
+
+  async function unblockUser(userId) {
+    return api(`/api/users/${encodeURIComponent(userId)}/block`, { method: "DELETE" });
+  }
+
+  async function reportUser(userId, reason, body) {
+    return api(`/api/users/${encodeURIComponent(userId)}/report`, {
+      method: "POST",
+      body: JSON.stringify({ reason, body }),
+    });
+  }
+
+  async function getLeaderboard(metric, scope) {
+    const q = new URLSearchParams({ metric: metric || "survivals", scope: scope || "global" });
+    return api(`/api/leaderboard?${q}`);
+  }
+
+  async function getActivity(scope) {
+    const q = scope ? `?scope=${encodeURIComponent(scope)}` : "";
+    return api(`/api/activity${q}`);
+  }
+
+  async function setLookingForGame(enabled) {
+    return api("/api/social/lfg", {
+      method: "PATCH",
+      body: JSON.stringify({ enabled: !!enabled }),
+    });
+  }
+
+  async function getGroups() {
+    return api("/api/groups");
+  }
+
+  async function createGroup(name) {
+    return api("/api/groups", { method: "POST", body: JSON.stringify({ name }) });
+  }
+
+  async function getGroupMembers(groupId) {
+    return api(`/api/groups/${encodeURIComponent(groupId)}/members`);
+  }
+
+  async function addGroupMember(groupId, userId) {
+    return api(`/api/groups/${encodeURIComponent(groupId)}/members`, {
+      method: "POST",
+      body: JSON.stringify({ userId }),
+    });
+  }
+
+  async function removeGroupMember(groupId, peerId) {
+    return api(`/api/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(peerId)}`, {
+      method: "DELETE",
+    });
+  }
+
+  async function getGroupMessages(groupId) {
+    return api(`/api/groups/${encodeURIComponent(groupId)}/messages`);
+  }
+
+  async function getScenarioComments(catalogId) {
+    return api(`/api/scenarios/catalog/${encodeURIComponent(catalogId)}/comments`);
+  }
+
+  async function addScenarioComment(catalogId, body) {
+    return api(`/api/scenarios/catalog/${encodeURIComponent(catalogId)}/comments`, {
+      method: "POST",
+      body: JSON.stringify({ body }),
+    });
+  }
+
+  async function toggleScenarioFavorite(catalogId) {
+    return api(`/api/scenarios/catalog/${encodeURIComponent(catalogId)}/favorite`, {
+      method: "POST",
+    });
+  }
+
+  async function getScenarioFavorites() {
+    return api("/api/scenarios/favorites");
+  }
+
+  async function getDevReports() {
+    return api("/api/dev/reports");
+  }
+
+  async function resolveDevReport(id, dismiss) {
+    return api(`/api/dev/reports/${encodeURIComponent(id)}/resolve`, {
+      method: "POST",
+      body: JSON.stringify({ dismiss: !!dismiss }),
+    });
+  }
+
+  async function getDevPayments() {
+    return api("/api/dev/payments");
+  }
+
+  async function grantDevPremium(userId, days) {
+    return api("/api/dev/premium/grant", {
+      method: "POST",
+      body: JSON.stringify({ userId, days }),
     });
   }
 
@@ -477,6 +608,31 @@
     uploadNewsMedia,
     newsMediaUrl,
     getAchievements,
+    checkAchievementUnlocks,
     setDisplayedAchievements,
+    getNotifications,
+    markNotificationRead,
+    markAllNotificationsRead,
+    deleteNotification,
+    blockUser,
+    unblockUser,
+    reportUser,
+    getLeaderboard,
+    getActivity,
+    setLookingForGame,
+    getGroups,
+    createGroup,
+    getGroupMembers,
+    addGroupMember,
+    removeGroupMember,
+    getGroupMessages,
+    getScenarioComments,
+    addScenarioComment,
+    toggleScenarioFavorite,
+    getScenarioFavorites,
+    getDevReports,
+    resolveDevReport,
+    getDevPayments,
+    grantDevPremium,
   };
 })();

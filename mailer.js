@@ -178,9 +178,31 @@ function isMailConfigured() {
   return useResend() || !!getTransporter();
 }
 
+async function sendPremiumActivated(toEmail, nickname, days) {
+  const subject = "Premium активирован — Бункер";
+  const text = [
+    `Здравствуйте, ${nickname || "игрок"}!`,
+    "",
+    `Premium на ${days} дн. активирован на вашем аккаунте.`,
+    "",
+    "Приятной игры!",
+  ].join("\n");
+
+  try {
+    if (useResend()) {
+      await sendViaResend(toEmail, subject, text);
+      return;
+    }
+    await sendViaSmtp(toEmail, subject, text);
+  } catch (err) {
+    throw wrapSmtpError(err);
+  }
+}
+
 module.exports = {
   sendEmailCode,
   isMailConfigured,
   mailFrom,
   useResend,
+  sendPremiumActivated,
 };

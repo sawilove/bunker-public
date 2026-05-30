@@ -117,6 +117,117 @@
     });
   }
 
+  function parseCatalogId(backstoryId) {
+    if (!backstoryId || !String(backstoryId).startsWith("catalog:")) return null;
+    return String(backstoryId).slice("catalog:".length);
+  }
+
+  function socialButtonsHtml(backstoryId) {
+    const id = parseCatalogId(backstoryId);
+    if (!id) return "";
+    return `<span class="scenario-card__social">
+      <button type="button" class="scenario-card__social-btn" data-scenario-fav="${id}" title="В избранное">♡</button>
+      <button type="button" class="scenario-card__social-btn" data-scenario-comments="${id}" title="Комментарии">💬</button>
+    </span>`;
+  }
+
+  async function openCommentsModal(catalogId) {
+    if (!window.BunkerAuth?.isLoggedIn?.()) {
+      alert("Войдите в аккаунт для комментариев.");
+      return;
+    }
+    let modal = document.getElementById("scenarioCommentsModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "scenarioCommentsModal";
+      modal.className = "scenario-comments-modal hidden";
+      modal.innerHTML = `<div class="scenario-comments-modal__card panel">
+        <button type="button" class="scenario-comments-modal__close" aria-label="Закрыть">×</button>
+        <h3>Комментарии</h3>
+        <ul class="scenario-comments-list" id="scenarioCommentsList"></ul>
+        <form id="scenarioCommentForm" class="scenario-comment-form">
+          <textarea id="scenarioCommentInput" maxlength="1000" rows="3" placeholder="Ваш комментарий…"></textarea>
+          <button type="submit" class="btn btn--small btn--amber">Отправить</button>
+        </form>
+        <p class="form-error hidden" id="scenarioCommentError"></p>
+      </div>`;
+      document.body.appendChild(modal);
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) modal.classList.add("hidden");
+      });
+      modal.querySelector(".scenario-comments-modal__close").addEventListener("click", () => {
+        modal.classList.add("hidden");
+      });
+    }
+    modal.dataset.catalogId = catalogId;
+    modal.classList.remove("hidden");
+    const listEl = modal.querySelector("#scenarioCommentsList");
+    const errEl = modal.querySelector("#scenarioCommentError");
+    async function loadComments() {
+      try {
+        const data = await BunkerAuth.getScenarioComments(catalogId);
+        if (!data.comments?.length) {
+          listEl.innerHTML = '<li class="scenario-comments-list__empty">Пока нет комментариев.</li>';
+          return;
+        }
+        listEl.innerHTML = data.comments
+          .map(
+            (c) => `<li class="scenario-comments-list__item">
+              <strong>${escapeHtml(c.user?.nickname || "Игрок")}</strong>
+              <p>${escapeHtml(c.body)}</p>
+            </li>`
+          )
+          .join("");
+      } catch (err) {
+        listEl.innerHTML = `<li class="scenario-comments-list__empty">${escapeHtml(err.message)}</li>`;
+      }
+    }
+    function escapeHtml(s) {
+      const el = document.createElement("div");
+      el.textContent = s || "";
+      return el.innerHTML;
+    }
+    modal.querySelector("#scenarioCommentForm").onsubmit = async (e) => {
+      e.preventDefault();
+      errEl.classList.add("hidden");
+      const input = modal.querySelector("#scenarioCommentInput");
+      try {
+        await BunkerAuth.addScenarioComment(catalogId, input.value);
+        input.value = "";
+        await loadComments();
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.classList.remove("hidden");
+      }
+    };
+    await loadComments();
+  }
+
+  function bindScenarioSocial(root) {
+    root.querySelectorAll("[data-scenario-fav]").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (!window.BunkerAuth?.isLoggedIn?.()) {
+          alert("Войдите в аккаунт.");
+          return;
+        }
+        try {
+          const result = await BunkerAuth.toggleScenarioFavorite(btn.dataset.scenarioFav);
+          btn.textContent = result.favorited ? "♥" : "♡";
+          btn.classList.toggle("scenario-card__social-btn--on", result.favorited);
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    });
+    root.querySelectorAll("[data-scenario-comments]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openCommentsModal(btn.dataset.scenarioComments);
+      });
+    });
+  }
+
   window.BunkerScenarioCatalogUi = {
     SORT_OPTIONS,
     sortScenarios,
@@ -126,5 +237,8 @@
     renderStarRating,
     bindStarRating,
     ratingAvgFromScenario,
+    socialButtonsHtml,
+    bindScenarioSocial,
+    openCommentsModal,
   };
 })();

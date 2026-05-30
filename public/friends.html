@@ -33,6 +33,24 @@
       <p id="addFriendSuccess" class="form-success hidden"></p>
     </section>
 
+    <section class="panel friends-lfg">
+      <p class="panel__title">Поиск партии</p>
+      <label class="friends-lfg__row">
+        <input type="checkbox" id="lfgToggle">
+        <span>Я ищу игру — друзья увидят статус «Ищет игру»</span>
+      </label>
+    </section>
+
+    <section class="panel friends-groups">
+      <p class="panel__title">Отряды</p>
+      <form id="createGroupForm" class="friends-groups__form">
+        <input type="text" id="groupNameInput" maxlength="40" placeholder="Название отряда">
+        <button type="submit" class="btn btn--small btn--amber">Создать</button>
+      </form>
+      <p id="groupError" class="form-error hidden"></p>
+      <ul id="groupsList" class="friends-groups__list"></ul>
+    </section>
+
     <section id="incomingSection" class="panel hidden">
       <p class="panel__title">Входящие заявки</p>
       <ul id="incomingList" class="friends-list"></ul>
@@ -73,6 +91,7 @@
   <script src="/social-client.js"></script>
   <script src="/chat-attachments.js"></script>
   <script src="/notifications.js"></script>
+  <script src="/achievement-unlocks.js"></script>
   <script src="/premium-modal.js"></script>
   <script src="/site-auth.js"></script>
   <script src="/dev-panel.js"></script>

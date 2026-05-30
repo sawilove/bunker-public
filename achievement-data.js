@@ -210,6 +210,20 @@ const ACHIEVEMENTS = {
     goalTarget: 20,
     goalKey: "publishedScenarios",
   },
+  leaderboard_top10: {
+    id: "leaderboard_top10",
+    type: "unique",
+    name: "Топ-10 бункера",
+    description: "Вошёл в десятку лучших по выживаниям на сервере",
+    icon: "survivals-50.svg",
+  },
+  friends_champion: {
+    id: "friends_champion",
+    type: "unique",
+    name: "Чемпион компании",
+    description: "Лидер среди друзей по количеству выживаний",
+    icon: "first-survival.svg",
+  },
 };
 
 const ACHIEVEMENT_LIST = Object.values(ACHIEVEMENTS);

@@ -21,7 +21,12 @@ const {
 } = require("./user-store");
 const catalogRuntime = require("./catalog-runtime");
 const { enrichPublicUser, getFriendship, listFriends } = require("./social-store");
-const { getDisplayedAchievementsPublic, syncAchievementsForUser, getUnlockedCount } = require("./achievement-store");
+const {
+  getDisplayedAchievementsPublic,
+  syncAchievementsForUser,
+  syncAndGetNewUnlocks,
+  getUnlockedCount,
+} = require("./achievement-store");
 
 const GUEST_AVATAR = "/icons/guest-avatar.svg";
 const DEFAULT_AVATAR = "/icons/default-avatar.svg";
@@ -275,8 +280,8 @@ function mountAuthRoutes(app) {
         res.status(401).json({ error: "Не авторизован." });
         return;
       }
-      await syncAchievementsForUser(user.id);
-      res.json({ user: await enrichPublicUser(user) });
+      const newlyUnlocked = await syncAndGetNewUnlocks(user.id);
+      res.json({ user: await enrichPublicUser(user), newlyUnlocked });
     } catch (err) {
       console.error("me error", err);
       res.status(500).json({ error: "Ошибка сервера." });

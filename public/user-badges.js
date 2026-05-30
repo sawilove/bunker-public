@@ -3,6 +3,7 @@
     offline: "Не в сети",
     online: "В сети",
     in_game: "В игре",
+    looking_for_game: "Ищет игру",
   };
 
   function escapeHtml(str) {
@@ -27,7 +28,8 @@
   }
 
   function statusHtml(user) {
-    const status = user?.status || "offline";
+    let status = user?.status || "offline";
+    if (user?.lookingForGame && status !== "offline") status = "looking_for_game";
     return `<span class="user-status user-status--${status}">${STATUS_LABELS[status] || STATUS_LABELS.offline}</span>`;
   }
 

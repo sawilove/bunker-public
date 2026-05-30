@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Бункер — Рейтинг</title>
+  <script src="/page-base.js"></script>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="leaderboard">
+  <div class="page page--with-topbar">
+    <div data-site-topbar class="site-topbar"></div>
+    <a href="/" class="back-link">← На главную</a>
+
+    <header class="site-header">
+      <div class="site-header__badge">Зал славы</div>
+      <h1>Рейтинг</h1>
+      <p class="site-header__tagline">Лучшие выжившие и авторы катастроф</p>
+    </header>
+
+    <section class="panel leaderboard-controls">
+      <div class="leaderboard-controls__row">
+        <label>Метрика
+          <select id="metricSelect">
+            <option value="survivals">Выживания</option>
+            <option value="games">Партии</option>
+            <option value="scenarios">Сценарии</option>
+          </select>
+        </label>
+        <label>Область
+          <select id="scopeSelect">
+            <option value="global">Все игроки</option>
+            <option value="friends">Среди друзей</option>
+          </select>
+        </label>
+        <button type="button" class="btn btn--small btn--amber" id="reloadBtn">Обновить</button>
+      </div>
+      <p id="myRank" class="leaderboard-my-rank hidden"></p>
+    </section>
+
+    <section class="panel">
+      <p class="panel__title">Таблица лидеров</p>
+      <ol id="leaderboardList" class="leaderboard-list">
+        <li class="leaderboard-list__empty">Загрузка…</li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <p class="panel__title">Лента активности</p>
+      <div class="leaderboard-controls__row">
+        <label>Лента
+          <select id="activityScope">
+            <option value="global">Общая</option>
+            <option value="friends">Друзья</option>
+          </select>
+        </label>
+      </div>
+      <ul id="activityFeed" class="activity-feed">
+        <li class="activity-feed__empty">Загрузка…</li>
+      </ul>
+    </section>
+  </div>
+
+  <script src="/config.js"></script>
+  <script src="/bunker-runtime.js"></script>
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
+  <script src="/auth.js"></script>
+  <script src="/user-badges.js"></script>
+  <script src="/social-client.js"></script>
+  <script src="/notifications.js"></script>
+  <script src="/achievement-unlocks.js"></script>
+  <script src="/premium-modal.js"></script>
+  <script src="/site-auth.js"></script>
+  <script src="/dev-panel.js"></script>
+  <script src="/leaderboard.js"></script>
+</body>
+</html>

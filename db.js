@@ -219,6 +219,142 @@ async function initDatabase() {
       PRIMARY KEY (user_id, achievement_id)
     );
   `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL DEFAULT '',
+      href TEXT NOT NULL DEFAULT '',
+      icon_url TEXT NOT NULL DEFAULT '',
+      payload JSONB NOT NULL DEFAULT '{}',
+      dedupe_key TEXT,
+      read_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await p.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS notifications_dedupe_idx
+    ON notifications (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL;
+  `);
+  await p.query(`
+    CREATE INDEX IF NOT EXISTS notifications_user_created_idx
+    ON notifications (user_id, created_at DESC);
+  `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS user_blocks (
+      blocker_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      blocked_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (blocker_id, blocked_id),
+      CHECK (blocker_id <> blocked_id)
+    );
+  `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS user_reports (
+      id TEXT PRIMARY KEY,
+      reporter_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      target_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      reason TEXT NOT NULL DEFAULT 'other',
+      body TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'pending',
+      resolved_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+      resolved_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await p.query(`
+    CREATE INDEX IF NOT EXISTS user_reports_status_idx
+    ON user_reports (status, created_at DESC);
+  `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS payments (
+      id TEXT PRIMARY KEY,
+      external_id TEXT NOT NULL UNIQUE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+      plan_days INTEGER NOT NULL DEFAULT 30,
+      comment TEXT NOT NULL DEFAULT '',
+      source TEXT NOT NULL DEFAULT 'cloudtips',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS activity_events (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      payload JSONB NOT NULL DEFAULT '{}',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await p.query(`
+    CREATE INDEX IF NOT EXISTS activity_events_created_idx
+    ON activity_events (created_at DESC);
+  `);
+  await p.query(`
+    CREATE INDEX IF NOT EXISTS activity_events_user_idx
+    ON activity_events (user_id, created_at DESC);
+  `);
+  await p.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS activity_hidden BOOLEAN NOT NULL DEFAULT false;
+  `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS bunker_groups (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      owner_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS group_members (
+      group_id TEXT NOT NULL REFERENCES bunker_groups(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      role TEXT NOT NULL DEFAULT 'member',
+      joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (group_id, user_id)
+    );
+  `);
+  await p.query(`
+    CREATE INDEX IF NOT EXISTS group_members_user_idx
+    ON group_members (user_id);
+  `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS group_messages (
+      id TEXT PRIMARY KEY,
+      group_id TEXT NOT NULL REFERENCES bunker_groups(id) ON DELETE CASCADE,
+      from_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      body TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await p.query(`
+    CREATE INDEX IF NOT EXISTS group_messages_group_idx
+    ON group_messages (group_id, created_at DESC);
+  `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS scenario_comments (
+      id TEXT PRIMARY KEY,
+      catalog_id TEXT NOT NULL REFERENCES scenario_catalog(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      body TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await p.query(`
+    CREATE INDEX IF NOT EXISTS scenario_comments_catalog_idx
+    ON scenario_comments (catalog_id, created_at DESC);
+  `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS scenario_favorites (
+      catalog_id TEXT NOT NULL REFERENCES scenario_catalog(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (catalog_id, user_id)
+    );
+  `);
 }
 
 function rowToUser(row) {
@@ -245,6 +381,7 @@ function rowToUser(row) {
     emailVerified: !!row.email_verified,
     customBackstory: row.custom_backstory || null,
     displayedAchievements: row.displayed_achievements || [],
+    activityHidden: !!row.activity_hidden,
     createdAt: row.created_at,
   };
 }

@@ -55,6 +55,9 @@
     }
     try {
       const data = await BunkerAuth.getAchievements();
+      if (data.newlyUnlocked?.length) {
+        window.BunkerAchievementUnlocks?.process(data.newlyUnlocked);
+      }
       render(data);
     } catch (err) {
       content.innerHTML = `<section class="panel"><p class="form-error">${BunkerUserBadges.escapeHtml(err.message)}</p></section>`;

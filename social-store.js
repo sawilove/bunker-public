@@ -1,12 +1,14 @@
 const crypto = require("crypto");
 const { getPool, pairKey, rowToUser } = require("./db");
 const { getUserById, publicUser } = require("./user-store");
-const { getUserStatus } = require("./presence");
+const { getUserStatus, getLookingForGame } = require("./presence");
+const { isBlockedEither, blockedUserFilterSql } = require("./moderation-store");
 
 async function enrichPublicUser(user) {
   if (!user) return null;
   const pub = publicUser(user);
   pub.status = getUserStatus(user.id);
+  pub.lookingForGame = getLookingForGame(user.id);
   return pub;
 }
 
@@ -14,13 +16,14 @@ async function searchUsersByNickname(query, excludeUserId, limit = 10) {
   const q = (query || "").trim().toLowerCase();
   if (q.length < 1) return [];
   const { rows } = await getPool().query(
-    `SELECT * FROM users
+    `SELECT * FROM users u
      WHERE nickname_lower LIKE $1 AND id <> $2
+       AND ${blockedUserFilterSql(3, "u")}
      ORDER BY
-       CASE WHEN nickname_lower LIKE $3 THEN 0 ELSE 1 END,
+       CASE WHEN nickname_lower LIKE $4 THEN 0 ELSE 1 END,
        nickname_lower
-     LIMIT $4`,
-    [`%${q}%`, excludeUserId, `${q}%`, limit]
+     LIMIT $5`,
+    [`%${q}%`, excludeUserId, excludeUserId, `${q}%`, limit]
   );
   const users = [];
   for (const row of rows) {
@@ -89,6 +92,9 @@ async function sendFriendRequestToId(fromUserId, toUserId) {
   if (fromUserId === toUserId) {
     return { ok: false, error: "Нельзя добавить себя." };
   }
+  if (await isBlockedEither(fromUserId, toUserId)) {
+    return { ok: false, error: "Действие недоступно." };
+  }
   const [userA, userB] = pairKey(fromUserId, toUserId);
   const existing = await getPool().query(
     `SELECT status, requested_by FROM friend_pairs WHERE user_a = $1 AND user_b = $2`,
@@ -132,7 +138,7 @@ async function respondFriendRequest(userId, peerId, accept) {
       `DELETE FROM friend_pairs WHERE user_a = $1 AND user_b = $2`,
       [userA, userB]
     );
-    return { ok: true };
+    return { ok: true, accepted: false };
   }
   await getPool().query(
     `UPDATE friend_pairs SET status = 'accepted' WHERE user_a = $1 AND user_b = $2`,
@@ -141,7 +147,7 @@ async function respondFriendRequest(userId, peerId, accept) {
   const { syncAchievementsForUser } = require("./achievement-store");
   syncAchievementsForUser(userId).catch(() => {});
   syncAchievementsForUser(peerId).catch(() => {});
-  return { ok: true };
+  return { ok: true, accepted: true, requesterId: row.requested_by };
 }
 
 async function removeFriend(userId, peerId) {
@@ -211,6 +217,9 @@ async function getChatMessages(userId, peerId, limit = 50, before = null) {
 async function sendChatMessage(fromUserId, toUserId, body) {
   const text = (body || "").trim().slice(0, 2000);
   if (!text) return { ok: false, error: "Пустое сообщение." };
+  if (await isBlockedEither(fromUserId, toUserId)) {
+    return { ok: false, error: "Действие недоступно." };
+  }
   if (!(await areFriends(fromUserId, toUserId))) {
     return { ok: false, error: "Можно писать только друзьям." };
   }

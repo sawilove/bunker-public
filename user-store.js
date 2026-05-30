@@ -234,7 +234,7 @@ async function login({ nickname, password }) {
   return { ok: true, user: publicUser(user), token: createToken(user.id) };
 }
 
-async function updateProfile(userId, { bio, nickname, friendsHidden, profileId }) {
+async function updateProfile(userId, { bio, nickname, friendsHidden, profileId, activityHidden }) {
   const user = await getUserById(userId);
   if (!user) return { ok: false, error: "Пользователь не найден." };
 
@@ -260,6 +260,11 @@ async function updateProfile(userId, { bio, nickname, friendsHidden, profileId }
     hideFriends = friendsHidden;
   }
 
+  let hideActivity = user.activityHidden;
+  if (typeof activityHidden === "boolean") {
+    hideActivity = activityHidden;
+  }
+
   let nextProfileId = user.profileId || user.id;
   if (profileId !== undefined) {
     if (!(user.dev || hasPremiumAccess(user))) {
@@ -279,8 +284,8 @@ async function updateProfile(userId, { bio, nickname, friendsHidden, profileId }
 
   try {
     await getPool().query(
-      `UPDATE users SET bio = $2, nickname = $3, nickname_lower = $4, friends_hidden = $5, profile_id = $6 WHERE id = $1`,
-      [userId, bioText, nick, nick.toLowerCase(), hideFriends, nextProfileId]
+      `UPDATE users SET bio = $2, nickname = $3, nickname_lower = $4, friends_hidden = $5, profile_id = $6, activity_hidden = $7 WHERE id = $1`,
+      [userId, bioText, nick, nick.toLowerCase(), hideFriends, nextProfileId, hideActivity]
     );
   } catch (err) {
     if (err.code === "23505") {
@@ -359,6 +364,15 @@ async function recordGameStats(playerUserIds, survivorUserIds) {
       `UPDATE users SET bunker_survivals = bunker_survivals + 1 WHERE id = ANY($1::text[])`,
       [survivors]
     );
+    const { recordSurvivalMilestone } = require("./activity-store");
+    for (const userId of survivors) {
+      const { rows } = await getPool().query(
+        `SELECT bunker_survivals FROM users WHERE id = $1`,
+        [userId]
+      );
+      const total = rows[0]?.bunker_survivals || 0;
+      recordSurvivalMilestone(userId, total).catch(() => {});
+    }
   }
 
   const { syncAchievementsForUser } = require("./achievement-store");

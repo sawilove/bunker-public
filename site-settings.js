@@ -156,9 +156,10 @@ function maintenanceMiddleware(req, res, next) {
     p.startsWith("/user/") ||
     p === "/profile" ||
     p === "/news" ||
-    p === "/friends" ||
-    p === "/achievements" ||
-    p === "/host" ||
+      p === "/friends" ||
+      p === "/achievements" ||
+      p === "/leaderboard" ||
+      p === "/host" ||
     p === "/player" ||
     /^\/game\/[^/]+\/?$/i.test(p) ||
     p === "/api/dev/settings" ||
@@ -166,6 +167,18 @@ function maintenanceMiddleware(req, res, next) {
     p === "/api/dev/game-catalog" ||
     p.startsWith("/api/friends") ||
     p.startsWith("/api/achievements") ||
+    p.startsWith("/api/notifications") ||
+    p.startsWith("/api/leaderboard") ||
+    p.startsWith("/api/activity") ||
+    p.startsWith("/api/groups") ||
+    p.startsWith("/api/blocks") ||
+    p.startsWith("/api/scenarios/favorites") ||
+    p.startsWith("/api/scenarios/catalog/") ||
+    p.startsWith("/api/webhooks/") ||
+    p.startsWith("/api/dev/reports") ||
+    p.startsWith("/api/dev/payments") ||
+    p.startsWith("/api/dev/premium") ||
+    p.startsWith("/api/social/") ||
     p.startsWith("/api/auth/achievements") ||
     p.startsWith("/api/chat/") ||
     p.startsWith("/api/game/") ||

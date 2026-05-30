@@ -3,6 +3,7 @@ const {
   getAchievementsForUser,
   getDisplayedAchievementsPublic,
   setDisplayedAchievements,
+  syncAndGetNewUnlocks,
 } = require("./achievement-store");
 const { requireUser } = require("./auth-routes");
 
@@ -21,6 +22,18 @@ function mountAchievementRoutes(app) {
       res.json(data);
     } catch (err) {
       console.error("achievements list error", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
+  app.get("/api/achievements/unlocks", async (req, res) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      const newlyUnlocked = await syncAndGetNewUnlocks(user.id);
+      res.json({ newlyUnlocked });
+    } catch (err) {
+      console.error("achievements unlocks error", err);
       res.status(500).json({ error: "Ошибка сервера." });
     }
   });
