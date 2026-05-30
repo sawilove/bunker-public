@@ -454,6 +454,8 @@ async function approveScenario(reviewerId, id, note) {
     [id, reviewerId, note ? String(note).slice(0, 500) : null]
   );
   await refreshPublishedCache();
+  const { syncAchievementsForUser } = require("./achievement-store");
+  syncAchievementsForUser(entry.authorId).catch(() => {});
   return { ok: true, entry: await getEntryById(id) };
 }
 

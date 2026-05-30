@@ -194,6 +194,8 @@ async function register({ nickname, password, email, verificationCode }) {
   }
 
   const user = await getUserById(id);
+  const { grantAchievement } = require("./achievement-store");
+  await grantAchievement(id, "register");
   return { ok: true, user: publicUser(user), token: createToken(id) };
 }
 
@@ -291,6 +293,10 @@ async function updateProfile(userId, { bio, nickname, friendsHidden, profileId }
   }
 
   const updated = await getUserById(userId);
+  const { syncAchievementsForUser } = require("./achievement-store");
+  syncAchievementsForUser(userId).catch((err) => {
+    console.error("syncAchievements after profile", userId, err);
+  });
   return { ok: true, user: publicUser(updated) };
 }
 
@@ -300,6 +306,10 @@ async function setAvatarBuffer(userId, buffer) {
     [userId, buffer]
   );
   const user = await getUserById(userId);
+  const { syncAchievementsForUser } = require("./achievement-store");
+  syncAchievementsForUser(userId).catch((err) => {
+    console.error("syncAchievements after avatar", userId, err);
+  });
   return publicUser(user);
 }
 
@@ -349,6 +359,13 @@ async function recordGameStats(playerUserIds, survivorUserIds) {
       `UPDATE users SET bunker_survivals = bunker_survivals + 1 WHERE id = ANY($1::text[])`,
       [survivors]
     );
+  }
+
+  const { syncAchievementsForUser } = require("./achievement-store");
+  for (const userId of played) {
+    syncAchievementsForUser(userId).catch((err) => {
+      console.error("syncAchievements after game", userId, err);
+    });
   }
 }
 

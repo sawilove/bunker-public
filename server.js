@@ -41,6 +41,7 @@ const { loadSiteSettings, mountDevRoutes, maintenanceMiddleware, initDatabase } 
   require("./backend/core");
 const { mountNewsRoutes, seedNewsIfEmpty } = require("./backend/news");
 const { mountScenarioCatalogRoutes } = require("./scenario-catalog-routes");
+const { mountAchievementRoutes } = require("./achievement-routes");
 const { requireUser } = require("./auth-routes");
 const scenarioCatalog = require("./scenario-catalog-store");
 
@@ -50,6 +51,7 @@ const server = http.createServer(app);
 app.use(express.json({ limit: "6mb" }));
 app.use(maintenanceMiddleware);
 mountAuthRoutes(app);
+mountAchievementRoutes(app);
 mountScenarioCatalogRoutes(app, { verifyToken, requireUser });
 mountDevRoutes(app);
 mountNewsRoutes(app);

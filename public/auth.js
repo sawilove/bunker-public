@@ -256,6 +256,7 @@
     "auth.html": "/auth",
     "news.html": "/news",
     "friends.html": "/friends",
+    "achievements.html": "/achievements",
     "host.html": "/host",
     "player.html": "/player",
     "profile.html": "/profile",
@@ -411,6 +412,17 @@
     return base ? `${base}/api/news/media/${mediaId}` : `/api/news/media/${mediaId}`;
   }
 
+  async function getAchievements() {
+    return api("/api/achievements");
+  }
+
+  async function setDisplayedAchievements(displayed) {
+    return api("/api/auth/achievements/display", {
+      method: "PATCH",
+      body: JSON.stringify({ displayed }),
+    });
+  }
+
   window.BunkerAuth = {
     apiBase,
     assetUrl,
@@ -464,5 +476,7 @@
     deleteNews,
     uploadNewsMedia,
     newsMediaUrl,
+    getAchievements,
+    setDisplayedAchievements,
   };
 })();

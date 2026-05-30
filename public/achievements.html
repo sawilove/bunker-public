@@ -3,26 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Бункер — Профиль</title>
+  <title>Бункер — Достижения</title>
   <script>
     (function(){var p=location.pathname.replace(/\\/g,"/");var r=/^\/user\/[^/]+\/?$/i.test(p)||/^\/(?:account|auth|news|friends|achievements|host|player|profile|game\/[^/]+)\/?$/i.test(p);if(r&&!document.querySelector("base[data-bunker-root]")){var b=document.createElement("base");b.href="/";b.setAttribute("data-bunker-root","1");document.head.appendChild(b);}})();
   </script>
   <link rel="stylesheet" href="/style.css">
 </head>
-<body class="account profile-page">
+<body class="achievements-page">
   <div class="page page--with-topbar">
     <div data-site-topbar class="site-topbar"></div>
     <a href="/" class="back-link">← На главную</a>
 
-    <header class="site-header site-header--profile">
-      <div class="site-header__badge">Досье выжившего</div>
-      <h1 id="profilePageTitle" class="visually-hidden">Профиль</h1>
-      <p class="site-header__tagline visually-hidden" id="profilePageTagline">Загрузка…</p>
+    <header class="site-header">
+      <div class="site-header__badge">Зал славы</div>
+      <h1>Достижения</h1>
+      <p class="site-header__tagline">Медали за подвиги в Бункере — до 5 можно показать в профиле</p>
     </header>
 
-    <section id="profilePageContent" class="panel profile-page-panel">
-      <p>Загрузка профиля…</p>
+    <section id="achievementsSummary" class="panel achievements-summary hidden">
+      <p class="achievements-summary__stat"><span id="achievementsUnlockedCount">0</span> из <span id="achievementsTotalCount">0</span> получено</p>
     </section>
+
+    <div id="achievementsContent">
+      <p class="panel">Загрузка…</p>
+    </div>
   </div>
 
   <script src="/config.js"></script>
@@ -36,10 +40,7 @@
   <script src="/premium-modal.js"></script>
   <script src="/site-auth.js"></script>
   <script src="/dev-panel.js"></script>
-  <script src="/chat-attachments.js"></script>
   <script src="/chat-widget.js"></script>
-  <script src="/avatar-crop.js"></script>
-  <script src="/scenario-catalog-ui.js"></script>
-  <script src="/profile.js"></script>
+  <script src="/achievements.js"></script>
 </body>
 </html>

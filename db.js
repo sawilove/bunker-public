@@ -207,6 +207,18 @@ async function initDatabase() {
     CREATE INDEX IF NOT EXISTS scenario_ratings_catalog_idx
     ON scenario_ratings (catalog_id);
   `);
+  await p.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS displayed_achievements JSONB NOT NULL DEFAULT '[]';
+  `);
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS user_achievements (
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      achievement_id TEXT NOT NULL,
+      unlocked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      progress INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (user_id, achievement_id)
+    );
+  `);
 }
 
 function rowToUser(row) {
@@ -232,6 +244,7 @@ function rowToUser(row) {
     emailLower: row.email_lower || null,
     emailVerified: !!row.email_verified,
     customBackstory: row.custom_backstory || null,
+    displayedAchievements: row.displayed_achievements || [],
     createdAt: row.created_at,
   };
 }

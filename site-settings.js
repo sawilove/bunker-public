@@ -157,6 +157,7 @@ function maintenanceMiddleware(req, res, next) {
     p === "/profile" ||
     p === "/news" ||
     p === "/friends" ||
+    p === "/achievements" ||
     p === "/host" ||
     p === "/player" ||
     /^\/game\/[^/]+\/?$/i.test(p) ||
@@ -164,6 +165,8 @@ function maintenanceMiddleware(req, res, next) {
     p === "/api/dev/maintenance" ||
     p === "/api/dev/game-catalog" ||
     p.startsWith("/api/friends") ||
+    p.startsWith("/api/achievements") ||
+    p.startsWith("/api/auth/achievements") ||
     p.startsWith("/api/chat/") ||
     p.startsWith("/api/game/") ||
     p.startsWith("/api/scenarios/") ||

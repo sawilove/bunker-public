@@ -138,6 +138,9 @@ async function respondFriendRequest(userId, peerId, accept) {
     `UPDATE friend_pairs SET status = 'accepted' WHERE user_a = $1 AND user_b = $2`,
     [userA, userB]
   );
+  const { syncAchievementsForUser } = require("./achievement-store");
+  syncAchievementsForUser(userId).catch(() => {});
+  syncAchievementsForUser(peerId).catch(() => {});
   return { ok: true };
 }
 

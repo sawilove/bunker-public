@@ -19,6 +19,8 @@
 
   let editUser = null;
 
+  let editDisplayedAchievementIds = [];
+
 
 
   function getUserIdFromUrl() {
@@ -112,7 +114,7 @@
     }
   }
 
-  function renderProfileHero(user, publishedScenarioCount = 0) {
+  function renderProfileHero(user, publishedScenarioCount = 0, displayedAchievements = []) {
 
     const av = BunkerAuth.assetUrl(user.avatarUrl || "/icons/default-avatar.svg");
 
@@ -126,6 +128,11 @@
 
       : "";
 
+    const medalsHtml = window.BunkerAchievementsUi?.medalsRowHtml?.(displayedAchievements, {
+      className: "profile-hero__medals",
+      size: "md",
+    }) || "";
+
 
 
     return `
@@ -136,9 +143,15 @@
 
         <div class="profile-hero__body">
 
-          <div class="profile-avatar-wrap ${frame}">
+          <div class="profile-hero__avatar-block">
 
-            <img class="profile-avatar" src="${av}" alt="">
+            <div class="profile-avatar-wrap ${frame}">
+
+              <img class="profile-avatar" src="${av}" alt="">
+
+            </div>
+
+            ${medalsHtml}
 
           </div>
 
@@ -314,6 +327,18 @@
 
           </label>
 
+          <div class="profile-edit__achievements">
+
+            <span class="field__label">Медали на баннере</span>
+
+            <p class="field__hint">Выберите до 5 полученных достижений — они отображаются справа от аватарки.</p>
+
+            <div id="achievementPicker" class="achievement-picker">Загрузка…</div>
+
+            <a href="${BunkerAuth.pageUrl("achievements.html")}" class="profile-edit__achievements-link">Все достижения →</a>
+
+          </div>
+
           <p id="profileEditError" class="form-error hidden"></p>
 
           <p id="profileEditSuccess" class="form-success hidden"></p>
@@ -412,9 +437,101 @@
 
 
 
+  async function loadAchievementPicker() {
+
+    const picker = content.querySelector("#achievementPicker");
+
+    if (!picker || !window.BunkerAuth?.getAchievements) return;
+
+    try {
+
+      const data = await BunkerAuth.getAchievements();
+
+      editDisplayedAchievementIds = [...(data.displayed || [])];
+
+      const unlocked = (data.achievements || []).filter((a) => a.unlocked);
+
+      picker.dataset.loaded = "1";
+
+      if (!unlocked.length) {
+
+        picker.innerHTML = `<p class="achievement-picker__empty">Пока нет полученных достижений. <a href="${BunkerAuth.pageUrl("achievements.html")}">Посмотреть список</a></p>`;
+
+        return;
+
+      }
+
+      picker.innerHTML = unlocked.map((ach) => {
+
+        const selected = editDisplayedAchievementIds.includes(ach.id);
+
+        return BunkerAchievementsUi.medalHtml(ach, {
+
+          size: "lg",
+
+          selected,
+
+          interactive: true,
+
+          showTitle: true,
+
+        });
+
+      }).join("");
+
+      picker.querySelectorAll(".achievement-medal--interactive").forEach((el) => {
+
+        el.addEventListener("click", () => {
+
+          const id = el.getAttribute("data-achievement-id");
+
+          if (!id) return;
+
+          const idx = editDisplayedAchievementIds.indexOf(id);
+
+          if (idx >= 0) {
+
+            editDisplayedAchievementIds.splice(idx, 1);
+
+            el.classList.remove("achievement-medal--selected");
+
+            return;
+
+          }
+
+          if (editDisplayedAchievementIds.length >= 5) {
+
+            showEditError("Можно показать не более 5 медалей.");
+
+            return;
+
+          }
+
+          showEditError("");
+
+          editDisplayedAchievementIds.push(id);
+
+          el.classList.add("achievement-medal--selected");
+
+        });
+
+      });
+
+    } catch (err) {
+
+      picker.innerHTML = `<p class="form-error">${BunkerUserBadges.escapeHtml(err.message)}</p>`;
+
+    }
+
+  }
+
+
+
   function bindProfileEditHandlers(user) {
 
     editUser = user;
+
+    editDisplayedAchievementIds = [];
 
     const form = content.querySelector("#profileEditForm");
 
@@ -458,11 +575,13 @@
 
         });
 
+        if (editDisplayedAchievementIds.length || content.querySelector("#achievementPicker")?.dataset.loaded) {
+
+          await BunkerAuth.setDisplayedAchievements(editDisplayedAchievementIds);
+
+        }
+
         setEditUrl(false);
-
-        if (window.BunkerSiteAuth) BunkerSiteAuth.refresh();
-
-        renderProfile(updated, cachedFriends, cachedMeta, "view");
 
         if (updated?.profileId && updated.profileId !== currentUserId) {
 
@@ -471,6 +590,10 @@
           return;
 
         }
+
+        if (window.BunkerSiteAuth) BunkerSiteAuth.refresh();
+
+        await reloadProfile();
 
         showFriendError("");
 
@@ -481,6 +604,10 @@
       }
 
     });
+
+
+
+    loadAchievementPicker();
 
 
 
@@ -652,6 +779,8 @@
 
     const publishedScenarioCount = meta.publishedScenarioCount ?? 0;
 
+    const displayedAchievements = meta.displayedAchievements || [];
+
 
 
     document.title = `Бункер — ${user.nickname}`;
@@ -682,7 +811,7 @@
 
         : `
 
-          ${renderProfileHero(user, publishedScenarioCount)}
+          ${renderProfileHero(user, publishedScenarioCount, displayedAchievements)}
 
           <div class="profile-view__actions">
 
@@ -766,6 +895,8 @@
       friendsHidden: data.friendsHidden,
 
       publishedScenarioCount: data.publishedScenarioCount ?? 0,
+
+      displayedAchievements: data.displayedAchievements || [],
 
     }, mode);
 
@@ -894,6 +1025,7 @@
         friendsCount: data.friendsCount,
         friendsHidden: data.friendsHidden,
         publishedScenarioCount: data.publishedScenarioCount ?? 0,
+        displayedAchievements: data.displayedAchievements || [],
       }, mode);
     } catch (err) {
       if (err?.status === 401 && !me) {

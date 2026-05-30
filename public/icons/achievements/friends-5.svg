@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img">
+  <defs>
+    <linearGradient id="ginhsy9" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3d36"/>
+      <stop offset="100%" stop-color="#0a0c0a"/>
+    </linearGradient>
+    <filter id="shginhsy9">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+  <path d="M16 50 L24 42 L40 42 L48 50 L40 58 L24 58 Z" fill="#5a1818" filter="url(#shginhsy9)"/>
+  <path d="M20 50 L32 44 L44 50 L32 55 Z" fill="#7ed4c4" opacity="0.75"/>
+  <circle cx="32" cy="28" r="23" fill="#1a1f18" stroke="#4a9e8e" stroke-width="2.5"/>
+  <circle cx="32" cy="28" r="18" fill="url(#ginhsy9)" stroke="#4a9e8e" stroke-width="1.5" opacity="0.95"/>
+  <circle cx="32" cy="28" r="14" fill="none" stroke="#7ed4c4" stroke-width="0.8" opacity="0.5"/>
+  <circle cx="26" cy="26" r="3" fill="#7ed4c4"/><circle cx="38" cy="26" r="3" fill="#7ed4c4"/><circle cx="32" cy="36" r="3" fill="#7ed4c4"/><line x1="28" y1="28" x2="30" y2="34" stroke="#7ed4c4" stroke-width="1"/><line x1="36" y1="28" x2="34" y2="34" stroke="#7ed4c4" stroke-width="1"/>
+</svg>

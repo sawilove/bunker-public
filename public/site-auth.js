@@ -7,6 +7,7 @@
     bell: `<svg class="site-topbar__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`,
     chat: `<svg class="site-topbar__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
     news: `<svg class="site-topbar__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+    achievements: `<svg class="site-topbar__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="9" r="6"/><path d="M8 15 L6 21 L12 18 L18 21 L16 15"/></svg>`,
     premium: `<svg class="site-topbar__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18h18l-2.2-10-4.3 4-3.5-6-3.5 6-4.3-4L3 18z"/></svg>`,
     menu: `<svg class="site-topbar__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>`,
   };
@@ -162,6 +163,7 @@
     const profileHref = BunkerAuth.profileUrl(user);
     const newsUrl = BunkerAuth.pageUrl("news.html");
     const friendsUrl = BunkerAuth.pageUrl("friends.html");
+    const achievementsUrl = BunkerAuth.pageUrl("achievements.html");
     const menuUserChip = `
       <a href="${profileHref}" class="site-topbar__menu-profile">
         <img class="site-topbar__menu-profile-avatar" src="${BunkerAuth.assetUrl(user.avatarUrl || "/icons/default-avatar.svg")}" alt="">
@@ -199,6 +201,7 @@
             </div>
           </div>
           <a href="${friendsUrl}" class="site-topbar__icon-btn" title="Друзья">${ICONS.friends}</a>
+          <a href="${achievementsUrl}" class="site-topbar__icon-btn" title="Достижения">${ICONS.achievements}</a>
           ${chip}
         </div>
         <button type="button" class="site-topbar__menu-btn" data-topbar-menu-toggle aria-expanded="false" aria-label="Меню">${ICONS.menu}</button>
@@ -208,6 +211,7 @@
           <button type="button" class="site-topbar__menu-item" data-mobile-settings>${ICONS.menu}<span>Настройки приложения</span></button>
           <button type="button" class="site-topbar__menu-item" data-premium-modal>${ICONS.premium}<span>Премиум</span></button>
           <a href="${friendsUrl}" class="site-topbar__menu-item">${ICONS.friends}<span>Друзья</span></a>
+          <a href="${achievementsUrl}" class="site-topbar__menu-item">${ICONS.achievements}<span>Достижения</span></a>
           <a href="${newsUrl}" class="site-topbar__menu-item">${ICONS.news}<span>Новости</span></a>
         </div>
       </div>`;

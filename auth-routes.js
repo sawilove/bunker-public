@@ -21,6 +21,7 @@ const {
 } = require("./user-store");
 const catalogRuntime = require("./catalog-runtime");
 const { enrichPublicUser, getFriendship, listFriends } = require("./social-store");
+const { getDisplayedAchievementsPublic, syncAchievementsForUser } = require("./achievement-store");
 
 const GUEST_AVATAR = "/icons/guest-avatar.svg";
 const DEFAULT_AVATAR = "/icons/default-avatar.svg";
@@ -209,6 +210,8 @@ function mountAuthRoutes(app) {
       const hideList = user.friendsHidden && !isSelf;
       const scenarioCatalog = require("./scenario-catalog-store");
       const publishedScenarioCount = await scenarioCatalog.countPublishedByAuthor(user.id);
+      await syncAchievementsForUser(user.id);
+      const displayedAchievements = await getDisplayedAchievementsPublic(user.id);
       res.json({
         user: await enrichPublicUser(user),
         friendship,
@@ -216,6 +219,7 @@ function mountAuthRoutes(app) {
         friendsCount: friends.length,
         friendsHidden: !!user.friendsHidden,
         publishedScenarioCount,
+        displayedAchievements,
       });
     } catch (err) {
       console.error("user profile error", err);
@@ -269,6 +273,7 @@ function mountAuthRoutes(app) {
         res.status(401).json({ error: "Не авторизован." });
         return;
       }
+      await syncAchievementsForUser(user.id);
       res.json({ user: await enrichPublicUser(user) });
     } catch (err) {
       console.error("me error", err);
