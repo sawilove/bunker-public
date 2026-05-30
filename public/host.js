@@ -411,6 +411,10 @@ function emitSettings() {
 }
 
 function fillCatalog(catalog, settings) {
+  BunkerScenarioEditor?.setCatalogMeta?.({
+    cardTypes: catalog.cardTypes,
+    cardPools: catalog.cardPools,
+  });
   if (!catalogReady) {
     catalog.backstories.forEach((b) => {
       backstoriesById[b.id] = b;

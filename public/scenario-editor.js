@@ -4,6 +4,38 @@
   const LOCK_SVG = `<span class="scenario-card__lock" aria-hidden="true">🔒</span>`;
 
   let overlay = null;
+  let hostCatalogMeta = null;
+
+  const FALLBACK_CARD_TYPES = [
+    { key: "gender_age", label: "Персонаж" },
+    { key: "body", label: "Телосложение" },
+    { key: "trait", label: "Человеческая черта" },
+    { key: "profession", label: "Профессия" },
+    { key: "health", label: "Здоровье" },
+    { key: "hobby", label: "Хобби / Увлечение" },
+    { key: "phobia", label: "Фобия / Страх" },
+    { key: "large_inventory", label: "Крупный инвентарь" },
+    { key: "backpack", label: "Рюкзак" },
+    { key: "extra", label: "Дополнительное сведение" },
+  ];
+
+  function setCatalogMeta(meta) {
+    if (meta?.cardTypes?.length) {
+      hostCatalogMeta = {
+        cardTypes: meta.cardTypes,
+        cardPools: meta.cardPools || {},
+      };
+    }
+  }
+
+  async function resolveCatalogForEditor() {
+    if (hostCatalogMeta?.cardTypes?.length) return hostCatalogMeta;
+    try {
+      return await BunkerAuth.getDevGameCatalog();
+    } catch {
+      return { cardTypes: FALLBACK_CARD_TYPES, cardPools: {} };
+    }
+  }
 
   function esc(str) {
     return BunkerUserBadges.escapeHtml(str || "");
@@ -90,9 +122,15 @@
           safePools[key] ||
           [];
         const lines = (Array.isArray(values) ? values : []).join("\n");
+        const hint =
+          key === "gender_age"
+            ? "Только пол (Мужской, Женский…). Возраст добавится автоматически."
+            : key === "profession"
+              ? "Названия профессий без уровня — уровень выпадет отдельно."
+              : "Одно значение на строку";
         return `<label class="field">
-          <span class="field__label">${esc(label)} <code>${esc(key)}</code></span>
-          <textarea data-pool-key="${esc(storageKey)}" rows="3" placeholder="Одно значение на строку">${esc(lines)}</textarea>
+          <span class="field__label">${esc(label)}</span>
+          <textarea data-pool-key="${esc(storageKey)}" rows="4" placeholder="${esc(hint)}">${esc(lines)}</textarea>
         </label>`;
       })
       .join("");
@@ -314,8 +352,22 @@
     }
   }
 
-  function renderPoolPresetSection(preset, cardTypes, pools, customPools) {
+  function readCustomPoolsFromCard(card) {
+    const out = {};
+    card.querySelectorAll("[data-pool-key]").forEach((el) => {
+      const values = el.value
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (values.length) out[el.dataset.poolKey] = values;
+    });
+    return out;
+  }
+
+  function renderPoolPresetSection(preset, catalog, customPools) {
     const p = preset || "standard";
+    const cardTypes = catalog?.cardTypes || FALLBACK_CARD_TYPES;
+    const pools = catalog?.cardPools || {};
     const customBlock =
       p === "custom"
         ? `<div class="scenario-editor__scroll">${renderPoolEditors(
@@ -331,14 +383,31 @@
         <label><input type="radio" name="poolPreset" value="18plus" ${p === "18plus" ? "checked" : ""}> 18+</label>
         <label><input type="radio" name="poolPreset" value="custom" ${p === "custom" ? "checked" : ""}> Свой</label>
       </fieldset>
+      <p class="scenario-editor__hint scenario-editor__hint--pool${p === "custom" ? "" : " hidden"}" data-pool-hint>
+        Отметьте «Свой» — ниже появятся поля по категориям карт. В каждом поле: <strong>одна строка = один вариант</strong> для розыгрыша.
+        Нужна хотя бы одна заполненная категория. Пустые категории подтянут значения из стандартного пака.
+      </p>
       <div data-custom-pools class="${p === "custom" ? "" : "hidden"}">${customBlock}</div>`;
   }
 
-  function bindPoolPreset(card) {
+  function bindPoolPreset(card, catalog, initialCustomPools) {
     const wrap = card.querySelector("[data-custom-pools]");
+    const hint = card.querySelector("[data-pool-hint]");
     card.querySelectorAll('input[name="poolPreset"]').forEach((radio) => {
       radio.addEventListener("change", () => {
-        wrap?.classList.toggle("hidden", radio.value !== "custom");
+        const isCustom = radio.value === "custom";
+        wrap?.classList.toggle("hidden", !isCustom);
+        hint?.classList.toggle("hidden", !isCustom);
+        if (isCustom && wrap && !wrap.querySelector("[data-pool-key]")) {
+          const saved = readCustomPoolsFromCard(card);
+          const pools = Object.keys(saved).length ? saved : initialCustomPools || {};
+          wrap.innerHTML = `<div class="scenario-editor__scroll">${renderPoolEditors(
+            catalog.cardTypes,
+            catalog.cardPools,
+            pools
+          )}</div>`;
+        }
+        if (isCustom) wrap?.scrollIntoView({ block: "nearest", behavior: "smooth" });
       });
     });
   }
@@ -394,10 +463,7 @@
   async function openPublishCatalogEditor(initial) {
     const wasPublished = initial?.status === "published";
     const tagsValue = Array.isArray(initial?.tags) ? initial.tags.join(", ") : "";
-    const catalog = await BunkerAuth.getDevGameCatalog().catch(() => ({
-      cardTypes: [],
-      cardPools: {},
-    }));
+    const catalog = await resolveCatalogForEditor();
     const publishedHint = wasPublished
       ? `<p class="scenario-editor__hint scenario-editor__hint--warn">После сохранения сценарий снимется с публикации. Отправьте на модерацию для повторного одобрения.</p>`
       : "";
@@ -409,8 +475,7 @@
     const coverPreview = hasCustomCover ? BunkerAuth.scenarioCoverUrl(initial.coverUrl) : "";
     const poolSection = renderPoolPresetSection(
       initial?.cardPoolPreset,
-      catalog.cardTypes,
-      catalog.cardPools,
+      catalog,
       initial?.cardPoolCustom
     );
     const body = `
@@ -432,7 +497,6 @@
         ${renderScenePicker(sceneKey, coverPreview, hasCustomCover)}
       </div>
       <div data-editor-panel="pools" class="scenario-editor__panel hidden">
-        <p class="scenario-editor__hint">Стандартный и 18+ — встроенные паки. «Свой» — ваши списки значений по категориям карт.</p>
         ${poolSection}
       </div>
       <input type="hidden" data-scenario-id value="${esc(initial?.catalogId || "")}">`;
@@ -454,7 +518,7 @@
       </div>`;
     el.classList.remove("hidden");
     bindScenePicker(card, hasCustomCover);
-    bindPoolPreset(card);
+    bindPoolPreset(card, catalog, initial?.cardPoolCustom);
     bindEditorTabs(card);
     card.querySelector(".scenario-editor__close").addEventListener("click", close);
     card.querySelector("[data-editor-cancel]").addEventListener("click", close);
@@ -664,6 +728,7 @@
   window.BunkerScenarioEditor = {
     CUSTOM_ID,
     close,
+    setCatalogMeta,
     openCustomScenarioEditor,
     openPublishCatalogEditor,
     openMyDisasters,
