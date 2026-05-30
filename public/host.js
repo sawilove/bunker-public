@@ -305,26 +305,29 @@ function communityAuthorHtml(b) {
 function communityScenarioCardHtml(b) {
   const published = formatScenarioDate(b.publishedAt || b.reviewedAt);
   const games = pluralGames(b.playCount || 0);
-  const rating =
-    window.BunkerScenarioCatalogUi?.formatRatingBadge?.(b) ||
-    "";
-  const meta =
-    published || b.playCount || rating
-      ? `<span class="scenario-card__meta">${rating}${published ? `<time>${escapeHtml(published)}</time>` : ""}${b.playCount != null ? `<span>${escapeHtml(games)}</span>` : ""}</span>`
-      : "";
-  return `<button type="button" class="scenario-card scenario-card--community" data-id="${escapeHtml(b.id)}" aria-selected="false"
+  const rating = window.BunkerScenarioCatalogUi?.formatRatingBadge?.(b) || "";
+  const metaParts = [];
+  if (rating) metaParts.push(rating);
+  if (published) metaParts.push(`<time>${escapeHtml(published)}</time>`);
+  if (b.playCount != null) metaParts.push(`<span>${escapeHtml(games)}</span>`);
+  const meta = metaParts.length
+    ? `<span class="scenario-catalog-card__meta">${metaParts.join("")}</span>`
+    : "";
+  return `<button type="button" class="scenario-catalog-card scenario-card" data-id="${escapeHtml(b.id)}" aria-selected="false"
       title="${escapeHtml(b.title)}">
-      <span class="scenario-card__media">${scenarioCardImgHtml(b)}${scenarioTagsHtml(b.tags)}${BunkerScenarioCatalogUi?.socialHoverHtml?.(b.id) || ""}</span>
-      <span class="scenario-card__label">
-        <span class="scenario-card__label-title">${escapeHtml(b.title)}</span>
-        ${communityAuthorHtml(b)}
+      <span class="scenario-catalog-card__media">${scenarioCardImgHtml(b)}${scenarioTagsHtml(b.tags)}${BunkerScenarioCatalogUi?.socialHoverHtml?.(b.id) || ""}</span>
+      <span class="scenario-catalog-card__body">
+        <span class="scenario-catalog-card__head">
+          <span class="scenario-catalog-card__title">${escapeHtml(b.title)}</span>
+          ${communityAuthorHtml(b)}
+        </span>
         ${meta}
       </span>
     </button>`;
 }
 
 function bindScenarioCards(root) {
-  root.querySelectorAll(".scenario-card").forEach((card) => {
+  root.querySelectorAll(".scenario-card, .scenario-catalog-card").forEach((card) => {
     card.addEventListener("click", () => {
       if (card.dataset.random === "true") {
         selectScenario(null, true);
@@ -362,7 +365,7 @@ function renderCommunityPanelInner() {
     return `<p class="scenario-grid__hint">Пока нет одобренных пользовательских катастроф.</p>`;
   }
   const sortHtml = BunkerScenarioCatalogUi?.sortSelectHtml?.(communitySort, "scenario-catalog-sort--host") || "";
-  return `${sortHtml}<div class="scenario-catalog-cards">${communityList
+  return `${sortHtml}<div class="scenario-community-list">${communityList
     .map((b) => communityScenarioCardHtml(b))
     .join("")}</div>`;
 }

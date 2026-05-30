@@ -1046,6 +1046,33 @@ input[type="range"]::-moz-range-thumb {
   gap: 0;
 }
 
+.scenario-catalog-card.scenario-card {
+  flex-direction: row;
+  align-items: stretch;
+  text-align: left;
+  width: 100%;
+}
+
+.scenario-catalog-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.scenario-catalog-card__head .scenario-catalog-card__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scenario-catalog-card__head .scenario-card__author {
+  flex-shrink: 0;
+}
+
 .scenario-catalog-card__media {
   position: relative;
   flex: 0 0 120px;
@@ -1109,7 +1136,9 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .scenario-card:hover .scenario-card__hover-actions,
-.scenario-card:focus-within .scenario-card__hover-actions {
+.scenario-card:focus-within .scenario-card__hover-actions,
+.scenario-catalog-card:hover .scenario-card__hover-actions,
+.scenario-catalog-card:focus-within .scenario-card__hover-actions {
   opacity: 1;
   pointer-events: auto;
 }
