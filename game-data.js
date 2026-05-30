@@ -969,13 +969,23 @@ function rollCardValue(key, scenarioId) {
   return pickRandom(pools[key]);
 }
 
-function dealPlayerCards(scenarioId) {
+function dealPlayerCards(scenarioId, poolsOverride = null) {
   const types = getCardTypes(scenarioId);
   const levels = getProfLevels(scenarioId);
-  const pools = getCardPools(scenarioId);
+  const basePools = getCardPools(scenarioId);
+  const pools =
+    poolsOverride && typeof poolsOverride === "object"
+      ? { ...basePools, ...poolsOverride }
+      : basePools;
   return types.map(({ key, label }) => {
     if (key === "profession") {
-      const prof = rollProfessionCard(scenarioId);
+      const profession = pickRandom(pools.profession);
+      const level = pickRandom(levels);
+      const prof = {
+        value: `${profession} (${level})`,
+        profession,
+        professionLevel: level,
+      };
       return {
         type: key,
         label,
@@ -997,10 +1007,19 @@ function dealPlayerCards(scenarioId) {
         opened: false,
       };
     }
+    if (key === "gender_age") {
+      const gender = pickRandom(pools.gender);
+      return {
+        type: key,
+        label,
+        value: `${gender}, ${formatAge(randomAge())}`,
+        opened: false,
+      };
+    }
     return {
       type: key,
       label,
-      value: rollCardValue(key, scenarioId),
+      value: pickRandom(pools[key]),
       opened: false,
     };
   });
@@ -1080,6 +1099,7 @@ function shuffleArray(arr) {
 module.exports = {
   MODES,
   BACKSTORIES,
+  BUNKER_PARAMS_PENDING_NOTE,
   CARD_TYPES,
   CARD_TYPES_18PLUS,
   CARD_POOLS_18PLUS,

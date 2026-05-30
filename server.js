@@ -10,19 +10,28 @@ const http = require("http");
 const path = require("path");
 const QRCode = require("qrcode");
 const { Server } = require("socket.io");
+const catalogRuntime = require("./catalog-runtime");
 const {
   MODES,
-  BACKSTORIES,
   dealPlayerCards,
   getRevealPerRound,
   getMaxRound,
   getBunkerSpots,
   buildActiveBackstory,
   getScenarioPreview,
-  shuffleArray,
-  pickRandom,
-} = require("./backend/game");
-const { mountAuthRoutes, resolvePlayerIdentity, recordGameStats } = require("./backend/auth");
+  applySettingsPayload,
+  getCatalogForHost,
+  CUSTOM_BACKSTORY_ID,
+  gameData,
+} = catalogRuntime;
+const { shuffleArray, pickRandom } = gameData;
+const {
+  mountAuthRoutes,
+  resolvePlayerIdentity,
+  recordGameStats,
+  verifyToken,
+  hasPremiumAccess,
+} = require("./backend/auth");
 const { mountSocialRoutes, mountSocialSockets, purgeOldChatMessages, syncInGameFromPlayers } =
   require("./backend/social");
 const { loadSiteSettings, mountDevRoutes, maintenanceMiddleware, initDatabase } =
@@ -124,8 +133,10 @@ const game = {
   phase: "setup",
   settings: {
     mode: "classic",
-    backstoryId: BACKSTORIES[0].id,
+    backstoryId: gameData.BACKSTORIES[0].id,
     backstoryRandom: false,
+    customBackstory: null,
+    customCardPools: null,
   },
   players: {},
   currentTurn: null,
@@ -457,7 +468,7 @@ function buildHostState() {
     phase: game.phase,
     hostId,
     sessionCode,
-    catalog: { modes: MODES, backstories: BACKSTORIES },
+    catalog: getCatalogForHost(),
     settings: { ...game.settings },
     backstory: ["playing", "voting", "ended"].includes(game.phase)
       ? game.activeBackstory
@@ -613,6 +624,19 @@ mountSocialSockets(io, {
   getSessionInvitePayload: resolveSessionInvite,
 });
 
+async function applyHostSettings(payload) {
+  if (!payload || typeof payload !== "object") return;
+  const user = payload.authToken ? await verifyToken(payload.authToken) : null;
+  const premium = hasPremiumAccess(user);
+  const safe = { ...payload };
+  if (!premium) {
+    if (safe.backstoryId === CUSTOM_BACKSTORY_ID) return;
+    delete safe.customBackstory;
+    delete safe.customCardPools;
+  }
+  applySettingsPayload(game, safe);
+}
+
 io.on("connection", (socket) => {
   socket.on("hostJoin", (payload) => {
     const requestedHostId = payload?.hostId || null;
@@ -655,20 +679,9 @@ io.on("connection", (socket) => {
     socket.emit("hostSessionEnded");
   });
 
-  socket.on("createSession", (payload) => {
+  socket.on("createSession", async (payload) => {
     if (!isHostSocket(socket) || game.phase !== "setup") return;
-    if (payload?.mode && MODES.some((m) => m.id === payload.mode)) {
-      game.settings.mode = payload.mode;
-    }
-    if (typeof payload?.backstoryRandom === "boolean") {
-      game.settings.backstoryRandom = payload.backstoryRandom;
-    }
-    if (
-      payload?.backstoryId &&
-      BACKSTORIES.some((b) => b.id === payload.backstoryId)
-    ) {
-      game.settings.backstoryId = payload.backstoryId;
-    }
+    await applyHostSettings(payload);
     if (!hostId) hostId = generatePersistentId();
     openLobby();
     broadcast();
@@ -793,20 +806,9 @@ io.on("connection", (socket) => {
     broadcast();
   });
 
-  socket.on("updateSettings", (payload) => {
+  socket.on("updateSettings", async (payload) => {
     if (!isHostSocket(socket) || game.phase !== "setup") return;
-    if (payload.mode && MODES.some((m) => m.id === payload.mode)) {
-      game.settings.mode = payload.mode;
-    }
-    if (typeof payload.backstoryRandom === "boolean") {
-      game.settings.backstoryRandom = payload.backstoryRandom;
-    }
-    if (
-      payload.backstoryId &&
-      BACKSTORIES.some((b) => b.id === payload.backstoryId)
-    ) {
-      game.settings.backstoryId = payload.backstoryId;
-    }
+    await applyHostSettings(payload);
     broadcast();
   });
 
@@ -830,7 +832,7 @@ io.on("connection", (socket) => {
 
     const scenarioId = game.activeBackstory.id;
     for (const id of playerIds()) {
-      game.players[id].cards = dealPlayerCards(scenarioId);
+      game.players[id].cards = dealPlayerCards(scenarioId, game.settings.customCardPools);
       game.players[id].excluded = false;
     }
     initRevealsThisRound();

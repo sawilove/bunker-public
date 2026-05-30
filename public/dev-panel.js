@@ -15,6 +15,10 @@
           <span>Режим технического обслуживания</span>
         </label>
         <p class="dev-panel__note">При включении все пользователи без dev увидят страницу техработ на любом URL сайта.</p>
+        <div class="dev-panel__actions">
+          <button type="button" class="btn btn--small btn--amber" data-dev-catalog-scenarios>Редактировать сценарии</button>
+          <button type="button" class="btn btn--small btn--amber" data-dev-catalog-pools>Паки характеристик</button>
+        </div>
         <p id="devPanelError" class="form-error hidden"></p>
         <p id="devPanelSuccess" class="form-success hidden"></p>
       </div>`;
@@ -24,6 +28,14 @@
       if (e.target === panel) close();
     });
     panel.querySelector("#devMaintenanceToggle").addEventListener("change", onMaintenanceToggle);
+    panel.querySelector("[data-dev-catalog-scenarios]")?.addEventListener("click", () => {
+      close();
+      BunkerScenarioEditor?.openDevScenariosEditor?.();
+    });
+    panel.querySelector("[data-dev-catalog-pools]")?.addEventListener("click", () => {
+      close();
+      BunkerScenarioEditor?.openDevCardPoolsEditor?.();
+    });
     return panel;
   }
 

@@ -51,9 +51,13 @@
         <p class="panel__subtitle" id="chatSubtitle">Выберите друга слева. Сообщения хранятся 48 часов.</p>
         <div id="chatMessages" class="friends-chat__messages"></div>
         <form id="chatForm" class="friends-chat__form hidden">
+          <button type="button" class="friends-chat__tool" data-friends-toggle-emoji title="Эмодзи" aria-label="Эмодзи">😊</button>
+          <button type="button" class="friends-chat__tool" data-friends-toggle-stickers title="Стикеры" aria-label="Стикеры">🖼️</button>
           <input type="text" id="chatInput" maxlength="2000" placeholder="Сообщение…" autocomplete="off">
           <button type="submit" class="btn btn--amber">Отправить</button>
         </form>
+        <div class="friends-chat__picker friends-chat__picker--emoji hidden" id="friendsEmojiPanel"></div>
+        <div class="friends-chat__picker friends-chat__picker--stickers hidden" id="friendsStickerPanel"></div>
         <p id="chatError" class="form-error hidden"></p>
       </section>
     </div>
@@ -67,10 +71,12 @@
   <script src="/auth.js"></script>
   <script src="/user-badges.js"></script>
   <script src="/social-client.js"></script>
+  <script src="/chat-attachments.js"></script>
   <script src="/notifications.js"></script>
   <script src="/premium-modal.js"></script>
   <script src="/site-auth.js"></script>
   <script src="/dev-panel.js"></script>
+  <script src="/scenario-editor.js"></script>
   <script src="/chat-widget.js"></script>
   <script src="/friends.js"></script>
 </body>

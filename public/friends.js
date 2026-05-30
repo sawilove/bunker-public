@@ -14,21 +14,36 @@ const inviteToast = document.getElementById("inviteToast");
 
 let friendsData = { friends: [], incoming: [], outgoing: [] };
 let activePeerId = null;
-const STICKER_PREFIX = "[[sticker:";
-const STICKER_SUFFIX = "]]";
 
-function parseSticker(body) {
-  const text = String(body || "");
-  if (!text.startsWith(STICKER_PREFIX) || !text.endsWith(STICKER_SUFFIX)) return null;
-  const raw = text.slice(STICKER_PREFIX.length, -STICKER_SUFFIX.length);
-  const [key] = raw.split("|");
-  if (!key) return null;
-  const [packId, file] = key.split("/");
-  if (!packId || !file) return null;
-  return {
-    src: `/stickers/${packId}/${file}`,
-    alt: "Стикер",
-  };
+const friendsEmojiPanel = document.getElementById("friendsEmojiPanel");
+const friendsStickerPanel = document.getElementById("friendsStickerPanel");
+const { parseSticker, formatStickerBody, renderEmojiButtonsHtml, renderStickerButtonsHtml } =
+  BunkerChatAttachments;
+
+if (friendsEmojiPanel) {
+  friendsEmojiPanel.innerHTML = renderEmojiButtonsHtml().replace(/chat-picker__/g, "friends-chat__");
+}
+if (friendsStickerPanel) {
+  friendsStickerPanel.innerHTML = renderStickerButtonsHtml().replace(/chat-picker__/g, "friends-chat__");
+}
+
+function hideFriendsPickers() {
+  friendsEmojiPanel?.classList.add("hidden");
+  friendsStickerPanel?.classList.add("hidden");
+}
+
+function toggleFriendsEmojiPanel() {
+  if (!activePeerId) return;
+  const show = friendsEmojiPanel.classList.contains("hidden");
+  friendsEmojiPanel.classList.toggle("hidden", !show);
+  friendsStickerPanel.classList.add("hidden");
+}
+
+function toggleFriendsStickerPanel() {
+  if (!activePeerId) return;
+  const show = friendsStickerPanel.classList.contains("hidden");
+  friendsStickerPanel.classList.toggle("hidden", !show);
+  friendsEmojiPanel.classList.add("hidden");
 }
 
 function showMsg(el, msg, isError = true) {
@@ -116,7 +131,7 @@ function appendChatMessage(msg) {
     const img = document.createElement("img");
     img.className = "friends-chat__sticker";
     img.src = sticker.src;
-    img.alt = sticker.alt;
+    img.alt = sticker.title;
     img.loading = "lazy";
     img.decoding = "async";
     el.appendChild(img);
@@ -132,6 +147,7 @@ async function openChat(user) {
   chatTitle.textContent = user.nickname;
   chatSubtitle.textContent = BunkerUserBadges.STATUS_LABELS[user.status] || "";
   chatForm.classList.remove("hidden");
+  hideFriendsPickers();
   chatMessages.innerHTML = "";
   showMsg(chatError, "");
   try {
@@ -314,12 +330,33 @@ addFriendForm.addEventListener("submit", async (e) => {
   }
 });
 
+document.querySelector("[data-friends-toggle-emoji]")?.addEventListener("click", toggleFriendsEmojiPanel);
+document.querySelector("[data-friends-toggle-stickers]")?.addEventListener("click", toggleFriendsStickerPanel);
+
+friendsEmojiPanel?.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-chat-emoji]");
+  if (!btn) return;
+  chatInput.value += btn.dataset.chatEmoji || "";
+  chatInput.focus();
+});
+
+friendsStickerPanel?.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-chat-sticker-file]");
+  if (!btn || !activePeerId) return;
+  const packId = btn.dataset.chatStickerPack;
+  const file = btn.dataset.chatStickerFile;
+  if (!packId || !file) return;
+  BunkerSocial.sendChat(activePeerId, formatStickerBody(packId, file));
+  hideFriendsPickers();
+});
+
 chatForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const body = chatInput.value.trim();
   if (!body || !activePeerId) return;
   BunkerSocial.sendChat(activePeerId, body);
   chatInput.value = "";
+  hideFriendsPickers();
 });
 
 BunkerSocial.onChat((msg) => {

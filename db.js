@@ -140,6 +140,9 @@ async function initDatabase() {
     );
   `);
   await p.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_backstory JSONB;
+  `);
+  await p.query(`
     CREATE TABLE IF NOT EXISTS news_media (
       id TEXT PRIMARY KEY,
       mime_type TEXT NOT NULL,
@@ -171,6 +174,7 @@ function rowToUser(row) {
     email: row.email || null,
     emailLower: row.email_lower || null,
     emailVerified: !!row.email_verified,
+    customBackstory: row.custom_backstory || null,
     createdAt: row.created_at,
   };
 }

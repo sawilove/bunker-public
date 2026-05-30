@@ -1,5 +1,6 @@
 const { getPool } = require("./db");
 const { verifyToken } = require("./user-store");
+const catalogRuntime = require("./catalog-runtime");
 
 const KEY_MAINTENANCE = "maintenance";
 let maintenanceEnabled = false;
@@ -25,11 +26,13 @@ function getTokenFromRequest(req) {
 
 async function loadSiteSettings() {
   try {
-    const { rows } = await getPool().query(
+    const pool = getPool();
+    const { rows } = await pool.query(
       `SELECT value FROM site_settings WHERE key = $1`,
       [KEY_MAINTENANCE]
     );
     maintenanceEnabled = rows[0]?.value === "true";
+    await catalogRuntime.loadCatalogOverrides(pool);
   } catch (err) {
     if (err.code !== "42P01") console.error("site settings load:", err.message);
   }
@@ -81,6 +84,46 @@ function mountDevRoutes(app) {
       res.status(500).json({ error: "Ошибка сервера." });
     }
   });
+
+  app.get("/api/dev/game-catalog", async (req, res) => {
+    try {
+      if (!(await isDevUser(req))) {
+        res.status(403).json({ error: "Доступ только для разработчиков." });
+        return;
+      }
+      const { gameData } = catalogRuntime;
+      res.json({
+        backstories: catalogRuntime.getEffectiveBackstories(),
+        backstoryOverrides: catalogRuntime.getDevCatalogState().backstoryOverrides,
+        cardPoolOverrides: catalogRuntime.getDevCatalogState().cardPoolOverrides,
+        cardTypes: gameData.CARD_TYPES,
+        cardPools: gameData.CARD_POOLS,
+      });
+    } catch (err) {
+      console.error("dev game-catalog get", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
+  app.put("/api/dev/game-catalog", async (req, res) => {
+    try {
+      if (!(await isDevUser(req))) {
+        res.status(403).json({ error: "Доступ только для разработчиков." });
+        return;
+      }
+      const pool = getPool();
+      if (req.body?.backstoryOverrides !== undefined) {
+        await catalogRuntime.saveDevBackstoryOverrides(pool, req.body.backstoryOverrides || {});
+      }
+      if (req.body?.cardPoolOverrides !== undefined) {
+        await catalogRuntime.saveDevCardPoolOverrides(pool, req.body.cardPoolOverrides || {});
+      }
+      res.json({ ok: true, ...catalogRuntime.getDevCatalogState() });
+    } catch (err) {
+      console.error("dev game-catalog put", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
 }
 
 function isStaticAsset(p) {
@@ -117,6 +160,7 @@ function maintenanceMiddleware(req, res, next) {
     /^\/game\/[^/]+\/?$/i.test(p) ||
     p === "/api/dev/settings" ||
     p === "/api/dev/maintenance" ||
+    p === "/api/dev/game-catalog" ||
     p.startsWith("/socket.io") ||
     isStaticAsset(p)
   ) {

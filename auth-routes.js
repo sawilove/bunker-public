@@ -16,7 +16,10 @@ const {
   getBannerBuffer,
   canUseBanner,
   hasPremiumAccess,
+  getCustomBackstory,
+  setCustomBackstory,
 } = require("./user-store");
+const catalogRuntime = require("./catalog-runtime");
 const { enrichPublicUser, getFriendship, listFriends } = require("./social-store");
 
 const GUEST_AVATAR = "/icons/guest-avatar.svg";
@@ -213,6 +216,45 @@ function mountAuthRoutes(app) {
       });
     } catch (err) {
       console.error("user profile error", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
+  app.get("/api/game/custom-scenario", async (req, res) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      if (!hasPremiumAccess(user)) {
+        res.status(403).json({ error: "Доступно с подпиской Премиум." });
+        return;
+      }
+      const saved = await getCustomBackstory(user.id);
+      res.json({
+        customBackstory: catalogRuntime.sanitizeCustomBackstory(saved) || null,
+      });
+    } catch (err) {
+      console.error("custom scenario get", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
+  app.put("/api/game/custom-scenario", async (req, res) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      if (!hasPremiumAccess(user)) {
+        res.status(403).json({ error: "Доступно с подпиской Премиум." });
+        return;
+      }
+      const custom = catalogRuntime.sanitizeCustomBackstory(req.body?.customBackstory);
+      if (!custom) {
+        res.status(400).json({ error: "Укажите название и описание катастрофы." });
+        return;
+      }
+      await setCustomBackstory(user.id, custom);
+      res.json({ ok: true, customBackstory: custom });
+    } catch (err) {
+      console.error("custom scenario put", err);
       res.status(500).json({ error: "Ошибка сервера." });
     }
   });

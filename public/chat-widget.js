@@ -1,22 +1,8 @@
 (function () {
   const CHAT_ICON = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
   const UNREAD_KEY = "bunker:chatUnread";
-  const STICKER_PREFIX = "[[sticker:";
-  const STICKER_SUFFIX = "]]";
-  const EMOJI_LIST = ["😀", "😁", "😂", "🤣", "😊", "😍", "😎", "🤔", "😴", "😢", "😡", "👍", "👎", "❤️", "🔥", "☢️"];
-  const STICKER_PACKS = [
-    {
-      id: "rustie_pack",
-      title: "Ржавик",
-      stickers: [
-        { file: "rustie1.png", title: "Ржавик 1" },
-        { file: "rustie2.png", title: "Ржавик 2" },
-        { file: "rustie3.png", title: "Ржавик 3" },
-        { file: "rustie4.png", title: "Ржавик 4" },
-        { file: "rustie5.png", title: "Ржавик 5" },
-      ],
-    },
-  ];
+  const { parseSticker, formatStickerBody, renderEmojiButtonsHtml, renderStickerButtonsHtml } =
+    BunkerChatAttachments;
 
   let root = null;
   let friends = [];
@@ -258,22 +244,6 @@
     hidePanels();
   }
 
-  function parseSticker(body) {
-    const text = String(body || "");
-    if (!text.startsWith(STICKER_PREFIX) || !text.endsWith(STICKER_SUFFIX)) return null;
-    const raw = text.slice(STICKER_PREFIX.length, -STICKER_SUFFIX.length);
-    const [key] = raw.split("|");
-    if (!key) return null;
-    const [packId, file] = key.split("/");
-    if (!packId || !file) return null;
-    const pack = STICKER_PACKS.find((item) => item.id === packId);
-    if (!pack || !pack.stickers.some((s) => s.file === file)) return null;
-    return {
-      src: `/stickers/${packId}/${file}`,
-      title: "Стикер",
-    };
-  }
-
   function hidePanels() {
     root.querySelector("[data-chat-emoji-panel]").classList.add("hidden");
     root.querySelector("[data-chat-sticker-panel]").classList.add("hidden");
@@ -299,26 +269,12 @@
 
   function renderEmojiPanel() {
     const panel = root.querySelector("[data-chat-emoji-panel]");
-    panel.innerHTML = EMOJI_LIST.map((emoji) => {
-      return `<button type="button" class="chat-widget__emoji" data-chat-emoji="${emoji}" aria-label="${emoji}">${emoji}</button>`;
-    }).join("");
+    panel.innerHTML = renderEmojiButtonsHtml().replace(/chat-picker__/g, "chat-widget__");
   }
 
   function renderStickerPanel() {
     const panel = root.querySelector("[data-chat-sticker-panel]");
-    panel.innerHTML = STICKER_PACKS.map((pack) => {
-      const stickers = pack.stickers.map((sticker) => {
-        const src = `/stickers/${pack.id}/${sticker.file}`;
-        const safeTitle = BunkerUserBadges.escapeHtml(sticker.title);
-        return `<button type="button" class="chat-widget__sticker-btn" data-chat-sticker-pack="${pack.id}" data-chat-sticker-file="${sticker.file}" data-chat-sticker-title="${safeTitle}" aria-label="${safeTitle}">
-          <img src="${src}" alt="${safeTitle}" loading="lazy" decoding="async">
-        </button>`;
-      }).join("");
-      return `<section class="chat-widget__sticker-pack">
-        <h4>${BunkerUserBadges.escapeHtml(pack.title)}</h4>
-        <div class="chat-widget__sticker-grid">${stickers}</div>
-      </section>`;
-    }).join("");
+    panel.innerHTML = renderStickerButtonsHtml().replace(/chat-picker__/g, "chat-widget__");
   }
 
   function onEmojiClick(e) {
@@ -335,7 +291,7 @@
     const packId = btn.dataset.chatStickerPack;
     const file = btn.dataset.chatStickerFile;
     if (!packId || !file) return;
-    const body = `${STICKER_PREFIX}${packId}/${file}${STICKER_SUFFIX}`;
+    const body = formatStickerBody(packId, file);
     BunkerSocial.sendChat(activePeerId, body);
     hidePanels();
   }

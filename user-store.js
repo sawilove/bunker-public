@@ -352,6 +352,22 @@ async function recordGameStats(playerUserIds, survivorUserIds) {
   }
 }
 
+async function getCustomBackstory(userId) {
+  const { rows } = await getPool().query(
+    `SELECT custom_backstory FROM users WHERE id = $1`,
+    [userId]
+  );
+  return rows[0]?.custom_backstory || null;
+}
+
+async function setCustomBackstory(userId, data) {
+  await getPool().query(`UPDATE users SET custom_backstory = $2::jsonb WHERE id = $1`, [
+    userId,
+    data ? JSON.stringify(data) : null,
+  ]);
+  return getUserById(userId);
+}
+
 module.exports = {
   initDatabase,
   register,
@@ -370,4 +386,6 @@ module.exports = {
   hasPremiumAccess,
   recordGameStats,
   createToken,
+  getCustomBackstory,
+  setCustomBackstory,
 };

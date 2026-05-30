@@ -271,6 +271,28 @@
     return filename;
   }
 
+  async function getCustomScenario() {
+    return api("/api/game/custom-scenario");
+  }
+
+  async function saveCustomScenario(customBackstory) {
+    return api("/api/game/custom-scenario", {
+      method: "PUT",
+      body: JSON.stringify({ customBackstory }),
+    });
+  }
+
+  async function getDevGameCatalog() {
+    return api("/api/dev/game-catalog");
+  }
+
+  async function saveDevGameCatalog(data) {
+    return api("/api/dev/game-catalog", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
   async function getDevSettings() {
     return api("/api/dev/settings");
   }
@@ -347,6 +369,10 @@
     pageUrl,
     getDevSettings,
     setMaintenance,
+    getCustomScenario,
+    saveCustomScenario,
+    getDevGameCatalog,
+    saveDevGameCatalog,
     getNews,
     getNewsCategories,
     createNews,
