@@ -974,11 +974,156 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* —— Scenario picker (host setup) —— */
+.scenario-picker {
+  margin-top: 0.35rem;
+}
+
+.scenario-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.scenario-tabs__btn {
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.scenario-tabs__btn:hover {
+  border-color: var(--border-bright);
+  color: var(--text);
+}
+
+.scenario-tabs__btn--active {
+  border-color: var(--amber);
+  color: var(--amber);
+  background: rgba(232, 168, 56, 0.08);
+}
+
+.scenario-picker__panel.hidden {
+  display: none;
+}
+
+.scenario-picker__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+  align-items: center;
+}
+
+.scenario-community-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
 .scenario-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(256px, 1fr));
   gap: 1rem;
-  margin-top: 0.35rem;
+}
+
+.scenario-catalog-card {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  text-align: left;
+  width: 100%;
+  padding: 0;
+  gap: 0;
+}
+
+.scenario-catalog-card__media {
+  position: relative;
+  flex: 0 0 120px;
+  overflow: hidden;
+}
+
+.scenario-catalog-card__media .scenario-card__img,
+.scenario-catalog-card__media .scenario-card__random-mark {
+  width: 120px;
+  height: 90px;
+  aspect-ratio: auto;
+}
+
+.scenario-catalog-card__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.55rem 0.75rem;
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-card);
+}
+
+.scenario-catalog-card__title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.scenario-catalog-card__author {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.scenario-catalog-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.scenario-card__media {
+  position: relative;
+  display: block;
+}
+
+.scenario-card__tags {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-end;
+  gap: 0.25rem;
+  padding: 0.35rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.75), transparent 60%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.scenario-card:hover .scenario-card__tags,
+.scenario-catalog-card:hover .scenario-card__tags {
+  opacity: 1;
+}
+
+.scenario-card__tag {
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  background: rgba(232, 168, 56, 0.25);
+  border: 1px solid rgba(232, 168, 56, 0.45);
+  color: var(--text);
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 .scenario-card {
@@ -1155,8 +1300,44 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .scenario-editor__mine-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
   padding: 0.65rem 0;
   border-bottom: 1px solid var(--border);
+}
+
+.scenario-editor__mine-thumb {
+  flex: 0 0 72px;
+  width: 72px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--bg-deep);
+}
+
+.scenario-editor__mine-thumb--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: var(--text-muted);
+}
+
+.scenario-editor__mine-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.scenario-editor__mine-date {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+.scenario-editor__hint--warn {
+  color: var(--amber);
 }
 
 .scenario-editor__status {
@@ -1189,7 +1370,6 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .host-dev-tools {
-  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;

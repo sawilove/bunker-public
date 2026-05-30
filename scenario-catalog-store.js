@@ -54,6 +54,19 @@ function sanitizeCardPoolCustom(raw) {
   return Object.keys(out).length ? out : null;
 }
 
+function sanitizeTags(raw) {
+  let list = [];
+  if (Array.isArray(raw)) {
+    list = raw;
+  } else if (typeof raw === "string") {
+    list = raw.split(/[,;\n]+/);
+  }
+  return list
+    .map((t) => String(t).trim().slice(0, 24))
+    .filter(Boolean)
+    .slice(0, 8);
+}
+
 function bunkerRollIdForEntry(entry) {
   if (entry.cardPoolPreset === "18plus") return "vulgar";
   return "nuclear";
@@ -86,6 +99,10 @@ function rowToEntry(row) {
     reviewedAt: row.reviewed_at || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    tags: Array.isArray(row.tags) ? row.tags : [],
+    playCount: row.play_count != null ? Number(row.play_count) : 0,
+    authorNickname: row.author_nickname || null,
+    publishedAt: row.reviewed_at || row.updated_at || null,
   };
   if (entry.cardPoolPreset === "18plus") entry.badge = "Сценарий 18+";
   entry.cardPools = cardPoolsForEntry(entry);
@@ -104,13 +121,22 @@ function entryToBackstory(entry) {
     coverUrl: entry.coverUrl,
     cardPools: entry.cardPools,
     cardPoolPreset: entry.cardPoolPreset,
+    tags: entry.tags || [],
+    playCount: entry.playCount || 0,
+    authorNickname: entry.authorNickname || null,
+    publishedAt: entry.publishedAt || entry.reviewedAt || null,
+    reviewedAt: entry.reviewedAt || null,
   };
 }
 
 async function refreshPublishedCache() {
   try {
     const { rows } = await getPool().query(
-      `SELECT * FROM scenario_catalog WHERE status = 'published' ORDER BY updated_at DESC`
+      `SELECT sc.*, u.nickname AS author_nickname
+       FROM scenario_catalog sc
+       JOIN users u ON u.id = sc.author_id
+       WHERE sc.status = 'published'
+       ORDER BY sc.updated_at DESC`
     );
     publishedCache = rows.map(rowToEntry);
   } catch (err) {
@@ -181,9 +207,10 @@ function validateDraftPayload(body) {
   if (cardPoolPreset === "custom" && !cardPoolCustom) {
     return { ok: false, error: "Заполните свой пак характеристик." };
   }
+  const tags = sanitizeTags(body?.tags);
   return {
     ok: true,
-    data: { title, text, locationLabel, sceneKey, cardPoolPreset, cardPoolCustom },
+    data: { title, text, locationLabel, sceneKey, cardPoolPreset, cardPoolCustom, tags },
   };
 }
 
@@ -192,6 +219,7 @@ async function upsertDraft(authorId, payload, existingId) {
   if (!v.ok) return v;
 
   const id = existingId || crypto.randomUUID();
+  let wasPublished = false;
   if (existingId) {
     const existing = await getEntryById(existingId);
     if (!existing || existing.authorId !== authorId) {
@@ -200,13 +228,14 @@ async function upsertDraft(authorId, payload, existingId) {
     if (existing.status === "pending") {
       return { ok: false, error: "Нельзя редактировать сценарий на модерации." };
     }
+    wasPublished = existing.status === "published";
   }
 
   await getPool().query(
     `INSERT INTO scenario_catalog (
       id, author_id, title, text, location_label, scene_key,
-      card_pool_preset, card_pool_custom, status, updated_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, 'draft', NOW())
+      card_pool_preset, card_pool_custom, tags, status, updated_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, 'draft', NOW())
     ON CONFLICT (id) DO UPDATE SET
       title = EXCLUDED.title,
       text = EXCLUDED.text,
@@ -214,8 +243,9 @@ async function upsertDraft(authorId, payload, existingId) {
       scene_key = EXCLUDED.scene_key,
       card_pool_preset = EXCLUDED.card_pool_preset,
       card_pool_custom = EXCLUDED.card_pool_custom,
+      tags = EXCLUDED.tags,
       status = CASE
-        WHEN scenario_catalog.status = 'published' THEN 'published'
+        WHEN scenario_catalog.status = 'published' THEN 'draft'
         WHEN scenario_catalog.status = 'rejected' THEN 'draft'
         ELSE scenario_catalog.status
       END,
@@ -229,9 +259,11 @@ async function upsertDraft(authorId, payload, existingId) {
       v.data.sceneKey,
       v.data.cardPoolPreset,
       v.data.cardPoolCustom ? JSON.stringify(v.data.cardPoolCustom) : null,
+      JSON.stringify(v.data.tags),
     ]
   );
 
+  if (wasPublished) await refreshPublishedCache();
   return { ok: true, entry: await getEntryById(id) };
 }
 
@@ -300,7 +332,7 @@ async function setCoverWebp(authorId, id, webpBuffer) {
 
 async function getCoverBuffer(catalogId) {
   const { rows } = await getPool().query(
-    `SELECT cover_webp FROM scenario_catalog WHERE id = $1 AND status = 'published'`,
+    `SELECT cover_webp FROM scenario_catalog WHERE id = $1`,
     [catalogId]
   );
   return rows[0]?.cover_webp || null;
@@ -341,6 +373,35 @@ async function processCoverUpload(imageDataUrl, crop) {
   return { ok: true, webp };
 }
 
+async function deleteByAuthor(authorId, id) {
+  const entry = await getEntryById(id);
+  if (!entry || entry.authorId !== authorId) {
+    return { ok: false, error: "Сценарий не найден." };
+  }
+  if (entry.status === "pending") {
+    return { ok: false, error: "Дождитесь решения модерации или отмените отправку." };
+  }
+  const wasPublished = entry.status === "published";
+  await getPool().query(`DELETE FROM scenario_catalog WHERE id = $1`, [id]);
+  if (wasPublished) await refreshPublishedCache();
+  return { ok: true };
+}
+
+async function incrementPlayCount(backstoryId) {
+  const uuid = parseCatalogUuid(backstoryId);
+  if (!uuid) return;
+  try {
+    await getPool().query(
+      `UPDATE scenario_catalog SET play_count = play_count + 1 WHERE id = $1 AND status = 'published'`,
+      [uuid]
+    );
+    const hit = publishedCache.find((e) => e.catalogId === uuid);
+    if (hit) hit.playCount = (hit.playCount || 0) + 1;
+  } catch (err) {
+    if (err.code !== "42P01") console.error("incrementPlayCount:", err.message);
+  }
+}
+
 module.exports = {
   CATALOG_PREFIX,
   VALID_SCENES,
@@ -363,6 +424,9 @@ module.exports = {
   setCoverWebp,
   getCoverBuffer,
   processCoverUpload,
+  deleteByAuthor,
+  incrementPlayCount,
+  sanitizeTags,
   entryToBackstory,
   bunkerRollIdForEntry,
   cardPoolsForEntry,

@@ -307,6 +307,10 @@
     return api(`/api/scenarios/${encodeURIComponent(id)}/submit`, { method: "POST" });
   }
 
+  async function deleteScenario(id) {
+    return api(`/api/scenarios/${encodeURIComponent(id)}`, { method: "DELETE" });
+  }
+
   async function uploadScenarioCover(id, image, crop) {
     return api(`/api/scenarios/${encodeURIComponent(id)}/cover`, {
       method: "POST",
@@ -426,6 +430,7 @@
     getMyScenarios,
     saveScenarioDraft,
     submitScenario,
+    deleteScenario,
     uploadScenarioCover,
     getDevPendingScenarios,
     approveScenario,

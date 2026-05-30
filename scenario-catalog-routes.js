@@ -96,6 +96,26 @@ function mountScenarioCatalogRoutes(app, { verifyToken, requireUser }) {
     }
   });
 
+  app.delete("/api/scenarios/:id", async (req, res) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      if (!hasPremiumAccess(user)) {
+        res.status(403).json({ error: "Доступно с подпиской Премиум." });
+        return;
+      }
+      const result = await scenarioCatalog.deleteByAuthor(user.id, req.params.id);
+      if (!result.ok) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("scenarios delete", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
   app.post("/api/scenarios/:id/cover", async (req, res) => {
     try {
       const user = await requireUser(req, res);

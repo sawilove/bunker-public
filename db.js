@@ -181,6 +181,12 @@ async function initDatabase() {
     CREATE INDEX IF NOT EXISTS scenario_catalog_published_idx
     ON scenario_catalog (status, updated_at DESC);
   `);
+  await p.query(`
+    ALTER TABLE scenario_catalog ADD COLUMN IF NOT EXISTS tags JSONB NOT NULL DEFAULT '[]';
+  `);
+  await p.query(`
+    ALTER TABLE scenario_catalog ADD COLUMN IF NOT EXISTS play_count INTEGER NOT NULL DEFAULT 0;
+  `);
 }
 
 function rowToUser(row) {

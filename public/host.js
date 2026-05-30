@@ -67,12 +67,13 @@ let lastQrUrl = "";
 let suppressSettingsEmit = false;
 let selectedBackstoryId = "nuclear";
 let backstoryRandom = false;
+let scenarioTab = "classic";
+let pendingScenarioSelection = null;
+let pendingSelectionUntil = 0;
 const backstoriesById = {};
 let hostAccess = { premium: false, dev: false, loggedIn: false };
-let savedCustomBackstory = null;
 const communityBackstoriesById = {};
 const catalogCardPoolsById = {};
-const CUSTOM_BACKSTORY_ID = BunkerScenarioEditor.CUSTOM_ID;
 
 function authTokenPayload() {
   const token = BunkerAuth.getToken?.() || "";
@@ -159,9 +160,6 @@ function currentSettingsPayload() {
     return payload;
   }
   payload.backstoryId = selectedBackstoryId;
-  if (selectedBackstoryId === CUSTOM_BACKSTORY_ID && savedCustomBackstory) {
-    payload.customBackstory = savedCustomBackstory;
-  }
   if (selectedBackstoryId?.startsWith?.("catalog:")) {
     payload.catalogCardPools = catalogCardPoolsById[selectedBackstoryId] || null;
   }
@@ -169,7 +167,7 @@ function currentSettingsPayload() {
 }
 
 function syncScenarioSelection() {
-  scenarioGrid.querySelectorAll(".scenario-card").forEach((card) => {
+  scenarioGrid.querySelectorAll(".scenario-card, .scenario-catalog-card").forEach((card) => {
     const isRandom = card.dataset.random === "true";
     const cardId = card.dataset.id;
     const selected = isRandom
@@ -188,23 +186,6 @@ function getLocalScenarioPreview() {
       text: "Катастрофа будет выбрана при старте. Описание увидите здесь после выбора.",
     };
   }
-  if (selectedBackstoryId === CUSTOM_BACKSTORY_ID) {
-    if (savedCustomBackstory) {
-      return enrichScenarioFromCatalog({
-        id: CUSTOM_BACKSTORY_ID,
-        ...savedCustomBackstory,
-        bunkerParamsPending: true,
-        bunkerParamsNote: "Параметры бункера определятся при старте игры.",
-      });
-    }
-    return {
-      isRandom: false,
-      id: CUSTOM_BACKSTORY_ID,
-      title: "Своя катастрофа",
-      text: "Откройте редактор и заполните описание катастрофы.",
-      bunkerParamsPending: true,
-    };
-  }
   const story =
     backstoriesById[selectedBackstoryId] || communityBackstoriesById[selectedBackstoryId];
   return story ? enrichScenarioFromCatalog(story) : null;
@@ -215,30 +196,53 @@ function updateHostScenarioTheme(data, showSpots = false) {
   renderScenarioHero(scenarioHero, data, { showSpots });
 }
 
-function canUseCustomScenario() {
+function canManageDisasters() {
   return hostAccess.premium || hostAccess.dev;
 }
 
+function formatScenarioDate(iso) {
+  if (!iso) return "";
+  try {
+    return new Intl.DateTimeFormat("ru-RU", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(new Date(iso));
+  } catch {
+    return "";
+  }
+}
+
+function pluralGames(n) {
+  const num = Number(n) || 0;
+  const mod10 = num % 10;
+  const mod100 = num % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${num} игра`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${num} игры`;
+  return `${num} игр`;
+}
+
+function scenarioTagsHtml(tags) {
+  const list = Array.isArray(tags) ? tags.filter(Boolean) : [];
+  if (!list.length) return "";
+  return `<span class="scenario-card__tags">${list
+    .map((t) => `<span class="scenario-card__tag">${escapeHtml(t)}</span>`)
+    .join("")}</span>`;
+}
+
 async function selectScenario(id, random) {
-  if (!random && id === CUSTOM_BACKSTORY_ID) {
-    if (!canUseCustomScenario()) {
-      BunkerPremium?.open?.();
-      return;
-    }
-    if (!savedCustomBackstory) {
-      BunkerScenarioEditor.openCustomScenarioEditor(null, (custom) => {
-        savedCustomBackstory = custom;
-        selectedBackstoryId = CUSTOM_BACKSTORY_ID;
-        backstoryRandom = false;
-        syncScenarioSelection();
-        updateHostScenarioTheme(getLocalScenarioPreview());
-        emitSettings();
-      });
-      return;
+  backstoryRandom = random;
+  if (!random) {
+    selectedBackstoryId = id;
+    if (id?.startsWith?.("catalog:")) {
+      pendingScenarioSelection = id;
+      pendingSelectionUntil = Date.now() + 2500;
+      scenarioTab = "community";
+    } else {
+      pendingScenarioSelection = null;
+      scenarioTab = "classic";
     }
   }
-  backstoryRandom = random;
-  if (!random) selectedBackstoryId = id;
   syncScenarioSelection();
   updateHostScenarioTheme(getLocalScenarioPreview());
   emitSettings();
@@ -266,36 +270,57 @@ function scenarioCardImgHtml(b) {
   return `<span class="scenario-card__random-mark" aria-hidden="true">18+</span>`;
 }
 
+function classicScenarioCardHtml(b) {
+  return `<button type="button" class="scenario-card" data-id="${escapeHtml(b.id)}" aria-selected="false"
+      title="${escapeHtml(b.title)}">
+      <span class="scenario-card__media">${scenarioCardImgHtml(b)}${scenarioTagsHtml(b.tags)}</span>
+      <span class="scenario-card__label">${escapeHtml(b.title)}</span>
+    </button>`;
+}
+
+function communityScenarioCardHtml(b) {
+  const author = b.authorNickname ? `@${escapeHtml(b.authorNickname)}` : "";
+  const published = formatScenarioDate(b.publishedAt || b.reviewedAt);
+  const games = pluralGames(b.playCount || 0);
+  return `<button type="button" class="scenario-catalog-card scenario-card" data-id="${escapeHtml(b.id)}" aria-selected="false"
+      title="${escapeHtml(b.title)}">
+      <span class="scenario-catalog-card__media">${scenarioCardImgHtml(b)}${scenarioTagsHtml(b.tags)}</span>
+      <span class="scenario-catalog-card__body">
+        <span class="scenario-catalog-card__title">${escapeHtml(b.title)}</span>
+        ${author ? `<span class="scenario-catalog-card__author">${author}</span>` : ""}
+        <span class="scenario-catalog-card__meta">
+          ${published ? `<time>${escapeHtml(published)}</time>` : ""}
+          <span class="scenario-catalog-card__plays">${escapeHtml(games)}</span>
+        </span>
+      </span>
+    </button>`;
+}
+
+function bindScenarioCards(root) {
+  root.querySelectorAll(".scenario-card, .scenario-catalog-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      if (card.dataset.random === "true") {
+        selectScenario(null, true);
+      } else {
+        selectScenario(card.dataset.id, false);
+      }
+    });
+  });
+}
+
+function setScenarioTab(tab) {
+  scenarioTab = tab;
+  scenarioGrid.querySelectorAll("[data-scenario-tab]").forEach((btn) => {
+    const active = btn.dataset.scenarioTab === tab;
+    btn.classList.toggle("scenario-tabs__btn--active", active);
+    btn.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  scenarioGrid.querySelector('[data-tab-panel="classic"]')?.classList.toggle("hidden", tab !== "classic");
+  scenarioGrid.querySelector('[data-tab-panel="community"]')?.classList.toggle("hidden", tab !== "community");
+}
+
 function buildScenarioGrid(backstories) {
-  const classicCards = backstories
-    .map(
-      (b) => `
-    <button type="button" class="scenario-card" data-id="${b.id}" aria-selected="false"
-      title="${escapeHtml(b.title)}">
-      ${scenarioCardImgHtml(b)}
-      <span class="scenario-card__label">${escapeHtml(b.title)}</span>
-    </button>`
-    )
-    .join("");
-
-  const communityList = Object.values(communityBackstoriesById);
-  const catalogSection =
-    hostAccess.loggedIn && communityList.length
-      ? `<p class="scenario-grid__section-title">Каталог</p>${communityList
-          .map(
-            (b) => `
-    <button type="button" class="scenario-card scenario-card--catalog" data-id="${escapeHtml(b.id)}" aria-selected="false"
-      title="${escapeHtml(b.title)}">
-      ${scenarioCardImgHtml(b)}
-      <span class="scenario-card__label">${escapeHtml(b.title)}</span>
-    </button>`
-          )
-          .join("")}`
-      : hostAccess.loggedIn
-        ? `<p class="scenario-grid__hint">В каталоге пока нет одобренных сценариев.</p>`
-        : `<p class="scenario-grid__hint">Войдите в аккаунт, чтобы выбирать сценарии из каталога.</p>`;
-
-  const cards = classicCards;
+  const classicCards = backstories.map((b) => classicScenarioCardHtml(b)).join("");
 
   const randomCard = `
     <button type="button" class="scenario-card scenario-card--random" data-random="true" aria-selected="false"
@@ -304,9 +329,20 @@ function buildScenarioGrid(backstories) {
       <span class="scenario-card__label">Случайный</span>
     </button>`;
 
-  const customCard = BunkerScenarioEditor.customScenarioCardHtml(canUseCustomScenario());
-  const mineBtn = canUseCustomScenario()
-    ? `<button type="button" class="btn btn--small" data-my-scenarios>Мои сценарии</button>`
+  const communityList = Object.values(communityBackstoriesById);
+  let communityPanel = "";
+  if (!hostAccess.loggedIn) {
+    communityPanel = `<p class="scenario-grid__hint">Войдите в аккаунт, чтобы выбирать пользовательские катастрофы.</p>`;
+  } else if (!communityList.length) {
+    communityPanel = `<p class="scenario-grid__hint">Пока нет одобренных пользовательских катастроф.</p>`;
+  } else {
+    communityPanel = `<div class="scenario-community-list">${communityList
+      .map((b) => communityScenarioCardHtml(b))
+      .join("")}</div>`;
+  }
+
+  const mineBtn = canManageDisasters()
+    ? `<button type="button" class="btn btn--small" data-my-disasters>Моя катастрофа</button>`
     : "";
   const devTools = hostAccess.dev
     ? `<div class="host-dev-tools">
@@ -315,38 +351,26 @@ function buildScenarioGrid(backstories) {
       </div>`
     : "";
 
-  scenarioGrid.innerHTML =
-    cards + catalogSection + customCard + randomCard + mineBtn + devTools;
+  scenarioGrid.className = "scenario-picker";
+  scenarioGrid.innerHTML = `
+    <div class="scenario-tabs" role="tablist" aria-label="Тип катастрофы">
+      <button type="button" class="scenario-tabs__btn${scenarioTab === "classic" ? " scenario-tabs__btn--active" : ""}" data-scenario-tab="classic" role="tab" aria-selected="${scenarioTab === "classic"}">Классика</button>
+      <button type="button" class="scenario-tabs__btn${scenarioTab === "community" ? " scenario-tabs__btn--active" : ""}" data-scenario-tab="community" role="tab" aria-selected="${scenarioTab === "community"}">Пользовательские катастрофы</button>
+    </div>
+    <div class="scenario-grid scenario-picker__panel${scenarioTab === "classic" ? "" : " hidden"}" data-tab-panel="classic" role="tabpanel">
+      ${classicCards}${randomCard}
+    </div>
+    <div class="scenario-picker__panel${scenarioTab === "community" ? "" : " hidden"}" data-tab-panel="community" role="tabpanel">
+      ${communityPanel}
+    </div>
+    <div class="scenario-picker__tools">${mineBtn}${devTools}</div>`;
 
-  scenarioGrid.querySelectorAll(".scenario-card").forEach((card) => {
-    card.addEventListener("click", () => {
-      if (card.classList.contains("scenario-card--locked")) {
-        BunkerPremium?.open?.();
-        return;
-      }
-      if (card.dataset.random === "true") {
-        selectScenario(null, true);
-      } else {
-        selectScenario(card.dataset.id, false);
-      }
-    });
-    if (
-      card.dataset.id === CUSTOM_BACKSTORY_ID &&
-      canUseCustomScenario() &&
-      !card.classList.contains("scenario-card--locked")
-    ) {
-      card.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
-        BunkerScenarioEditor.openCustomScenarioEditor(savedCustomBackstory, (custom) => {
-          savedCustomBackstory = custom;
-          if (selectedBackstoryId === CUSTOM_BACKSTORY_ID) {
-            updateHostScenarioTheme(getLocalScenarioPreview());
-            emitSettings();
-          }
-        });
-      });
-    }
+  scenarioGrid.querySelectorAll("[data-scenario-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => setScenarioTab(btn.dataset.scenarioTab));
   });
+
+  bindScenarioCards(scenarioGrid.querySelector('[data-tab-panel="classic"]') || scenarioGrid);
+  bindScenarioCards(scenarioGrid.querySelector('[data-tab-panel="community"]') || scenarioGrid);
 
   scenarioGrid.querySelector("[data-dev-edit-scenarios]")?.addEventListener("click", () => {
     BunkerScenarioEditor.openDevScenariosEditor();
@@ -354,9 +378,11 @@ function buildScenarioGrid(backstories) {
   scenarioGrid.querySelector("[data-dev-edit-pools]")?.addEventListener("click", () => {
     BunkerScenarioEditor.openDevCardPoolsEditor();
   });
-  scenarioGrid.querySelector("[data-my-scenarios]")?.addEventListener("click", () => {
-    BunkerScenarioEditor.openMyScenarios?.();
+  scenarioGrid.querySelector("[data-my-disasters]")?.addEventListener("click", () => {
+    BunkerScenarioEditor.openMyDisasters?.();
   });
+
+  syncScenarioSelection();
 }
 
 function emitSettings() {
@@ -390,17 +416,41 @@ function fillCatalog(catalog, settings) {
       communityBackstoriesById[b.id] = b;
       if (b.cardPools) catalogCardPoolsById[b.id] = b.cardPools;
     });
+    if (
+      selectedBackstoryId?.startsWith?.("catalog:") &&
+      !communityBackstoriesById[selectedBackstoryId] &&
+      !pendingScenarioSelection
+    ) {
+      selectedBackstoryId = Object.keys(backstoriesById)[0] || "nuclear";
+      scenarioTab = "classic";
+    }
     if (catalogReady) rebuildScenarioGrid();
   }
 
   suppressSettingsEmit = true;
   backstoryRandom = !!settings.backstoryRandom;
-  if (backstoryRandom) {
-    selectedBackstoryId = settings.backstoryId || selectedBackstoryId;
+  const serverId = settings.backstoryId;
+  if (
+    pendingScenarioSelection &&
+    Date.now() < pendingSelectionUntil &&
+    selectedBackstoryId === pendingScenarioSelection &&
+    serverId !== pendingScenarioSelection
+  ) {
+    // keep local catalog selection until server confirms
   } else {
-    selectedBackstoryId = settings.backstoryId || selectedBackstoryId;
+    if (backstoryRandom) {
+      selectedBackstoryId = serverId || selectedBackstoryId;
+    } else {
+      selectedBackstoryId = serverId || selectedBackstoryId;
+    }
+    if (serverId === pendingScenarioSelection) pendingScenarioSelection = null;
+    if (selectedBackstoryId?.startsWith?.("catalog:")) {
+      scenarioTab = "community";
+    } else if (!backstoryRandom) {
+      scenarioTab = "classic";
+    }
   }
-  if (settings.customBackstory) savedCustomBackstory = settings.customBackstory;
+  if (catalogReady) setScenarioTab(scenarioTab);
   syncScenarioSelection();
   updateHostScenarioTheme(getLocalScenarioPreview());
   suppressSettingsEmit = false;
@@ -618,10 +668,6 @@ async function loadHostAccess() {
         dev: !!user.dev,
         loggedIn: true,
       };
-      if (hostAccess.premium || hostAccess.dev) {
-        const data = await BunkerAuth.getCustomScenario();
-        savedCustomBackstory = data.customBackstory || null;
-      }
     }
   } catch {
     hostAccess = { premium: false, dev: false, loggedIn: false };

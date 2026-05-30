@@ -659,7 +659,7 @@ async function applyHostSettings(payload) {
   if (
     safe.backstoryId &&
     catalogRuntime.isCatalogBackstoryId(safe.backstoryId) &&
-    !catalogRuntime.isValidBackstoryId(safe.backstoryId, safe)
+    !catalogRuntime.isValidBackstoryId(safe.backstoryId, safe, { loggedIn })
   ) {
     return;
   }
@@ -859,6 +859,13 @@ io.on("connection", (socket) => {
     game.phase = "playing";
     game.activeBackstory = buildActiveBackstory(game.settings, n);
     game.round = 1;
+
+    if (
+      game.settings.backstoryId &&
+      catalogRuntime.isCatalogBackstoryId(game.settings.backstoryId)
+    ) {
+      scenarioCatalog.incrementPlayCount(game.settings.backstoryId);
+    }
 
     const scenarioId =
       catalogRuntime.dealScenarioIdForSettings(game.settings) || game.activeBackstory.id;

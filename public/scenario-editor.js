@@ -284,22 +284,59 @@
         if (values.length) cardPoolCustom[el.dataset.poolKey] = values;
       });
     }
-    return { title, text, locationLabel, sceneKey, cardPoolPreset, cardPoolCustom };
+    const tagsRaw = card.querySelector("[data-pub-tags]")?.value || "";
+    return { title, text, locationLabel, sceneKey, cardPoolPreset, cardPoolCustom, tags: tagsRaw };
+  }
+
+  function formatMineDate(iso) {
+    if (!iso) return "";
+    try {
+      return new Intl.DateTimeFormat("ru-RU", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }).format(new Date(iso));
+    } catch {
+      return "";
+    }
+  }
+
+  function scenarioThumbHtml(s) {
+    const coverSrc = s.coverUrl ? BunkerAuth.scenarioCoverUrl(s.coverUrl) : null;
+    if (coverSrc) {
+      return `<img class="scenario-editor__mine-thumb" src="${esc(coverSrc)}" alt="" loading="lazy">`;
+    }
+    if (s.scene) {
+      const src = BunkerRuntime.assetUrl(`scenarios/${s.scene}.png`);
+      return `<img class="scenario-editor__mine-thumb" src="${esc(src)}" alt="" loading="lazy">`;
+    }
+    return `<span class="scenario-editor__mine-thumb scenario-editor__mine-thumb--empty">?</span>`;
   }
 
   async function openPublishCatalogEditor(initial) {
+    const wasPublished = initial?.status === "published";
+    const tagsValue = Array.isArray(initial?.tags) ? initial.tags.join(", ") : "";
     const catalog = await BunkerAuth.getDevGameCatalog().catch(() => ({
       cardTypes: [],
       cardPools: {},
     }));
+    const publishedHint = wasPublished
+      ? `<p class="scenario-editor__hint scenario-editor__hint--warn">После сохранения сценарий снимется с публикации. Отправьте на модерацию для повторного одобрения.</p>`
+      : "";
+    const deleteBtn = initial?.catalogId
+      ? `<button type="button" class="btn btn--danger" data-delete-scenario>Удалить катастрофу</button>`
+      : "";
     const body = `
-      <p class="scenario-editor__hint">Черновик можно отправить на модерацию. После одобления dev сценарий появится в каталоге.</p>
+      <p class="scenario-editor__hint">Черновик можно отправить на модерацию. После одобления сценарий появится в каталоге.</p>
+      ${publishedHint}
       <label class="field"><span class="field__label">Название</span>
         <input type="text" data-pub-title maxlength="80" value="${esc(initial?.title || "")}"></label>
       <label class="field"><span class="field__label">Описание</span>
         <textarea data-pub-text rows="5" maxlength="4000">${esc(initial?.text || "")}</textarea></label>
       <label class="field"><span class="field__label">Подпись срока / места</span>
         <input type="text" data-pub-location maxlength="80" value="${esc(initial?.locationLabel || "В бункере")}"></label>
+      <label class="field"><span class="field__label">Теги</span>
+        <input type="text" data-pub-tags maxlength="200" placeholder="через запятую, до 8 тегов" value="${esc(tagsValue)}"></label>
       ${renderScenePicker(initial?.sceneKey || initial?.scene, initial?.coverUrl ? BunkerAuth.scenarioCoverUrl(initial.coverUrl) : "")}
       ${renderPoolPresetSection(
         initial?.cardPoolPreset,
@@ -320,6 +357,7 @@
       <div class="scenario-editor__actions scenario-editor__actions--wrap">
         <button type="button" class="btn btn--amber" data-save-draft>Черновик</button>
         <button type="button" class="btn btn--amber" data-submit-mod>На модерацию</button>
+        ${deleteBtn}
         <button type="button" class="btn" data-editor-cancel>Отмена</button>
       </div>`;
     el.classList.remove("hidden");
@@ -348,6 +386,7 @@
         sceneKey: form.sceneKey,
         cardPoolPreset: form.cardPoolPreset,
         cardPoolCustom: form.cardPoolCustom,
+        tags: form.tags,
       });
       card.querySelector("[data-scenario-id]").value = scenario.catalogId;
       if (card.dataset.coverDataUrl) {
@@ -376,6 +415,19 @@
         card.querySelector("[data-editor-error]").classList.remove("hidden");
       })
     );
+    card.querySelector("[data-delete-scenario]")?.addEventListener("click", async () => {
+      const id = card.querySelector("[data-scenario-id]").value;
+      if (!id || !confirm("Удалить эту катастрофу? Действие необратимо.")) return;
+      try {
+        await BunkerAuth.deleteScenario(id);
+        close();
+        openMyDisasters();
+      } catch (err) {
+        const errEl = card.querySelector("[data-editor-error]");
+        errEl.textContent = err.message;
+        errEl.classList.remove("hidden");
+      }
+    });
   }
 
   const STATUS_LABELS = {
@@ -385,23 +437,27 @@
     rejected: "Отклонён",
   };
 
-  async function openMyScenarios() {
+  async function openMyDisasters() {
     const { scenarios } = await BunkerAuth.getMyScenarios();
     const rows = scenarios.length
       ? scenarios
           .map(
             (s) => `<li class="scenario-editor__mine-row">
-              <strong>${esc(s.title)}</strong>
-              <span class="scenario-editor__status scenario-editor__status--${esc(s.status)}">${esc(STATUS_LABELS[s.status] || s.status)}</span>
-              ${s.reviewNote ? `<p class="scenario-editor__hint">${esc(s.reviewNote)}</p>` : ""}
-              <button type="button" class="btn btn--small" data-edit-scenario="${esc(s.catalogId)}">Редактировать</button>
+              ${scenarioThumbHtml(s)}
+              <div class="scenario-editor__mine-body">
+                <strong>${esc(s.title)}</strong>
+                <span class="scenario-editor__status scenario-editor__status--${esc(s.status)}">${esc(STATUS_LABELS[s.status] || s.status)}</span>
+                ${s.createdAt ? `<time class="scenario-editor__mine-date">${esc(formatMineDate(s.createdAt))}</time>` : ""}
+                ${s.reviewNote ? `<p class="scenario-editor__hint">${esc(s.reviewNote)}</p>` : ""}
+                <button type="button" class="btn btn--small" data-edit-scenario="${esc(s.catalogId)}">Редактировать</button>
+              </div>
             </li>`
           )
           .join("")
-      : "<p class=\"scenario-editor__hint\">У вас пока нет сценариев в каталоге.</p>";
+      : "<p class=\"scenario-editor__hint\">У вас пока нет катастроф в каталоге.</p>";
     const body = `<ul class="scenario-editor__mine-list">${rows}</ul>
-      <button type="button" class="btn btn--amber" data-new-catalog>Создать для каталога</button>`;
-    const card = openModal("Мои сценарии", body, async () => {});
+      <button type="button" class="btn btn--amber" data-new-catalog>Создать катастрофу</button>`;
+    const card = openModal("Моя катастрофа", body, async () => {});
     card.querySelector("[data-editor-save]").classList.add("hidden");
     card.querySelector("[data-new-catalog]")?.addEventListener("click", () => {
       close();
@@ -414,6 +470,10 @@
         openPublishCatalogEditor(item || null);
       });
     });
+  }
+
+  async function openMyScenarios() {
+    return openMyDisasters();
   }
 
   async function openDevScenarioModeration() {
@@ -516,6 +576,7 @@
     close,
     openCustomScenarioEditor,
     openPublishCatalogEditor,
+    openMyDisasters,
     openMyScenarios,
     openDevScenarioModeration,
     openDevScenariosEditor,
