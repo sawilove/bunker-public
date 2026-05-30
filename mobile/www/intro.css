@@ -290,3 +290,30 @@ body {
     transform: none !important;
   }
 }
+
+.intro__server-error {
+  position: fixed;
+  inset: auto 1rem 2rem;
+  z-index: 10;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  background: rgba(12, 16, 12, 0.92);
+  border: 1px solid rgba(255, 180, 60, 0.35);
+  text-align: center;
+}
+
+.intro__server-error-text {
+  margin: 0 0 0.75rem;
+  color: #e8dcc8;
+  font-size: 0.95rem;
+}
+
+.intro__server-error-retry {
+  padding: 0.55rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  background: #c9922a;
+  color: #0a0c0a;
+  font-weight: 600;
+  cursor: pointer;
+}

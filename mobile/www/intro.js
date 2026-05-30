@@ -68,7 +68,39 @@
   async function goToApp() {
     intro.classList.add("is-done");
     await wait(500);
+    const base = APP_URL.replace(/\/$/, "");
+    try {
+      const res = await fetch(`${base}/api/auth/me`, { credentials: "include" });
+      if (res.status >= 502) throw new Error("server unavailable");
+    } catch {
+      showServerError();
+      return;
+    }
     window.location.replace(APP_URL);
+  }
+
+  function showServerError() {
+    intro.classList.remove("is-done");
+    screenTitle.classList.remove("is-active");
+    screenLogo.classList.remove("is-leaving");
+    screenLogo.classList.add("is-active");
+    if (progress) progress.style.width = "0%";
+
+    let err = document.getElementById("introServerError");
+    if (!err) {
+      err = document.createElement("div");
+      err.id = "introServerError";
+      err.className = "intro__server-error";
+      err.innerHTML =
+        '<p class="intro__server-error-text">Сервер временно недоступен.</p>' +
+        '<button type="button" class="intro__server-error-retry">Повторить</button>';
+      intro.appendChild(err);
+      err.querySelector(".intro__server-error-retry").addEventListener("click", function () {
+        err.classList.add("hidden");
+        goToApp();
+      });
+    }
+    err.classList.remove("hidden");
   }
 
   async function runIntro() {

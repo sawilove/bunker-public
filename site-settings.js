@@ -97,7 +97,7 @@ function mountDevRoutes(app) {
         backstoryOverrides: catalogRuntime.getDevCatalogState().backstoryOverrides,
         cardPoolOverrides: catalogRuntime.getDevCatalogState().cardPoolOverrides,
         cardTypes: gameData.CARD_TYPES,
-        cardPools: gameData.CARD_POOLS,
+        cardPools: catalogRuntime.mergeCardPools("nuclear", null),
       });
     } catch (err) {
       console.error("dev game-catalog get", err);
@@ -161,6 +161,9 @@ function maintenanceMiddleware(req, res, next) {
     p === "/api/dev/settings" ||
     p === "/api/dev/maintenance" ||
     p === "/api/dev/game-catalog" ||
+    p.startsWith("/api/friends") ||
+    p.startsWith("/api/chat/") ||
+    p.startsWith("/api/game/") ||
     p.startsWith("/socket.io") ||
     isStaticAsset(p)
   ) {

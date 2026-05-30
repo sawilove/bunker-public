@@ -12,11 +12,7 @@ const QRCode = require("qrcode");
 const { Server } = require("socket.io");
 const catalogRuntime = require("./catalog-runtime");
 const {
-  MODES,
   dealPlayerCards,
-  getRevealPerRound,
-  getMaxRound,
-  getBunkerSpots,
   buildActiveBackstory,
   getScenarioPreview,
   applySettingsPayload,
@@ -24,7 +20,14 @@ const {
   CUSTOM_BACKSTORY_ID,
   gameData,
 } = catalogRuntime;
-const { shuffleArray, pickRandom } = gameData;
+const {
+  shuffleArray,
+  pickRandom,
+  MODES,
+  getRevealPerRound,
+  getMaxRound,
+  getBunkerSpots,
+} = gameData;
 const {
   mountAuthRoutes,
   resolvePlayerIdentity,

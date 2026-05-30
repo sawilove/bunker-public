@@ -117,13 +117,27 @@
       .join("");
   }
 
+  function poolStorageKey(cardKey) {
+    return cardKey === "gender_age" ? "gender" : cardKey;
+  }
+
   function renderPoolEditors(cardTypes, pools, overrides) {
-    return cardTypes
+    const safeTypes = Array.isArray(cardTypes) ? cardTypes : [];
+    const safePools = pools && typeof pools === "object" ? pools : {};
+    const safeOverrides = overrides && typeof overrides === "object" ? overrides : {};
+    return safeTypes
       .map(({ key, label }) => {
-        const lines = (overrides[key] || pools[key] || []).join("\n");
+        const storageKey = poolStorageKey(key);
+        const values =
+          safeOverrides[storageKey] ||
+          safeOverrides[key] ||
+          safePools[storageKey] ||
+          safePools[key] ||
+          [];
+        const lines = (Array.isArray(values) ? values : []).join("\n");
         return `<label class="field">
           <span class="field__label">${esc(label)} <code>${esc(key)}</code></span>
-          <textarea data-pool-key="${esc(key)}" rows="3" placeholder="Одно значение на строку">${esc(lines)}</textarea>
+          <textarea data-pool-key="${esc(storageKey)}" rows="3" placeholder="Одно значение на строку">${esc(lines)}</textarea>
         </label>`;
       })
       .join("");
@@ -154,7 +168,11 @@
       okEl.classList.remove("hidden");
       setTimeout(() => {
         close();
-        window.location.reload();
+        const dest =
+          window.BunkerRuntime?.pageUrl?.("index.html") ||
+          location.pathname.replace(/\/[^/]*$/, "/") ||
+          "/";
+        window.location.replace(dest.startsWith("http") ? dest : `${location.origin}${dest}`);
       }, 500);
     });
   }
