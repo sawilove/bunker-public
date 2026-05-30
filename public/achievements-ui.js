@@ -26,7 +26,8 @@
     const displayedClass = opts.displayed ? " achievement-medal--displayed" : "";
     const interactiveClass = opts.interactive ? " achievement-medal--interactive" : "";
     const shine = shineClass(ach, locked);
-    return `<span class="achievement-medal achievement-medal--${size}${lockedClass}${selectedClass}${displayedClass}${interactiveClass}${shine}"${titleAttr} data-achievement-id="${esc(ach.id || "")}">
+    const shineStyle = shine ? ` style="--medal-icon:url('${esc(icon)}')"` : "";
+    return `<span class="achievement-medal achievement-medal--${size}${lockedClass}${selectedClass}${displayedClass}${interactiveClass}${shine}"${titleAttr}${shineStyle} data-achievement-id="${esc(ach.id || "")}">
       <img class="achievement-medal__img" src="${esc(icon)}" alt="" loading="lazy">
     </span>`;
   }
