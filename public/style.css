@@ -2918,7 +2918,7 @@ input[type="range"]::-moz-range-thumb {
   z-index: 1;
   display: flex;
   align-items: flex-end;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 1rem;
   padding: 1.25rem;
   flex-wrap: wrap;
@@ -2933,10 +2933,12 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .profile-hero__rank {
-  flex-shrink: 0;
-  align-self: flex-start;
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 2;
   text-align: right;
-  padding-top: 0.15rem;
+  pointer-events: none;
 }
 
 .profile-hero__rank-label {
@@ -3406,6 +3408,15 @@ input[type="range"]::-moz-range-thumb {
     align-items: flex-start;
     gap: 0.7rem;
     padding: 0.8rem;
+  }
+
+  body.profile-page .profile-hero__rank {
+    top: 0.8rem;
+    right: 0.8rem;
+  }
+
+  body.profile-page .profile-hero__body:has(.profile-hero__rank) .profile-hero__main {
+    padding-right: 4.25rem;
   }
 
   body.profile-page .profile-avatar {
@@ -5803,14 +5814,8 @@ body.mobile-compact-ui .mobile-dock__btn--play {
     flex-wrap: wrap;
   }
 
-  .profile-hero__body {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .profile-hero__rank {
-    align-self: flex-end;
-    margin-top: -0.25rem;
+  .profile-hero__body:has(.profile-hero__rank) .profile-hero__main {
+    padding-right: 4.25rem;
   }
 
   .profile-hero__rank-value {
