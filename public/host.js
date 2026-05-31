@@ -72,7 +72,7 @@ let communitySort = "relevance";
 let pendingScenarioSelection = null;
 let pendingSelectionUntil = 0;
 const backstoriesById = {};
-let hostAccess = { premium: false, dev: false, loggedIn: false };
+let hostAccess = { premium: false, dev: false, loggedIn: false, userId: null };
 let lastHostPhase = null;
 const communityBackstoriesById = {};
 const catalogCardPoolsById = {};
@@ -302,6 +302,33 @@ function communityAuthorHtml(b) {
     </span>`;
 }
 
+function communityNewCatalogCardHtml() {
+  return `<button type="button" class="scenario-catalog-card scenario-card scenario-catalog-card--new" data-new-catalog aria-label="Новая катастрофа">
+    <span class="scenario-catalog-card__media scenario-catalog-card__media--new"><span class="scenario-catalog-card__new-mark" aria-hidden="true">+</span></span>
+    <span class="scenario-catalog-card__body">
+      <span class="scenario-catalog-card__title">Новая катастрофа</span>
+      <span class="scenario-catalog-card__author">Создать и отправить на модерацию</span>
+    </span>
+  </button>`;
+}
+
+function communityEditHoverHtml(b) {
+  if (!hostAccess.userId || !b.authorId || b.authorId !== hostAccess.userId) return "";
+  return `<button type="button" class="scenario-card__hover-btn scenario-card__hover-btn--edit" data-scenario-edit="${escapeHtml(b.id)}" title="Редактировать" aria-label="Редактировать">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+  </button>`;
+}
+
+function communitySocialHoverHtml(b) {
+  const social = BunkerScenarioCatalogUi?.socialHoverHtml?.(b.id) || "";
+  const edit = communityEditHoverHtml(b);
+  if (!social && !edit) return "";
+  const inner = social
+    ? social.replace(/^<span class="scenario-card__hover-actions">/, "").replace(/<\/span>\s*$/, "")
+    : "";
+  return `<span class="scenario-card__hover-actions">${inner}${edit}</span>`;
+}
+
 function communityScenarioCardHtml(b) {
   const published = formatScenarioDate(b.publishedAt || b.reviewedAt);
   const games = pluralGames(b.playCount || 0);
@@ -313,9 +340,10 @@ function communityScenarioCardHtml(b) {
   const meta = metaParts.length
     ? `<span class="scenario-catalog-card__meta">${metaParts.join("")}</span>`
     : "";
-  return `<button type="button" class="scenario-catalog-card scenario-card" data-id="${escapeHtml(b.id)}" aria-selected="false"
+  return `<div class="scenario-catalog-card-wrap">
+    <button type="button" class="scenario-catalog-card scenario-card" data-id="${escapeHtml(b.id)}" aria-selected="false"
       title="${escapeHtml(b.title)}">
-      <span class="scenario-catalog-card__media">${scenarioCardImgHtml(b)}${scenarioTagsHtml(b.tags)}${BunkerScenarioCatalogUi?.socialHoverHtml?.(b.id) || ""}</span>
+      <span class="scenario-catalog-card__media">${scenarioCardImgHtml(b)}${scenarioTagsHtml(b.tags)}</span>
       <span class="scenario-catalog-card__body">
         <span class="scenario-catalog-card__head">
           <span class="scenario-catalog-card__title">${escapeHtml(b.title)}</span>
@@ -323,11 +351,14 @@ function communityScenarioCardHtml(b) {
         </span>
         ${meta}
       </span>
-    </button>`;
+    </button>
+    ${communitySocialHoverHtml(b)}
+  </div>`;
 }
 
 function bindScenarioCards(root) {
   root.querySelectorAll(".scenario-card, .scenario-catalog-card").forEach((card) => {
+    if (card.hasAttribute("data-new-catalog")) return;
     card.addEventListener("click", () => {
       if (card.dataset.random === "true") {
         selectScenario(null, true);
@@ -337,6 +368,54 @@ function bindScenarioCards(root) {
     });
   });
   BunkerScenarioCatalogUi?.bindScenarioSocial?.(root);
+}
+
+function bindCommunityPanelExtras(root) {
+  root.querySelector("[data-new-catalog]")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    BunkerScenarioEditor.openPublishCatalogEditor?.(null);
+  });
+  root.querySelector("[data-my-disasters]")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    BunkerScenarioEditor.openMyDisasters?.();
+  });
+  root.querySelectorAll("[data-scenario-edit]").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      if (!BunkerAuth.getMyScenarios) return;
+      try {
+        const data = await BunkerAuth.getMyScenarios();
+        const backstoryId = btn.dataset.scenarioEdit;
+        const item = (data.scenarios || []).find(
+          (s) => s.id === backstoryId || s.catalogId && `catalog:${s.catalogId}` === backstoryId
+        );
+        if (item) BunkerScenarioEditor.openPublishCatalogEditor(item);
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+  });
+}
+
+async function refreshCommunityCatalogFromApi() {
+  if (!hostAccess.loggedIn || !BunkerAuth.getScenarioCatalog) return;
+  try {
+    const data = await BunkerAuth.getScenarioCatalog(communitySort);
+    for (const key of Object.keys(communityBackstoriesById)) {
+      delete communityBackstoriesById[key];
+    }
+    (data.scenarios || []).forEach((b) => {
+      communityBackstoriesById[b.id] = b;
+      if (b.cardPools) catalogCardPoolsById[b.id] = b.cardPools;
+    });
+    refreshCommunityPanel();
+    syncScenarioSelection();
+    updateHostScenarioTheme(getLocalScenarioPreview());
+  } catch {
+    /* ignore */
+  }
 }
 
 function setScenarioTab(tab) {
@@ -361,13 +440,17 @@ function renderCommunityPanelInner() {
     return `<p class="scenario-grid__hint">Войдите в аккаунт, чтобы выбирать пользовательские катастрофы.</p>`;
   }
   const communityList = getSortedCommunityList();
-  if (!communityList.length) {
-    return `<p class="scenario-grid__hint">Пока нет одобренных пользовательских катастроф.</p>`;
-  }
   const sortHtml = BunkerScenarioCatalogUi?.sortSelectHtml?.(communitySort, "scenario-catalog-sort--host") || "";
-  return `${sortHtml}<div class="scenario-community-list">${communityList
-    .map((b) => communityScenarioCardHtml(b))
-    .join("")}</div>`;
+  const newCard = canManageDisasters() ? communityNewCatalogCardHtml() : "";
+  const manageLink = canManageDisasters()
+    ? `<button type="button" class="scenario-community-manage btn btn--small" data-my-disasters>Мои черновики</button>`
+    : "";
+  const listHtml = communityList.map((b) => communityScenarioCardHtml(b)).join("");
+  const emptyHint =
+    communityList.length || newCard
+      ? ""
+      : `<p class="scenario-grid__hint">Пока нет одобренных пользовательских катастроф.</p>`;
+  return `${sortHtml}${manageLink}<div class="scenario-community-list">${newCard}${listHtml}</div>${emptyHint}`;
 }
 
 function refreshCommunityPanel() {
@@ -379,6 +462,7 @@ function refreshCommunityPanel() {
     refreshCommunityPanel();
   });
   bindScenarioCards(panel);
+  bindCommunityPanelExtras(panel);
   syncScenarioSelection();
 }
 
@@ -394,16 +478,6 @@ function buildScenarioGrid(backstories) {
 
   const communityPanel = renderCommunityPanelInner();
 
-  const mineBtn = canManageDisasters()
-    ? `<button type="button" class="btn btn--small" data-my-disasters>Моя катастрофа</button>`
-    : "";
-  const devTools = hostAccess.dev
-    ? `<div class="host-dev-tools">
-        <button type="button" class="btn btn--small" data-dev-edit-scenarios>Редактировать сценарии</button>
-        <button type="button" class="btn btn--small" data-dev-edit-pools>Паки характеристик</button>
-      </div>`
-    : "";
-
   scenarioGrid.className = "scenario-picker";
   scenarioGrid.innerHTML = `
     <div class="scenario-tabs" role="tablist" aria-label="Тип катастрофы">
@@ -415,8 +489,7 @@ function buildScenarioGrid(backstories) {
     </div>
     <div class="scenario-picker__panel scenario-picker__panel--community${scenarioTab === "community" ? "" : " hidden"}" data-tab-panel="community" role="tabpanel">
       ${communityPanel}
-    </div>
-    <div class="scenario-picker__tools">${mineBtn}${devTools}</div>`;
+    </div>`;
 
   scenarioGrid.querySelectorAll("[data-scenario-tab]").forEach((btn) => {
     btn.addEventListener("click", () => setScenarioTab(btn.dataset.scenarioTab));
@@ -429,16 +502,7 @@ function buildScenarioGrid(backstories) {
     refreshCommunityPanel();
   });
   bindScenarioCards(communityPanelEl || scenarioGrid);
-
-  scenarioGrid.querySelector("[data-dev-edit-scenarios]")?.addEventListener("click", () => {
-    BunkerScenarioEditor.openDevScenariosEditor();
-  });
-  scenarioGrid.querySelector("[data-dev-edit-pools]")?.addEventListener("click", () => {
-    BunkerScenarioEditor.openDevCardPoolsEditor();
-  });
-  scenarioGrid.querySelector("[data-my-disasters]")?.addEventListener("click", () => {
-    BunkerScenarioEditor.openMyDisasters?.();
-  });
+  bindCommunityPanelExtras(communityPanelEl || scenarioGrid);
 
   syncScenarioSelection();
 }
@@ -644,7 +708,7 @@ function applyState(state) {
     hostStatus.textContent =
       n === 0 ? "Ожидание подключений…" : `В зале: ${n} чел.`;
     bunkerHint.textContent = state.scenario?.bunkerParamsPending
-      ? `${state.scenario.bunkerParamsNote || "Параметры бункера — при старте"} · мест: ${state.bunkerSpots}`
+      ? `${state.scenario.locationLabel || "В бункере"}: ${state.scenario.bunkerParamsNote || "параметры бункера — при старте"} · мест: ${state.bunkerSpots}`
       : formatBunkerHint(state.scenario, state.bunkerSpots);
     startBtn.disabled = !state.canStart;
     updateHostScenarioTheme(state.scenario);
@@ -713,13 +777,13 @@ socket.on("hostError", (msg) => {
 
 async function loadHostAccess() {
   if (!BunkerAuth.apiBase?.()) {
-    hostAccess = { premium: false, dev: false, loggedIn: false };
+    hostAccess = { premium: false, dev: false, loggedIn: false, userId: null };
     rebuildScenarioGrid();
     syncScenarioSelection();
     return;
   }
   if (!BunkerAuth.getToken?.()) {
-    hostAccess = { premium: false, dev: false, loggedIn: false };
+    hostAccess = { premium: false, dev: false, loggedIn: false, userId: null };
     rebuildScenarioGrid();
     syncScenarioSelection();
     return;
@@ -727,16 +791,17 @@ async function loadHostAccess() {
   try {
     const user = await BunkerAuth.fetchMe();
     if (!user) {
-      hostAccess = { premium: false, dev: false, loggedIn: false };
+      hostAccess = { premium: false, dev: false, loggedIn: false, userId: null };
     } else {
       hostAccess = {
         premium: !!user.premium,
         dev: !!user.dev,
         loggedIn: true,
+        userId: user.id || null,
       };
     }
   } catch {
-    hostAccess = { premium: false, dev: false, loggedIn: false };
+    hostAccess = { premium: false, dev: false, loggedIn: false, userId: null };
   }
   rebuildScenarioGrid();
   syncScenarioSelection();
@@ -746,4 +811,7 @@ async function loadHostAccess() {
 loadHostAccess();
 window.addEventListener("bunker:auth-ready", () => {
   loadHostAccess();
+});
+window.addEventListener("bunker:scenarios-changed", () => {
+  refreshCommunityCatalogFromApi();
 });

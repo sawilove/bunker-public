@@ -522,6 +522,12 @@
     });
   }
 
+  async function deleteScenarioComment(commentId) {
+    return api(`/api/scenarios/comments/${encodeURIComponent(commentId)}`, {
+      method: "DELETE",
+    });
+  }
+
   async function toggleScenarioFavorite(catalogId) {
     return api(`/api/scenarios/catalog/${encodeURIComponent(catalogId)}/favorite`, {
       method: "POST",
@@ -628,6 +634,7 @@
     getGroupMessages,
     getScenarioComments,
     addScenarioComment,
+    deleteScenarioComment,
     toggleScenarioFavorite,
     getScenarioFavorites,
     getDevReports,
