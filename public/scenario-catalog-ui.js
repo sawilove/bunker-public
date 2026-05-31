@@ -135,6 +135,53 @@
     </span>`;
   }
 
+  function escapeHtml(s) {
+    const el = document.createElement("div");
+    el.textContent = s || "";
+    return el.innerHTML;
+  }
+
+  function formatCommentDate(iso) {
+    if (!iso) return "";
+    try {
+      return new Intl.DateTimeFormat("ru-RU", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(iso));
+    } catch {
+      return "";
+    }
+  }
+
+  function commentAvatarSrc(user) {
+    if (user?.avatarUrl) {
+      const base = (BunkerAuth.apiBase?.() || "").replace(/\/$/, "");
+      return base ? `${base}${user.avatarUrl}` : user.avatarUrl;
+    }
+    return BunkerAuth.assetUrl?.("/icons/default-avatar.svg") || "/icons/default-avatar.svg";
+  }
+
+  function commentItemHtml(c, currentUserId) {
+    const av = commentAvatarSrc(c.user);
+    const canDelete = currentUserId && c.user?.id === currentUserId;
+    const deleteBtn = canDelete
+      ? `<button type="button" class="scenario-comments-list__delete" data-delete-comment="${escapeHtml(c.id)}" title="Удалить" aria-label="Удалить комментарий">×</button>`
+      : "";
+    return `<li class="scenario-comments-list__item">
+      <img class="scenario-comments-list__avatar" src="${escapeHtml(av)}" alt="">
+      <div class="scenario-comments-list__body">
+        <div class="scenario-comments-list__head">
+          <span class="scenario-comments-list__name">${escapeHtml(c.user?.nickname || "Игрок")}</span>
+          <time class="scenario-comments-list__date">${escapeHtml(formatCommentDate(c.createdAt))}</time>
+          ${deleteBtn}
+        </div>
+        <p class="scenario-comments-list__text">${escapeHtml(c.body)}</p>
+      </div>
+    </li>`;
+  }
+
   async function openCommentsModal(catalogId) {
     if (!window.BunkerAuth?.isLoggedIn?.()) {
       alert("Войдите в аккаунт для комментариев.");
@@ -150,7 +197,7 @@
         <h3>Комментарии</h3>
         <ul class="scenario-comments-list" id="scenarioCommentsList"></ul>
         <form id="scenarioCommentForm" class="scenario-comment-form">
-          <textarea id="scenarioCommentInput" maxlength="1000" rows="3" placeholder="Ваш комментарий…"></textarea>
+          <textarea id="scenarioCommentInput" maxlength="1000" rows="2" placeholder="Ваш комментарий…"></textarea>
           <button type="submit" class="btn btn--small btn--amber">Отправить</button>
         </form>
         <p class="form-error hidden" id="scenarioCommentError"></p>
@@ -167,6 +214,9 @@
     modal.classList.remove("hidden");
     const listEl = modal.querySelector("#scenarioCommentsList");
     const errEl = modal.querySelector("#scenarioCommentError");
+    const me = await BunkerAuth.fetchMe?.();
+    const currentUserId = me?.id || null;
+
     async function loadComments() {
       try {
         const data = await BunkerAuth.getScenarioComments(catalogId);
@@ -174,23 +224,25 @@
           listEl.innerHTML = '<li class="scenario-comments-list__empty">Пока нет комментариев.</li>';
           return;
         }
-        listEl.innerHTML = data.comments
-          .map(
-            (c) => `<li class="scenario-comments-list__item">
-              <strong>${escapeHtml(c.user?.nickname || "Игрок")}</strong>
-              <p>${escapeHtml(c.body)}</p>
-            </li>`
-          )
-          .join("");
+        listEl.innerHTML = data.comments.map((c) => commentItemHtml(c, currentUserId)).join("");
+        listEl.querySelectorAll("[data-delete-comment]").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            if (!confirm("Удалить комментарий?")) return;
+            errEl.classList.add("hidden");
+            try {
+              await BunkerAuth.deleteScenarioComment(btn.dataset.deleteComment);
+              await loadComments();
+            } catch (err) {
+              errEl.textContent = err.message;
+              errEl.classList.remove("hidden");
+            }
+          });
+        });
       } catch (err) {
         listEl.innerHTML = `<li class="scenario-comments-list__empty">${escapeHtml(err.message)}</li>`;
       }
     }
-    function escapeHtml(s) {
-      const el = document.createElement("div");
-      el.textContent = s || "";
-      return el.innerHTML;
-    }
+
     modal.querySelector("#scenarioCommentForm").onsubmit = async (e) => {
       e.preventDefault();
       errEl.classList.add("hidden");

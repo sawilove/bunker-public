@@ -148,6 +148,56 @@ function authorProfileIdFromRow(row) {
   return row?.author_profile_id || row?.profile_id || row?.author_id || null;
 }
 
+function sanitizeBunkerProfile(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  if (raw.mode !== "custom") return null;
+  const profile = {};
+  const trim = (v, max) => String(v || "").trim().slice(0, max);
+  const bunkerType = trim(raw.bunkerType, 120);
+  const bunkerCondition = trim(raw.bunkerCondition, 120);
+  const bunkerArea = trim(raw.bunkerArea, 120);
+  const bunkerInventory = trim(raw.bunkerInventory, 500);
+  const stayDurationLabel = trim(raw.stayDurationLabel, 120);
+  const foodSupplyLabel = trim(raw.foodSupplyLabel, 120);
+  if (bunkerType) profile.bunkerType = bunkerType;
+  if (bunkerCondition) profile.bunkerCondition = bunkerCondition;
+  if (bunkerArea) profile.bunkerArea = bunkerArea;
+  if (bunkerInventory) profile.bunkerInventory = bunkerInventory;
+  if (stayDurationLabel) profile.stayDurationLabel = stayDurationLabel;
+  if (foodSupplyLabel) profile.foodSupplyLabel = foodSupplyLabel;
+  return Object.keys(profile).length ? { mode: "custom", ...profile } : null;
+}
+
+function bunkerProfileFromRow(row) {
+  const raw = row?.bunker_profile;
+  if (!raw || typeof raw !== "object" || raw.mode !== "custom") return null;
+  return sanitizeBunkerProfile(raw);
+}
+
+function applyBunkerProfileToScenario(story, bunkerProfile) {
+  if (!bunkerProfile) {
+    return {
+      ...story,
+      bunkerParamsPending: true,
+      bunkerParamsNote:
+        story.bunkerParamsNote ||
+        "Срок пребывания, запасы и описание бункера определятся случайно при старте игры.",
+    };
+  }
+  const p = bunkerProfile;
+  return {
+    ...story,
+    bunkerParamsPending: false,
+    bunkerType: p.bunkerType || null,
+    bunkerCondition: p.bunkerCondition || null,
+    bunkerArea: p.bunkerArea || null,
+    bunkerInventory: p.bunkerInventory || null,
+    stayDurationLabel: p.stayDurationLabel || null,
+    yearsLabel: p.stayDurationLabel || null,
+    foodSupplyLabel: p.foodSupplyLabel || null,
+  };
+}
+
 function bunkerRollIdForEntry(entry) {
   if (entry.cardPoolPreset === "18plus") return "vulgar";
   return "nuclear";
@@ -181,6 +231,7 @@ function rowToEntry(row) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     tags: Array.isArray(row.tags) ? row.tags : [],
+    bunkerProfile: bunkerProfileFromRow(row),
     playCount: row.play_count != null ? Number(row.play_count) : 0,
     ratingSum: row.rating_sum != null ? Number(row.rating_sum) : 0,
     ratingCount: row.rating_count != null ? Number(row.rating_count) : 0,
@@ -204,6 +255,8 @@ function entryToBackstory(entry) {
     locationLabel: entry.locationLabel,
     badge: entry.badge,
     coverUrl: entry.coverUrl,
+    authorId: entry.authorId || null,
+    bunkerProfile: entry.bunkerProfile || null,
     cardPools: entry.cardPools,
     cardPoolPreset: entry.cardPoolPreset,
     tags: entry.tags || [],
@@ -369,9 +422,10 @@ function validateDraftPayload(body) {
     return { ok: false, error: "Заполните свой пак характеристик." };
   }
   const tags = sanitizeTags(body?.tags);
+  const bunkerProfile = sanitizeBunkerProfile(body?.bunkerProfile);
   return {
     ok: true,
-    data: { title, text, locationLabel, sceneKey, cardPoolPreset, cardPoolCustom, tags },
+    data: { title, text, locationLabel, sceneKey, cardPoolPreset, cardPoolCustom, tags, bunkerProfile },
   };
 }
 
@@ -395,8 +449,8 @@ async function upsertDraft(authorId, payload, existingId) {
   await getPool().query(
     `INSERT INTO scenario_catalog (
       id, author_id, title, text, location_label, scene_key,
-      card_pool_preset, card_pool_custom, tags, status, updated_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, 'draft', NOW())
+      card_pool_preset, card_pool_custom, tags, bunker_profile, status, updated_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10::jsonb, 'draft', NOW())
     ON CONFLICT (id) DO UPDATE SET
       title = EXCLUDED.title,
       text = EXCLUDED.text,
@@ -405,6 +459,7 @@ async function upsertDraft(authorId, payload, existingId) {
       card_pool_preset = EXCLUDED.card_pool_preset,
       card_pool_custom = EXCLUDED.card_pool_custom,
       tags = EXCLUDED.tags,
+      bunker_profile = EXCLUDED.bunker_profile,
       status = CASE
         WHEN scenario_catalog.status = 'published' THEN 'draft'
         WHEN scenario_catalog.status = 'rejected' THEN 'draft'
@@ -421,6 +476,7 @@ async function upsertDraft(authorId, payload, existingId) {
       v.data.cardPoolPreset,
       v.data.cardPoolCustom ? JSON.stringify(v.data.cardPoolCustom) : null,
       JSON.stringify(v.data.tags),
+      v.data.bunkerProfile ? JSON.stringify(v.data.bunkerProfile) : null,
     ]
   );
 
@@ -588,7 +644,8 @@ async function incrementPlayCount(backstoryId) {
 
 async function listScenarioComments(catalogId, limit = 30) {
   const { rows } = await getPool().query(
-    `SELECT c.id, c.body, c.created_at, u.id AS user_id, u.nickname, u.profile_id
+    `SELECT c.id, c.body, c.created_at, u.id AS user_id, u.nickname, u.profile_id,
+            u.avatar_webp, u.avatar_updated_at
      FROM scenario_comments c
      JOIN users u ON u.id = c.user_id
      WHERE c.catalog_id = $1
@@ -600,7 +657,20 @@ async function listScenarioComments(catalogId, limit = 30) {
     id: r.id,
     body: r.body,
     createdAt: r.created_at,
-    user: { id: r.user_id, profileId: r.profile_id || r.user_id, nickname: r.nickname },
+    user: {
+      id: r.user_id,
+      profileId: r.profile_id || r.user_id,
+      nickname: r.nickname,
+      avatarUrl: r.avatar_webp
+        ? `/api/avatars/${r.user_id}?v=${
+            r.avatar_updated_at instanceof Date
+              ? r.avatar_updated_at.getTime()
+              : r.avatar_updated_at
+                ? new Date(r.avatar_updated_at).getTime()
+                : Date.now()
+          }`
+        : null,
+    },
   }));
 }
 
@@ -718,6 +788,8 @@ module.exports = {
   sanitizeTags,
   entryToBackstory,
   bunkerRollIdForEntry,
+  sanitizeBunkerProfile,
+  applyBunkerProfileToScenario,
   cardPoolsForEntry,
   listScenarioComments,
   addScenarioComment,

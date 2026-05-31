@@ -194,6 +194,9 @@ async function initDatabase() {
     ALTER TABLE scenario_catalog ADD COLUMN IF NOT EXISTS rating_count INTEGER NOT NULL DEFAULT 0;
   `);
   await p.query(`
+    ALTER TABLE scenario_catalog ADD COLUMN IF NOT EXISTS bunker_profile JSONB;
+  `);
+  await p.query(`
     CREATE TABLE IF NOT EXISTS scenario_ratings (
       catalog_id TEXT NOT NULL REFERENCES scenario_catalog(id) ON DELETE CASCADE,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

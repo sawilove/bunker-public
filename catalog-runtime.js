@@ -176,7 +176,10 @@ function getScenarioPreview(settings) {
     };
   }
   const story = findBackstory(settings.backstoryId) || getEffectiveBackstories()[0];
-  return {
+  const catalogEntry = scenarioCatalog.isCatalogBackstoryId(story.id)
+    ? scenarioCatalog.getPublishedEntry(story.id)
+    : null;
+  const base = {
     isRandom: false,
     id: story.id,
     scene: story.scene,
@@ -185,6 +188,12 @@ function getScenarioPreview(settings) {
     badge: story.badge,
     locationLabel: story.locationLabel,
     coverUrl: story.coverUrl || null,
+  };
+  if (catalogEntry?.bunkerProfile) {
+    return scenarioCatalog.applyBunkerProfileToScenario(base, catalogEntry.bunkerProfile);
+  }
+  return {
+    ...base,
     bunkerParamsPending: true,
     bunkerParamsNote: gameData.BUNKER_PARAMS_PENDING_NOTE,
   };
@@ -201,12 +210,18 @@ function buildActiveBackstory(settings, playerCount) {
     story = findBackstory(settings.backstoryId) || getEffectiveBackstories()[0];
   }
   const spots = gameData.getBunkerSpots(playerCount);
-  const rollId = scenarioCatalog.isCatalogBackstoryId(story.id)
-    ? scenarioCatalog.bunkerRollIdForEntry(
-        scenarioCatalog.getPublishedEntry(story.id) || { cardPoolPreset: "standard" }
-      )
+  const catalogEntry = scenarioCatalog.isCatalogBackstoryId(story.id)
+    ? scenarioCatalog.getPublishedEntry(story.id)
+    : null;
+  const customBunker = catalogEntry?.bunkerProfile
+    ? scenarioCatalog.applyBunkerProfileToScenario({}, catalogEntry.bunkerProfile)
+    : null;
+  const rollId = catalogEntry
+    ? scenarioCatalog.bunkerRollIdForEntry(catalogEntry)
     : story.id;
-  const bunker = gameData.rollBunkerProfile(rollId);
+  const bunker = customBunker && !customBunker.bunkerParamsPending
+    ? customBunker
+    : gameData.rollBunkerProfile(rollId);
   return {
     id: story.id,
     scene: story.scene,

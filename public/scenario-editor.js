@@ -412,6 +412,54 @@
     });
   }
 
+  function renderBunkerEditorSection(bunkerProfile) {
+    const mode = bunkerProfile?.mode === "custom" ? "custom" : "random";
+    const p = bunkerProfile?.mode === "custom" ? bunkerProfile : {};
+    return `
+      <fieldset class="scenario-editor__presets">
+        <legend class="field__label">Параметры бункера</legend>
+        <label><input type="radio" name="bunkerMode" value="random" ${mode === "random" ? "checked" : ""}> Случайно при старте игры</label>
+        <label><input type="radio" name="bunkerMode" value="custom" ${mode === "custom" ? "checked" : ""}> Задать вручную</label>
+      </fieldset>
+      <div data-bunker-fields class="${mode === "custom" ? "" : "hidden"}">
+        <label class="field"><span class="field__label">Срок пребывания</span>
+          <input type="text" data-bunker-stay maxlength="120" placeholder="например: 3 года 6 месяцев" value="${esc(p.stayDurationLabel || "")}"></label>
+        <label class="field"><span class="field__label">Тип убежища</span>
+          <input type="text" data-bunker-type maxlength="120" value="${esc(p.bunkerType || "")}"></label>
+        <label class="field"><span class="field__label">Состояние</span>
+          <input type="text" data-bunker-condition maxlength="120" value="${esc(p.bunkerCondition || "")}"></label>
+        <label class="field"><span class="field__label">Площадь</span>
+          <input type="text" data-bunker-area maxlength="120" value="${esc(p.bunkerArea || "")}"></label>
+        <label class="field"><span class="field__label">Что внутри</span>
+          <textarea data-bunker-inventory rows="3" maxlength="500" placeholder="один пункт на строку или через «;»">${esc(p.bunkerInventory || "")}</textarea></label>
+        <label class="field"><span class="field__label">Запас еды</span>
+          <input type="text" data-bunker-food maxlength="120" value="${esc(p.foodSupplyLabel || "")}"></label>
+      </div>`;
+  }
+
+  function bindBunkerMode(card) {
+    const wrap = card.querySelector("[data-bunker-fields]");
+    card.querySelectorAll('input[name="bunkerMode"]').forEach((radio) => {
+      radio.addEventListener("change", () => {
+        wrap?.classList.toggle("hidden", radio.value !== "custom");
+      });
+    });
+  }
+
+  function readBunkerProfileFromCard(card) {
+    const mode = card.querySelector('input[name="bunkerMode"]:checked')?.value || "random";
+    if (mode !== "custom") return { mode: "random" };
+    return {
+      mode: "custom",
+      stayDurationLabel: card.querySelector("[data-bunker-stay]")?.value.trim() || "",
+      bunkerType: card.querySelector("[data-bunker-type]")?.value.trim() || "",
+      bunkerCondition: card.querySelector("[data-bunker-condition]")?.value.trim() || "",
+      bunkerArea: card.querySelector("[data-bunker-area]")?.value.trim() || "",
+      bunkerInventory: card.querySelector("[data-bunker-inventory]")?.value.trim() || "",
+      foodSupplyLabel: card.querySelector("[data-bunker-food]")?.value.trim() || "",
+    };
+  }
+
   function readPublishForm(card) {
     const title = card.querySelector("[data-pub-title]")?.value.trim();
     const text = card.querySelector("[data-pub-text]")?.value.trim();
@@ -432,7 +480,8 @@
       });
     }
     const tagsRaw = card.querySelector("[data-pub-tags]")?.value || "";
-    return { title, text, locationLabel, sceneKey, cardPoolPreset, cardPoolCustom, tags: tagsRaw };
+    const bunkerProfile = readBunkerProfileFromCard(card);
+    return { title, text, locationLabel, sceneKey, cardPoolPreset, cardPoolCustom, tags: tagsRaw, bunkerProfile };
   }
 
   function formatMineDate(iso) {
@@ -478,11 +527,13 @@
       catalog,
       initial?.cardPoolCustom
     );
+    const bunkerSection = renderBunkerEditorSection(initial?.bunkerProfile);
     const body = `
       <p class="scenario-editor__hint">Черновик можно отправить на модерацию. После одобления сценарий появится в каталоге.</p>
       ${publishedHint}
       <div class="scenario-editor__tabs" role="tablist" aria-label="Редактор катастрофы">
         <button type="button" class="scenario-editor__tab scenario-editor__tab--active" data-editor-tab="scenario" role="tab" aria-selected="true">Катастрофа</button>
+        <button type="button" class="scenario-editor__tab" data-editor-tab="bunker" role="tab" aria-selected="false">Бункер</button>
         <button type="button" class="scenario-editor__tab" data-editor-tab="pools" role="tab" aria-selected="false">Пак характеристик</button>
       </div>
       <div data-editor-panel="scenario" class="scenario-editor__panel">
@@ -495,6 +546,10 @@
         <label class="field"><span class="field__label">Теги</span>
           <input type="text" data-pub-tags maxlength="200" placeholder="через запятую, до 8 тегов" value="${esc(tagsValue)}"></label>
         ${renderScenePicker(sceneKey, coverPreview, hasCustomCover)}
+      </div>
+      <div data-editor-panel="bunker" class="scenario-editor__panel hidden">
+        <p class="scenario-editor__hint">Подпись «срока / места» задаётся на вкладке «Катастрофа». Здесь — детали бункера для превью и игры.</p>
+        ${bunkerSection}
       </div>
       <div data-editor-panel="pools" class="scenario-editor__panel hidden">
         ${poolSection}
@@ -519,6 +574,7 @@
     el.classList.remove("hidden");
     bindScenePicker(card, hasCustomCover);
     bindPoolPreset(card, catalog, initial?.cardPoolCustom);
+    bindBunkerMode(card);
     bindEditorTabs(card);
     card.querySelector(".scenario-editor__close").addEventListener("click", close);
     card.querySelector("[data-editor-cancel]").addEventListener("click", close);
@@ -544,6 +600,7 @@
         cardPoolPreset: form.cardPoolPreset,
         cardPoolCustom: form.cardPoolCustom,
         tags: form.tags,
+        bunkerProfile: form.bunkerProfile,
       });
       card.querySelector("[data-scenario-id]").value = scenario.catalogId;
       await applyCoverChanges(card, scenario.catalogId);
@@ -554,6 +611,7 @@
         okEl.textContent = "Черновик сохранён.";
       }
       okEl.classList.remove("hidden");
+      window.dispatchEvent(new CustomEvent("bunker:scenarios-changed"));
       setTimeout(close, 800);
     }
 

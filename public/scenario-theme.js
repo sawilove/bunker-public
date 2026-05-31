@@ -95,8 +95,10 @@ function renderScenarioHero(heroEl, data, options = {}) {
   const yearsLine = stayLabel
     ? `<p class="scenario-hero__years">${scenarioEscape(loc)}: <strong>${scenarioEscape(stayLabel)}</strong></p>`
     : data.bunkerParamsPending && data.bunkerParamsNote
-      ? `<p class="scenario-hero__years scenario-hero__years--pending">${scenarioEscape(data.bunkerParamsNote)}</p>`
-      : "";
+      ? `<p class="scenario-hero__years scenario-hero__years--pending">${scenarioEscape(loc)}: ${scenarioEscape(data.bunkerParamsNote)}</p>`
+      : loc && loc !== "В бункере"
+        ? `<p class="scenario-hero__years">${scenarioEscape(loc)}</p>`
+        : "";
 
   const bunkerStats = renderBunkerStats(data);
   const spotsLine =
@@ -144,13 +146,43 @@ function renderBunkerStats(data) {
 
 function enrichScenarioFromCatalog(story) {
   if (!story) return null;
-  return {
+  const base = {
     ...story,
+    badge: story.badge,
+    locationLabel: story.locationLabel || "В бункере",
+  };
+  if (story.bunkerProfile) {
+    return applyCatalogBunkerProfile(base, story.bunkerProfile);
+  }
+  return {
+    ...base,
     bunkerParamsPending: true,
     bunkerParamsNote:
       story.bunkerParamsNote ||
       "Срок пребывания, запасы и описание бункера определятся случайно при старте игры.",
-    badge: story.badge,
-    locationLabel: story.locationLabel,
+  };
+}
+
+function applyCatalogBunkerProfile(story, bunkerProfile) {
+  if (!bunkerProfile || bunkerProfile.mode !== "custom") {
+    return {
+      ...story,
+      bunkerParamsPending: true,
+      bunkerParamsNote:
+        story.bunkerParamsNote ||
+        "Срок пребывания, запасы и описание бункера определятся случайно при старте игры.",
+    };
+  }
+  const p = bunkerProfile;
+  return {
+    ...story,
+    bunkerParamsPending: false,
+    bunkerType: p.bunkerType || null,
+    bunkerCondition: p.bunkerCondition || null,
+    bunkerArea: p.bunkerArea || null,
+    bunkerInventory: p.bunkerInventory || null,
+    stayDurationLabel: p.stayDurationLabel || null,
+    yearsLabel: p.stayDurationLabel || null,
+    foodSupplyLabel: p.foodSupplyLabel || null,
   };
 }
