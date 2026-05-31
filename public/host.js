@@ -334,6 +334,7 @@ function communityScenarioCardHtml(b) {
   const published = formatScenarioDate(b.publishedAt || b.reviewedAt);
   const games = pluralGames(b.playCount || 0);
   const rating = window.BunkerScenarioCatalogUi?.formatRatingBadge?.(b) || "";
+  const socialStats = window.BunkerScenarioCatalogUi?.formatSocialCountsHtml?.(b) || "";
   const metaParts = [];
   if (rating) metaParts.push(rating);
   if (published) metaParts.push(`<time>${escapeHtml(published)}</time>`);
@@ -341,15 +342,19 @@ function communityScenarioCardHtml(b) {
   const meta = metaParts.length
     ? `<span class="scenario-card__meta">${metaParts.join("")}</span>`
     : "";
-  return `<button type="button" class="scenario-card scenario-card--community" data-id="${escapeHtml(b.id)}" aria-selected="false"
-    title="${escapeHtml(b.title)}">
-    <span class="scenario-card__media">${scenarioCardImgHtml(b)}${scenarioTagsHtml(b.tags)}${communitySocialHoverHtml(b)}</span>
-    <span class="scenario-card__label">
-      <span class="scenario-card__label-title">${escapeHtml(b.title)}</span>
-      ${communityAuthorHtml(b)}
-      ${meta}
-    </span>
-  </button>`;
+  return `<div class="scenario-card-wrap scenario-card-wrap--community">
+    <button type="button" class="scenario-card scenario-card--community" data-id="${escapeHtml(b.id)}" aria-selected="false"
+      title="${escapeHtml(b.title)}">
+      <span class="scenario-card__media">${scenarioCardImgHtml(b)}${scenarioTagsHtml(b.tags)}</span>
+      <span class="scenario-card__label">
+        <span class="scenario-card__label-title">${escapeHtml(b.title)}</span>
+        ${communityAuthorHtml(b)}
+        ${meta}
+        ${socialStats}
+      </span>
+    </button>
+    ${communitySocialHoverHtml(b)}
+  </div>`;
 }
 
 function bindScenarioCards(root) {

@@ -55,6 +55,32 @@
     return `<span class="scenario-card__rating" title="Средняя оценка (${count})">★ ${avg.toFixed(1)} <span class="scenario-card__rating-count">(${count})</span></span>`;
   }
 
+  function pluralComments(n) {
+    const num = Number(n) || 0;
+    const mod10 = num % 10;
+    const mod100 = num % 100;
+    if (mod10 === 1 && mod100 !== 11) return `${num} комментарий`;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${num} комментария`;
+    return `${num} комментариев`;
+  }
+
+  function formatSocialCountsHtml(b) {
+    const comments = Number(b.commentCount) || 0;
+    const favorites = Number(b.favoriteCount) || 0;
+    return `<span class="scenario-card__social-stats">
+      <span class="scenario-card__stat scenario-card__stat--comments" title="Комментарии">💬 ${pluralComments(comments)}</span>
+      <span class="scenario-card__stat scenario-card__stat--favorites" title="Пользователи добавили в избранное">♥ ${favorites} в избранном</span>
+    </span>`;
+  }
+
+  function updateCardFavoriteCount(root, catalogId, count) {
+    root.querySelectorAll(`[data-scenario-fav="${catalogId}"]`).forEach((btn) => {
+      const wrap = btn.closest(".scenario-card-wrap--community");
+      const stat = wrap?.querySelector(".scenario-card__stat--favorites");
+      if (stat) stat.textContent = `♥ ${count} в избранном`;
+    });
+  }
+
   function sortSelectHtml(current, extraClass) {
     const cls = extraClass ? ` ${extraClass}` : "";
     const opts = SORT_OPTIONS.map(
@@ -272,6 +298,9 @@
           const result = await BunkerAuth.toggleScenarioFavorite(btn.dataset.scenarioFav);
           btn.classList.toggle("scenario-card__hover-btn--on", result.favorited);
           btn.querySelector("svg")?.setAttribute("fill", result.favorited ? "currentColor" : "none");
+          if (result.favoriteCount != null) {
+            updateCardFavoriteCount(root, btn.dataset.scenarioFav, result.favoriteCount);
+          }
         } catch (err) {
           alert(err.message);
         }
@@ -290,6 +319,7 @@
     SORT_OPTIONS,
     sortScenarios,
     formatRatingBadge,
+    formatSocialCountsHtml,
     sortSelectHtml,
     bindSortSelect,
     renderStarRating,

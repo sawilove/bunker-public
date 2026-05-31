@@ -235,6 +235,8 @@ function rowToEntry(row) {
     playCount: row.play_count != null ? Number(row.play_count) : 0,
     ratingSum: row.rating_sum != null ? Number(row.rating_sum) : 0,
     ratingCount: row.rating_count != null ? Number(row.rating_count) : 0,
+    commentCount: row.comment_count != null ? Number(row.comment_count) : 0,
+    favoriteCount: row.favorite_count != null ? Number(row.favorite_count) : 0,
     authorNickname: row.author_nickname || null,
     authorProfileId: authorProfileIdFromRow(row),
     authorAvatarUrl: authorAvatarUrlFromRow(row),
@@ -263,6 +265,8 @@ function entryToBackstory(entry) {
     playCount: entry.playCount || 0,
     ratingAvg: entry.ratingAvg ?? null,
     ratingCount: entry.ratingCount || 0,
+    commentCount: entry.commentCount || 0,
+    favoriteCount: entry.favoriteCount || 0,
     authorNickname: entry.authorNickname || null,
     authorProfileId: entry.authorProfileId || null,
     authorAvatarUrl: entry.authorAvatarUrl || null,
@@ -271,11 +275,16 @@ function entryToBackstory(entry) {
   };
 }
 
+const PUBLISHED_SOCIAL_COUNT_SQL = `
+  (SELECT COUNT(*)::int FROM scenario_comments cm WHERE cm.catalog_id = sc.id) AS comment_count,
+  (SELECT COUNT(*)::int FROM scenario_favorites fv WHERE fv.catalog_id = sc.id) AS favorite_count`;
+
 async function refreshPublishedCache() {
   try {
     const { rows } = await getPool().query(
       `SELECT sc.*, u.nickname AS author_nickname, u.profile_id AS author_profile_id,
-              u.avatar_webp AS author_avatar_webp, u.avatar_updated_at AS author_avatar_updated_at
+              u.avatar_webp AS author_avatar_webp, u.avatar_updated_at AS author_avatar_updated_at,
+              ${PUBLISHED_SOCIAL_COUNT_SQL}
        FROM scenario_catalog sc
        JOIN users u ON u.id = sc.author_id
        WHERE sc.status = 'published'
@@ -327,7 +336,8 @@ async function countPublishedByAuthor(authorId) {
 async function listPublishedByAuthor(authorId, sortRaw) {
   const { rows } = await getPool().query(
     `SELECT sc.*, u.nickname AS author_nickname, u.profile_id AS author_profile_id,
-            u.avatar_webp AS author_avatar_webp, u.avatar_updated_at AS author_avatar_updated_at
+            u.avatar_webp AS author_avatar_webp, u.avatar_updated_at AS author_avatar_updated_at,
+            ${PUBLISHED_SOCIAL_COUNT_SQL}
      FROM scenario_catalog sc
      JOIN users u ON u.id = sc.author_id
      WHERE sc.author_id = $1 AND sc.status = 'published'`,
@@ -686,12 +696,14 @@ async function addScenarioComment(userId, catalogId, body) {
     `INSERT INTO scenario_comments (id, catalog_id, user_id, body) VALUES ($1, $2, $3, $4)`,
     [id, catalogId, userId, text]
   );
+  const hit = publishedCache.find((e) => e.catalogId === catalogId);
+  if (hit) hit.commentCount = (hit.commentCount || 0) + 1;
   return { ok: true, comment: { id, body: text, createdAt: new Date().toISOString() } };
 }
 
 async function deleteScenarioComment(userId, commentId, isDev = false) {
   const { rows } = await getPool().query(
-    `SELECT user_id FROM scenario_comments WHERE id = $1`,
+    `SELECT user_id, catalog_id FROM scenario_comments WHERE id = $1`,
     [commentId]
   );
   const row = rows[0];
@@ -700,6 +712,8 @@ async function deleteScenarioComment(userId, commentId, isDev = false) {
     return { ok: false, error: "Нельзя удалить чужой комментарий." };
   }
   await getPool().query(`DELETE FROM scenario_comments WHERE id = $1`, [commentId]);
+  const hit = publishedCache.find((e) => e.catalogId === row.catalog_id);
+  if (hit) hit.commentCount = Math.max(0, (hit.commentCount || 0) - 1);
   return { ok: true };
 }
 
@@ -717,13 +731,17 @@ async function toggleScenarioFavorite(userId, catalogId) {
       `DELETE FROM scenario_favorites WHERE catalog_id = $1 AND user_id = $2`,
       [catalogId, userId]
     );
-    return { ok: true, favorited: false };
+    const hit = publishedCache.find((e) => e.catalogId === catalogId);
+    if (hit) hit.favoriteCount = Math.max(0, (hit.favoriteCount || 0) - 1);
+    return { ok: true, favorited: false, favoriteCount: hit?.favoriteCount ?? null };
   }
   await getPool().query(
     `INSERT INTO scenario_favorites (catalog_id, user_id) VALUES ($1, $2)`,
     [catalogId, userId]
   );
-  return { ok: true, favorited: true };
+  const hit = publishedCache.find((e) => e.catalogId === catalogId);
+  if (hit) hit.favoriteCount = (hit.favoriteCount || 0) + 1;
+  return { ok: true, favorited: true, favoriteCount: hit?.favoriteCount ?? null };
 }
 
 async function listScenarioFavorites(userId) {
