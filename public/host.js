@@ -303,11 +303,12 @@ function communityAuthorHtml(b) {
 }
 
 function communityNewCatalogCardHtml() {
-  return `<button type="button" class="scenario-catalog-card scenario-card scenario-catalog-card--new" data-new-catalog aria-label="Новая катастрофа">
-    <span class="scenario-catalog-card__media scenario-catalog-card__media--new"><span class="scenario-catalog-card__new-mark" aria-hidden="true">+</span></span>
-    <span class="scenario-catalog-card__body">
-      <span class="scenario-catalog-card__title">Новая катастрофа</span>
-      <span class="scenario-catalog-card__author">Создать и отправить на модерацию</span>
+  const locked = canManageDisasters() ? "" : " scenario-card--locked";
+  return `<button type="button" class="scenario-card scenario-card--new${locked}" data-new-catalog aria-label="Новая катастрофа">
+    <span class="scenario-card__new-mark" aria-hidden="true">+</span>
+    <span class="scenario-card__label">
+      <span class="scenario-card__label-title">Новая катастрофа</span>
+      <span class="scenario-card__meta">Создать и отправить на модерацию</span>
     </span>
   </button>`;
 }
@@ -338,22 +339,17 @@ function communityScenarioCardHtml(b) {
   if (published) metaParts.push(`<time>${escapeHtml(published)}</time>`);
   if (b.playCount != null) metaParts.push(`<span>${escapeHtml(games)}</span>`);
   const meta = metaParts.length
-    ? `<span class="scenario-catalog-card__meta">${metaParts.join("")}</span>`
+    ? `<span class="scenario-card__meta">${metaParts.join("")}</span>`
     : "";
-  return `<div class="scenario-catalog-card-wrap">
-    <button type="button" class="scenario-catalog-card scenario-card" data-id="${escapeHtml(b.id)}" aria-selected="false"
-      title="${escapeHtml(b.title)}">
-      <span class="scenario-catalog-card__media">${scenarioCardImgHtml(b)}${scenarioTagsHtml(b.tags)}</span>
-      <span class="scenario-catalog-card__body">
-        <span class="scenario-catalog-card__head">
-          <span class="scenario-catalog-card__title">${escapeHtml(b.title)}</span>
-          ${communityAuthorHtml(b)}
-        </span>
-        ${meta}
-      </span>
-    </button>
-    ${communitySocialHoverHtml(b)}
-  </div>`;
+  return `<button type="button" class="scenario-card scenario-card--community" data-id="${escapeHtml(b.id)}" aria-selected="false"
+    title="${escapeHtml(b.title)}">
+    <span class="scenario-card__media">${scenarioCardImgHtml(b)}${scenarioTagsHtml(b.tags)}${communitySocialHoverHtml(b)}</span>
+    <span class="scenario-card__label">
+      <span class="scenario-card__label-title">${escapeHtml(b.title)}</span>
+      ${communityAuthorHtml(b)}
+      ${meta}
+    </span>
+  </button>`;
 }
 
 function bindScenarioCards(root) {
@@ -374,6 +370,10 @@ function bindCommunityPanelExtras(root) {
   root.querySelector("[data-new-catalog]")?.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!canManageDisasters()) {
+      window.BunkerPremiumModal?.open?.();
+      return;
+    }
     BunkerScenarioEditor.openPublishCatalogEditor?.(null);
   });
   root.querySelector("[data-my-disasters]")?.addEventListener("click", (e) => {
@@ -441,7 +441,7 @@ function renderCommunityPanelInner() {
   }
   const communityList = getSortedCommunityList();
   const sortHtml = BunkerScenarioCatalogUi?.sortSelectHtml?.(communitySort, "scenario-catalog-sort--host") || "";
-  const newCard = canManageDisasters() ? communityNewCatalogCardHtml() : "";
+  const newCard = hostAccess.loggedIn ? communityNewCatalogCardHtml() : "";
   const manageLink = canManageDisasters()
     ? `<button type="button" class="scenario-community-manage btn btn--small" data-my-disasters>Мои черновики</button>`
     : "";
@@ -450,7 +450,7 @@ function renderCommunityPanelInner() {
     communityList.length || newCard
       ? ""
       : `<p class="scenario-grid__hint">Пока нет одобренных пользовательских катастроф.</p>`;
-  return `${sortHtml}${manageLink}<div class="scenario-community-list">${newCard}${listHtml}</div>${emptyHint}`;
+  return `${sortHtml}${manageLink}<div class="scenario-grid">${newCard}${listHtml}</div>${emptyHint}`;
 }
 
 function refreshCommunityPanel() {
