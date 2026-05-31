@@ -1542,6 +1542,28 @@ input[type="range"]::-moz-range-thumb {
   background: linear-gradient(160deg, rgba(232, 168, 56, 0.15), var(--bg-deep));
 }
 
+.scenario-card--new {
+  border-style: dashed;
+  border-color: rgba(232, 168, 56, 0.45);
+}
+
+.scenario-card--new:hover {
+  border-color: var(--amber);
+}
+
+.scenario-card--new .scenario-card__new-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  font-size: 3rem;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--amber);
+  background: rgba(232, 168, 56, 0.08);
+}
+
 .scenario-card--custom .scenario-card__custom-mark {
   display: flex;
   align-items: center;
