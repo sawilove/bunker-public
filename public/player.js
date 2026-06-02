@@ -33,6 +33,7 @@ const roundInfoEl = document.getElementById("roundInfo");
 const openedCardsSection = document.getElementById("openedCardsSection");
 const openedCardsPanel = document.getElementById("openedCardsPanel");
 const lastVoteStatsEl = document.getElementById("lastVoteStats");
+const lastVoteStatsSection = document.getElementById("lastVoteStatsSection");
 const bunkerSurvivalPanel = document.getElementById("bunkerSurvivalPanel");
 
 let joined = false;
@@ -287,7 +288,10 @@ function updateOpenedCardsPanel(state) {
 function updateLastVoteStats(state) {
   if (!lastVoteStatsEl) return;
   const result = state.lastVoteResult || state.voting?.lastVoteResult;
-  window.BunkerGameUiExtras?.renderLastVoteStats(lastVoteStatsEl, result);
+  const inGame = ["playing", "voting", "ended"].includes(state.phase);
+  const show = inGame && !!result?.tallies?.length;
+  lastVoteStatsSection?.classList.toggle("hidden", !show);
+  window.BunkerGameUiExtras?.renderLastVoteStats(lastVoteStatsEl, result, { alwaysShow: true });
 }
 
 function updateBunkerSurvival(state) {
