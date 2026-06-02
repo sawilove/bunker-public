@@ -11,6 +11,7 @@ const path = require("path");
 const QRCode = require("qrcode");
 const { Server } = require("socket.io");
 const catalogRuntime = require("./catalog-runtime");
+const { computeBunkerSurvivalScore } = require("./bunker-survival-score");
 const {
   dealPlayerCards,
   buildActiveBackstory,
@@ -189,6 +190,10 @@ const game = {
   turnOrder: [],
   votes: {},
   lastExcludedName: null,
+  voteTieCandidates: null,
+  voteRevoteRound: 0,
+  lastVoteResult: null,
+  bunkerSurvival: null,
 };
 
 function playerIds() {
@@ -391,7 +396,10 @@ async function preloadCatalogRatingsForPlayers() {
 function endGame() {
   game.phase = "ended";
   game.currentTurn = null;
+  game.voteTieCandidates = null;
+  game.voteRevoteRound = 0;
   revealAllCards();
+  game.bunkerSurvival = computeBunkerSurvivalScore(game);
   game.catalogRatingsByUser = {};
   if (catalogRuntime.isCatalogBackstoryId(game.settings.backstoryId)) {
     game.catalogRateCatalogId = scenarioCatalog.parseCatalogUuid(game.settings.backstoryId);
@@ -415,15 +423,16 @@ function startVoting() {
   game.phase = "voting";
   game.currentTurn = null;
   game.votes = {};
+  game.voteTieCandidates = null;
+  game.voteRevoteRound = 0;
 }
 
-function resolveVoting() {
+function buildVoteTallies() {
   const tallies = {};
   for (const targetId of Object.values(game.votes)) {
     if (!game.players[targetId] || game.players[targetId].excluded) continue;
     tallies[targetId] = (tallies[targetId] || 0) + 1;
   }
-
   let maxVotes = 0;
   let candidates = [];
   for (const [id, count] of Object.entries(tallies)) {
@@ -434,15 +443,58 @@ function resolveVoting() {
       candidates.push(id);
     }
   }
+  return { tallies, maxVotes, candidates };
+}
 
-  if (candidates.length > 0 && maxVotes > 0) {
-    const excludedId = pickRandom(candidates);
+function snapshotLastVote({ tie, candidates, excludedId }) {
+  const { tallies } = buildVoteTallies();
+  const rows = Object.entries(tallies)
+    .map(([id, votes]) => ({
+      id,
+      name: game.players[id]?.name || id,
+      votes,
+    }))
+    .sort((a, b) => b.votes - a.votes || a.name.localeCompare(b.name, "ru"));
+  game.lastVoteResult = {
+    tallies: rows,
+    totalVotes: Object.keys(game.votes).length,
+    votersNeeded: activePlayerIds().filter((id) => !game.players[id].excluded).length,
+    tie: !!tie,
+    revoteRound: game.voteRevoteRound,
+    tieCandidateNames: tie
+      ? candidates.map((id) => game.players[id]?.name).filter(Boolean)
+      : [],
+    excludedId: excludedId || null,
+    excludedName: excludedId ? game.players[excludedId]?.name || null : null,
+    at: Date.now(),
+  };
+}
+
+function resolveVoting() {
+  const { tallies, maxVotes, candidates } = buildVoteTallies();
+
+  if (candidates.length > 1 && maxVotes > 0) {
+    snapshotLastVote({ tie: true, candidates });
+    game.voteTieCandidates = [...candidates];
+    game.voteRevoteRound += 1;
+    game.votes = {};
+    game.phase = "voting";
+    return;
+  }
+
+  let excludedId = null;
+  if (candidates.length === 1 && maxVotes > 0) {
+    excludedId = candidates[0];
     game.players[excludedId].excluded = true;
     game.lastExcludedName = game.players[excludedId].name;
     game.turnOrder = game.turnOrder.filter((id) => id !== excludedId);
   } else {
     game.lastExcludedName = null;
   }
+
+  snapshotLastVote({ tie: false, candidates, excludedId });
+  game.voteTieCandidates = null;
+  game.voteRevoteRound = 0;
 
   if (activeCount() === bunkerSpots()) {
     endGame();
@@ -477,9 +529,13 @@ function finishPlayerTurn(playerId) {
 }
 
 function randomBotVoteTarget(botId) {
-  const targets = activePlayerIds().filter(
+  let targets = activePlayerIds().filter(
     (id) => id !== botId && game.players[id] && !game.players[id].excluded
   );
+  if (Array.isArray(game.voteTieCandidates) && game.voteTieCandidates.length) {
+    const allowed = new Set(game.voteTieCandidates);
+    targets = targets.filter((id) => allowed.has(id));
+  }
   if (!targets.length) return null;
   return pickRandom(targets);
 }
@@ -544,9 +600,12 @@ function runBotTick() {
 
 function buildVotingInfo(forPlayerId) {
   const active = activePlayerIds();
-  const targets = active
-    .filter((id) => id !== forPlayerId)
-    .map((id) => ({ id, name: game.players[id].name }));
+  let targetIds = active.filter((id) => id !== forPlayerId);
+  if (Array.isArray(game.voteTieCandidates) && game.voteTieCandidates.length) {
+    const allowed = new Set(game.voteTieCandidates);
+    targetIds = targetIds.filter((id) => allowed.has(id));
+  }
+  const targets = targetIds.map((id) => ({ id, name: game.players[id].name }));
   const votersNeeded = active.filter((id) => !game.players[id].excluded).length;
   const votesCast = Object.keys(game.votes).length;
   return {
@@ -560,7 +619,33 @@ function buildVotingInfo(forPlayerId) {
       active.includes(forPlayerId) &&
       !game.players[forPlayerId].excluded,
     lastExcludedName: game.lastExcludedName,
+    tieRevote: !!(game.voteTieCandidates && game.voteTieCandidates.length),
+    revoteRound: game.voteRevoteRound,
+    tieCandidateNames: (game.voteTieCandidates || []).map(
+      (id) => game.players[id]?.name
+    ).filter(Boolean),
+    lastVoteResult: game.lastVoteResult,
   };
+}
+
+function buildOpenedCardsOverview(forPlayerId) {
+  if (!["playing", "voting", "ended"].includes(game.phase)) return [];
+  const revealAll = game.phase === "ended";
+  return playerIds()
+    .filter((id) => id !== forPlayerId)
+    .map((id) => {
+      const p = game.players[id];
+      const opened = (p.cards || [])
+        .filter((c) => revealAll || c.opened)
+        .map((c) => mapCardForClient(c, revealAll));
+      return {
+        id,
+        name: p.name,
+        excluded: !!p.excluded,
+        opened,
+      };
+    })
+    .filter((row) => row.opened.length > 0 || revealAll);
 }
 
 function mapPlayerBrief(id) {
@@ -638,6 +723,10 @@ function resetToSetup() {
   game.turnOrder = [];
   game.votes = {};
   game.lastExcludedName = null;
+  game.voteTieCandidates = null;
+  game.voteRevoteRound = 0;
+  game.lastVoteResult = null;
+  game.bunkerSurvival = null;
   game.catalogRateCatalogId = null;
   game.catalogRatingsByUser = {};
   syncInGameFromPlayers(game.players, game.phase);
@@ -676,6 +765,11 @@ function buildHostState(hostUser = null) {
     survivorsCount: active,
     round: ["playing", "voting"].includes(game.phase) ? buildRoundInfo() : null,
     voting: game.phase === "voting" ? buildVotingInfo(null) : null,
+    lastVoteResult: game.lastVoteResult,
+    bunkerSurvival: game.phase === "ended" ? game.bunkerSurvival : null,
+    openedCardsOverview: ["playing", "voting", "ended"].includes(game.phase)
+      ? buildOpenedCardsOverview(null)
+      : [],
     players: playerIds().map((id) => sanitizePlayerForHost(id, game.players[id])),
     currentTurn: game.currentTurn,
     canStart: game.phase === "lobby" && n >= 6,
@@ -705,6 +799,11 @@ function buildPlayerState(playerId) {
         ? { ...buildRoundInfo(), myReveals, remaining: Math.max(0, quota - myReveals) }
         : null,
     voting: game.phase === "voting" ? buildVotingInfo(playerId) : null,
+    lastVoteResult: game.lastVoteResult,
+    bunkerSurvival: game.phase === "ended" ? game.bunkerSurvival : null,
+    openedCardsOverview: ["playing", "voting", "ended"].includes(game.phase)
+      ? buildOpenedCardsOverview(playerId)
+      : [],
     catalogRating: buildCatalogRatingState(me?.userId || null),
     settings: { mode: game.settings.mode },
     you: me
@@ -769,6 +868,10 @@ function resetToLobby() {
   game.turnOrder = [];
   game.votes = {};
   game.lastExcludedName = null;
+  game.voteTieCandidates = null;
+  game.voteRevoteRound = 0;
+  game.lastVoteResult = null;
+  game.bunkerSurvival = null;
   for (const id of playerIds()) {
     const { name, socketId, userId, isGuest, nickname, avatarUrl, nameMode, isBot } =
       game.players[id];
@@ -1165,6 +1268,15 @@ io.on("connection", (socket) => {
     if (targetId === voterId) {
       socket.emit("actionError", "Нельзя голосовать против себя.");
       return;
+    }
+    if (Array.isArray(game.voteTieCandidates) && game.voteTieCandidates.length) {
+      if (!game.voteTieCandidates.includes(targetId)) {
+        socket.emit(
+          "actionError",
+          "При ничьей можно голосовать только за спорных игроков."
+        );
+        return;
+      }
     }
 
     game.votes[voterId] = targetId;

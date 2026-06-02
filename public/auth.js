@@ -591,6 +591,10 @@
     });
   }
 
+  async function devGetAchievementCatalog() {
+    return api("/api/dev/achievements/catalog");
+  }
+
   async function devGetSessionState() {
     return api("/api/dev/session-state");
   }
@@ -693,6 +697,7 @@
     devRotateProfileId,
     devGrantAchievement,
     devRevokeAchievement,
+    devGetAchievementCatalog,
     devGetSessionState,
     devListSessionPlayerIds,
     devEndSession,

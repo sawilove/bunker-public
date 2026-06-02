@@ -279,15 +279,11 @@ function mountSocialPlatformRoutes(app, io) {
         res.status(404).json({ error: "Пользователь не найден." });
         return;
       }
+      const { devUserPayload } = require("./user-store");
       res.json({
         user: {
-          id: found.id,
-          profileId: found.profileId || found.id,
-          nickname: found.nickname,
+          ...devUserPayload(found),
           email: found.email || null,
-          dev: !!found.dev,
-          premium: !!found.premium,
-          premiumUntil: found.premiumUntil || null,
         },
       });
     } catch (err) {

@@ -16,6 +16,7 @@
         </label>
         <p class="dev-panel__note">При включении все пользователи без dev увидят страницу техработ на любом URL сайта.</p>
         <div class="dev-panel__actions">
+          <a href="/dev" class="btn btn--small">Полная dev-страница</a>
           <button type="button" class="btn btn--small btn--amber" data-dev-catalog-scenarios>Редактировать сценарии</button>
           <button type="button" class="btn btn--small btn--amber" data-dev-catalog-pools>Паки характеристик</button>
           <button type="button" class="btn btn--small btn--amber" data-dev-scenario-mod>Модерация каталога</button>
@@ -132,5 +133,10 @@
     }
   }
 
-  window.BunkerDevPanel = { open, close };
+  window.BunkerDevPanel = {
+    open,
+    close,
+    openReportsModal,
+    openPaymentsModal,
+  };
 })();

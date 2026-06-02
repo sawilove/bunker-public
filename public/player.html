@@ -76,15 +76,23 @@
       </div>
     </div>
 
+    <section id="openedCardsSection" class="panel opened-cards-panel-wrap hidden">
+      <p class="panel__title">Открытые карты других игроков</p>
+      <p class="panel__subtitle">Только то, что уже выложено на стол</p>
+      <div id="openedCardsPanel"></div>
+    </section>
+
     <section id="votingSection" class="panel hidden">
       <p class="panel__title">Голосование на исключение</p>
       <p class="round-info" id="votingInfo"></p>
+      <div id="lastVoteStats" class="vote-stat hidden"></div>
       <div id="voteButtons" class="pass-turn-grid"></div>
     </section>
 
     <section id="endedSection" class="panel hidden">
       <p class="panel__title">Игра окончена</p>
       <p class="round-info" id="endedMessage"></p>
+      <div id="bunkerSurvivalPanel" class="survival-panel hidden"></div>
       <div id="catalogRateWrap" class="catalog-rate-wrap hidden"></div>
     </section>
 
@@ -132,6 +140,7 @@
   <script src="/scenario-theme.js"></script>
   <script src="/scenario-catalog-ui.js"></script>
   <script src="/player-auth-ui.js"></script>
+  <script src="/game-ui-extras.js"></script>
   <script src="/player.js"></script>
 </body>
 </html>
