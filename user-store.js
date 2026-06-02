@@ -419,18 +419,43 @@ async function setCustomBackstory(userId, data) {
   return getUserById(userId);
 }
 
+function devUserPayload(user) {
+  if (!user) return null;
+  const base = publicUser(user);
+  return {
+    ...base,
+    premiumFlag: !!user.premium,
+    premiumEffective: hasPremiumAccess(user),
+    premiumUntil: user.premiumUntil || null,
+    devFlag: !!user.dev,
+  };
+}
+
 async function setUserFlagsForDev(targetUserId, flags = {}) {
   const user = await getUserById(targetUserId);
   if (!user) return { ok: false, error: "Пользователь не найден." };
-  const nextDev = typeof flags.dev === "boolean" ? flags.dev : !!user.dev;
-  const nextPremium = typeof flags.premium === "boolean" ? flags.premium : !!user.premium;
-  await getPool().query(`UPDATE users SET dev = $2, premium = $3 WHERE id = $1`, [
-    targetUserId,
-    nextDev,
-    nextPremium,
-  ]);
+  const hasDev = typeof flags.dev === "boolean";
+  const hasPremium = typeof flags.premium === "boolean";
+  if (!hasDev && !hasPremium) {
+    return { ok: false, error: "Укажите dev и/или premium (boolean)." };
+  }
+  const nextDev = hasDev ? flags.dev : !!user.dev;
+  const nextPremium = hasPremium ? flags.premium : !!user.premium;
+  const clearPremiumUntil = hasPremium && flags.premium === false;
+  if (clearPremiumUntil) {
+    await getPool().query(
+      `UPDATE users SET dev = $2, premium = $3, premium_until = NULL WHERE id = $1`,
+      [targetUserId, nextDev, nextPremium]
+    );
+  } else {
+    await getPool().query(`UPDATE users SET dev = $2, premium = $3 WHERE id = $1`, [
+      targetUserId,
+      nextDev,
+      nextPremium,
+    ]);
+  }
   const updated = await getUserById(targetUserId);
-  return { ok: true, user: publicUser(updated) };
+  return { ok: true, user: devUserPayload(updated) };
 }
 
 async function rotateProfileIdForDev(targetUserId) {
@@ -450,7 +475,7 @@ async function rotateProfileIdForDev(targetUserId) {
   if (!nextId) return { ok: false, error: "Не удалось подобрать новый profileId." };
   await getPool().query(`UPDATE users SET profile_id = $2 WHERE id = $1`, [targetUserId, nextId]);
   const updated = await getUserById(targetUserId);
-  return { ok: true, user: publicUser(updated) };
+  return { ok: true, user: devUserPayload(updated) };
 }
 
 module.exports = {
@@ -475,5 +500,6 @@ module.exports = {
   setCustomBackstory,
   findUserForDev,
   setUserFlagsForDev,
+  devUserPayload,
   rotateProfileIdForDev,
 };

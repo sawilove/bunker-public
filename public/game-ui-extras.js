@@ -1,0 +1,127 @@
+/** Shared in-game UI: vote stats, opened cards table, bunker survival */
+(function () {
+  function escapeHtml(str) {
+    const el = document.createElement("div");
+    el.textContent = str == null ? "" : String(str);
+    return el.innerHTML;
+  }
+
+  function formatCardLine(c) {
+    if (c.type === "profession" && c.professionLevel) {
+      return `${c.profession || c.value} — ${c.professionLevel}`;
+    }
+    if (c.type === "health" && c.condition) {
+      return `${c.condition} — ${c.conditionLevel || c.value}`;
+    }
+    return c.value || "—";
+  }
+
+  function renderLastVoteStats(container, result) {
+    if (!container) return;
+    if (!result?.tallies?.length) {
+      container.innerHTML = "";
+      container.classList.add("hidden");
+      return;
+    }
+    container.classList.remove("hidden");
+    const maxVotes = Math.max(...result.tallies.map((t) => t.votes), 1);
+    const bars = result.tallies
+      .map((t) => {
+        const pct = Math.round((t.votes / maxVotes) * 100);
+        return `<div class="vote-stat-row">
+          <span class="vote-stat-row__name">${escapeHtml(t.name)}</span>
+          <div class="vote-stat-row__bar-wrap"><div class="vote-stat-row__bar" style="width:${pct}%"></div></div>
+          <span class="vote-stat-row__count">${t.votes}</span>
+        </div>`;
+      })
+      .join("");
+    const tieNote = result.tie
+      ? `<p class="vote-stat__note vote-stat__note--tie">Ничья: переголосование только среди ${escapeHtml((result.tieCandidateNames || []).join(", "))}.</p>`
+      : "";
+    const excluded = result.excludedName
+      ? `<p class="vote-stat__note">Исключён: <strong>${escapeHtml(result.excludedName)}</strong></p>`
+      : "";
+    container.innerHTML = `
+      <p class="vote-stat__title">Итоги последнего голосования</p>
+      <p class="vote-stat__meta">Голосов: ${result.totalVotes || 0} / ${result.votersNeeded || "—"}${result.revoteRound ? ` · переголосование #${result.revoteRound}` : ""}</p>
+      <div class="vote-stat__bars">${bars}</div>
+      ${tieNote}
+      ${excluded}`;
+  }
+
+  function renderOpenedCardsPanel(container, rows) {
+    if (!container) return;
+    if (!rows?.length) {
+      container.innerHTML = '<p class="opened-cards-panel__empty">Пока никто не открыл карты на стол.</p>';
+      return;
+    }
+    const tableRows = rows
+      .map((row) => {
+        const cardsHtml = row.opened.length
+          ? row.opened
+              .map(
+                (c) =>
+                  `<span class="opened-cards-panel__chip"><span class="opened-cards-panel__chip-label">${escapeHtml(c.label)}</span> ${escapeHtml(formatCardLine(c))}</span>`
+              )
+              .join("")
+          : '<span class="opened-cards-panel__chip opened-cards-panel__chip--muted">—</span>';
+        const excl = row.excluded
+          ? ' <span class="status-badge status-badge--excluded-inline">искл.</span>'
+          : "";
+        return `<tr>
+          <th scope="row" class="opened-cards-panel__player">${escapeHtml(row.name)}${excl}</th>
+          <td class="opened-cards-panel__cards">${cardsHtml}</td>
+        </tr>`;
+      })
+      .join("");
+    container.innerHTML = `
+      <div class="opened-cards-panel__scroll">
+        <table class="opened-cards-panel__table">
+          <thead><tr><th>Игрок</th><th>Открытые карты</th></tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  function renderBunkerSurvival(container, data) {
+    if (!container || !data) {
+      if (container) {
+        container.innerHTML = "";
+        container.classList.add("hidden");
+      }
+      return;
+    }
+    container.classList.remove("hidden");
+    const criteriaHtml = (data.criteria || [])
+      .map((c) => {
+        const cls = c.pass ? "survival-criterion--pass" : "survival-criterion--fail";
+        const icon = c.pass ? "✓" : "✗";
+        return `<li class="survival-criterion ${cls}">
+          <span class="survival-criterion__icon" aria-hidden="true">${icon}</span>
+          <div class="survival-criterion__body">
+            <span class="survival-criterion__label">${escapeHtml(c.label)} <em>(${c.weight}%)</em></span>
+            <span class="survival-criterion__detail">${escapeHtml(c.detail)}</span>
+          </div>
+        </li>`;
+      })
+      .join("");
+    container.innerHTML = `
+      <div class="survival-score">
+        <div class="survival-score__ring" style="--score:${data.score}">
+          <span class="survival-score__value">${data.score}</span>
+        </div>
+        <div class="survival-score__summary">
+          <p class="survival-score__verdict">${escapeHtml(data.verdict)}</p>
+          <p class="survival-score__meta">Выживших: ${data.survivorsCount} · мест в бункере: ${data.bunkerSpots}</p>
+        </div>
+      </div>
+      <ul class="survival-score__criteria">${criteriaHtml}</ul>`;
+  }
+
+  window.BunkerGameUiExtras = {
+    renderLastVoteStats,
+    renderOpenedCardsPanel,
+    renderBunkerSurvival,
+    formatCardLine,
+  };
+})();

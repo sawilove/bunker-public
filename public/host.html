@@ -61,14 +61,21 @@
       <p class="round-info" id="hostRoundInfo"></p>
     </section>
 
+    <section id="openedCardsPanelSection" class="panel opened-cards-panel-wrap hidden">
+      <p class="panel__title">Открытые карты игроков</p>
+      <div id="hostOpenedCardsPanel"></div>
+    </section>
+
     <section id="votingPanel" class="panel hidden">
       <p class="panel__title">Голосование</p>
       <p class="round-info" id="hostVotingInfo"></p>
+      <div id="hostLastVoteStats" class="vote-stat hidden"></div>
     </section>
 
     <section id="endedPanel" class="panel hidden">
       <p class="panel__title">Игра окончена</p>
       <p class="round-info" id="hostEndedInfo"></p>
+      <div id="hostBunkerSurvivalPanel" class="survival-panel hidden"></div>
       <div class="host-actions">
         <button type="button" id="newSessionBtn" class="btn btn--amber">Новая сессия</button>
       </div>
@@ -136,6 +143,7 @@
       location.replace(target);
     })();
   </script>
+  <script src="/game-ui-extras.js"></script>
   <script src="/host.js"></script>
 </body>
 </html>

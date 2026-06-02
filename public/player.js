@@ -30,8 +30,29 @@ const cardsGrid = document.getElementById("cardsGrid");
 const playerGreeting = document.getElementById("playerGreeting");
 const excludedBadge = document.getElementById("excludedBadge");
 const roundInfoEl = document.getElementById("roundInfo");
+const openedCardsSection = document.getElementById("openedCardsSection");
+const openedCardsPanel = document.getElementById("openedCardsPanel");
+const lastVoteStatsEl = document.getElementById("lastVoteStats");
+const bunkerSurvivalPanel = document.getElementById("bunkerSurvivalPanel");
 
 let joined = false;
+let lastRevealTapAt = 0;
+
+if (cardsGrid && !cardsGrid.dataset.revealDelegated) {
+  cardsGrid.dataset.revealDelegated = "1";
+  const onRevealTap = (e) => {
+    const btn = e.target.closest(".game-card__reveal-btn");
+    if (!btn || btn.disabled) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const now = Date.now();
+    if (now - lastRevealTapAt < 350) return;
+    lastRevealTapAt = now;
+    socket.emit("openCard", Number(btn.dataset.index));
+  };
+  cardsGrid.addEventListener("click", onRevealTap);
+  cardsGrid.addEventListener("pointerup", onRevealTap);
+}
 let validatedCode = null;
 let manualCodeFlow = false;
 let lastPlayerPhase = null;
@@ -250,12 +271,36 @@ function renderCards(cards, isYourTurn, round, phase, excluded) {
     })
     .join("");
 
-  cardsGrid.querySelectorAll(".game-card__reveal-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      socket.emit("openCard", Number(btn.dataset.index));
-    });
-  });
+}
+
+function updateOpenedCardsPanel(state) {
+  if (!openedCardsSection || !openedCardsPanel) return;
+  const show = ["playing", "voting", "ended"].includes(state.phase);
+  openedCardsSection.classList.toggle("hidden", !show);
+  if (!show) return;
+  window.BunkerGameUiExtras?.renderOpenedCardsPanel(
+    openedCardsPanel,
+    state.openedCardsOverview || []
+  );
+}
+
+function updateLastVoteStats(state) {
+  if (!lastVoteStatsEl) return;
+  const result = state.lastVoteResult || state.voting?.lastVoteResult;
+  window.BunkerGameUiExtras?.renderLastVoteStats(lastVoteStatsEl, result);
+}
+
+function updateBunkerSurvival(state) {
+  if (!bunkerSurvivalPanel) return;
+  if (state.phase === "ended" && state.bunkerSurvival) {
+    window.BunkerGameUiExtras?.renderBunkerSurvival(
+      bunkerSurvivalPanel,
+      state.bunkerSurvival
+    );
+  } else {
+    bunkerSurvivalPanel.innerHTML = "";
+    bunkerSurvivalPanel.classList.add("hidden");
+  }
 }
 
 function renderCatalogRating(cr) {
@@ -305,15 +350,24 @@ function renderCatalogRating(cr) {
 }
 
 function renderVoting(voting) {
+  const tieHint = voting?.tieRevote
+    ? `<p class="round-info vote-tie-hint">Переголосование #${voting.revoteRound || 1}: голосуйте только за ${escapeHtml((voting.tieCandidateNames || []).join(", "))}.</p>`
+    : "";
   if (!voting?.canVote) {
-    voteButtons.innerHTML = "<p class='round-info'>Вы не участвуете в голосовании.</p>";
+    voteButtons.innerHTML = `${tieHint}<p class='round-info'>Вы не участвуете в голосовании.</p>`;
     return;
   }
   if (voting.myVote) {
-    voteButtons.innerHTML = "<p class='round-info'>Ваш голос учтён. Ожидайте остальных.</p>";
+    voteButtons.innerHTML = `${tieHint}<p class='round-info'>Ваш голос учтён. Ожидайте остальных.</p>`;
     return;
   }
-  voteButtons.innerHTML = voting.targets
+  if (!voting.targets?.length) {
+    voteButtons.innerHTML = `${tieHint}<p class='round-info'>Нет доступных кандидатов для голосования.</p>`;
+    return;
+  }
+  voteButtons.innerHTML =
+    tieHint +
+    voting.targets
     .map(
       (t) =>
         `<button type="button" class="btn btn--danger" data-vote="${t.id}">Исключить: ${escapeHtml(t.name)}</button>`
@@ -367,8 +421,10 @@ function applyState(state) {
   document.body.classList.toggle("player--in-game", inGame || inVoting || inEnded);
 
   waitingModal.classList.toggle("hidden", !inLobby);
+  waitingModal.setAttribute("aria-hidden", inLobby ? "false" : "true");
   votingSection.classList.toggle("hidden", !inVoting);
   endedSection.classList.toggle("hidden", !inEnded);
+  updateOpenedCardsPanel(state);
   if (!inEnded) renderCatalogRating(null);
   turnSection.classList.toggle("hidden", !inGame || state.you.excluded);
   gameSection.classList.toggle("hidden", inLobby);
@@ -412,8 +468,11 @@ function applyState(state) {
 
   if (inVoting && state.voting) {
     playerBadge.textContent = "Голосование";
-    playerTagline.textContent = "Проголосуйте, кого исключить из бункера.";
+    playerTagline.textContent = state.voting.tieRevote
+      ? "Ничья — переголосование только среди спорных игроков."
+      : "Проголосуйте, кого исключить из бункера.";
     votingInfo.textContent = `Голосов: ${state.voting.votesCast} / ${state.voting.votersNeeded}. В бункере осталось мест: ${state.bunkerSpots}.`;
+    updateLastVoteStats(state);
     renderVoting(state.voting);
     renderCards(state.you.cards, false, null, state.phase, state.you.excluded);
     return;
@@ -427,9 +486,13 @@ function applyState(state) {
       ? "Вы в бункере! Все характеристики открыты."
       : "Вы исключены. Все характеристики открыты для разбора.";
     renderCatalogRating(state.catalogRating);
+    updateLastVoteStats(state);
+    updateBunkerSurvival(state);
     renderCards(state.you.cards, false, null, state.phase, state.you.excluded);
     return;
   }
+
+  updateLastVoteStats(state);
 
   playerBadge.textContent = `Раунд ${state.round?.number ?? 1}`;
   if (roundInfoEl && state.round) {
@@ -460,6 +523,7 @@ function applyState(state) {
   }
 
   renderCards(state.you.cards, state.isYourTurn, state.round, state.phase, state.you.excluded);
+  updateOpenedCardsPanel(state);
 }
 
 socket.on("gameState", applyState);

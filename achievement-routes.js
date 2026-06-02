@@ -8,6 +8,7 @@ const {
   revokeAchievement,
 } = require("./achievement-store");
 const { requireUser } = require("./auth-routes");
+const { ACHIEVEMENT_LIST, TYPE_LABELS } = require("./achievement-data");
 
 function mountAchievementRoutes(app) {
   const publicDir = path.join(__dirname, "public");
@@ -69,6 +70,29 @@ function mountAchievementRoutes(app) {
       res.json({ displayed });
     } catch (err) {
       console.error("displayed achievements error", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
+  app.get("/api/dev/achievements/catalog", async (req, res) => {
+    try {
+      const devUser = await requireUser(req, res);
+      if (!devUser) return;
+      if (!devUser.dev) {
+        res.status(403).json({ error: "Только для разработчиков." });
+        return;
+      }
+      res.json({
+        achievements: ACHIEVEMENT_LIST.map((a) => ({
+          id: a.id,
+          name: a.name,
+          type: a.type,
+          typeLabel: TYPE_LABELS[a.type] || a.type,
+          description: a.description,
+        })),
+      });
+    } catch (err) {
+      console.error("dev achievements catalog", err);
       res.status(500).json({ error: "Ошибка сервера." });
     }
   });

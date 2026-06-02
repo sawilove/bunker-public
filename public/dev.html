@@ -19,6 +19,24 @@
     </header>
 
     <section class="panel">
+      <p class="panel__title">Сайт и каталог (из топбара)</p>
+      <p class="dev-panel__hint">Дублирует быстрые действия из служебной панели в шапке.</p>
+      <label class="dev-panel__row">
+        <input type="checkbox" id="devMaintenanceToggle">
+        <span>Режим технического обслуживания</span>
+      </label>
+      <div class="host-actions dev-page-actions">
+        <button type="button" id="devOpenPanelBtn" class="btn btn--small">Открыть служебную панель</button>
+        <button type="button" class="btn btn--small btn--amber" data-dev-catalog-scenarios>Редактировать сценарии</button>
+        <button type="button" class="btn btn--small btn--amber" data-dev-catalog-pools>Паки характеристик</button>
+        <button type="button" class="btn btn--small btn--amber" data-dev-scenario-mod>Модерация каталога</button>
+        <button type="button" class="btn btn--small" data-dev-reports>Жалобы</button>
+        <button type="button" class="btn btn--small" data-dev-payments>Платежи</button>
+      </div>
+      <p id="devMaintenanceMsg" class="round-info"></p>
+    </section>
+
+    <section class="panel">
       <p class="panel__title">Пользователи и флаги</p>
       <div class="field">
         <label class="field__label" for="devUserQuery">Пользователь (id/profileId/nickname/email)</label>
@@ -29,14 +47,29 @@
       </div>
       <p id="devUserInfo" class="round-info"></p>
       <div class="host-actions">
+        <button type="button" id="devSetDevOnBtn" class="btn btn--small">dev: вкл</button>
+        <button type="button" id="devSetDevOffBtn" class="btn btn--small">dev: выкл</button>
+        <button type="button" id="devSetPremiumOnBtn" class="btn btn--small">premium: вкл</button>
+        <button type="button" id="devSetPremiumOffBtn" class="btn btn--small">premium: выкл</button>
         <button type="button" id="devToggleDevBtn" class="btn btn--small">Переключить dev</button>
         <button type="button" id="devTogglePremiumBtn" class="btn btn--small">Переключить premium</button>
         <button type="button" id="devRotateProfileBtn" class="btn btn--small">Сменить profileId</button>
+      </div>
+      <div class="field field--inline">
+        <label class="field__label" for="devPremiumDays">Выдать premium на дней</label>
+        <input id="devPremiumDays" class="input input--narrow" type="number" min="1" max="3650" value="30">
+        <button type="button" id="devGrantPremiumBtn" class="btn btn--small btn--amber">Выдать срок</button>
       </div>
     </section>
 
     <section class="panel">
       <p class="panel__title">Достижения</p>
+      <p class="field__hint">Справочник ID — клик по строке копирует id в поле ниже.</p>
+      <div class="field">
+        <label class="field__label" for="devAchievementFilter">Поиск по id / названию</label>
+        <input id="devAchievementFilter" class="input" type="search" placeholder="фильтр…">
+      </div>
+      <div id="devAchievementCatalog" class="dev-achievement-catalog"></div>
       <div class="field">
         <label class="field__label" for="devAchievementId">ID достижения</label>
         <input id="devAchievementId" class="input" type="text" placeholder="например: bunker_dev">
@@ -54,7 +87,7 @@
         <button type="button" id="devResetLobbyBtn" class="btn btn--small">Сброс в лобби</button>
         <button type="button" id="devEndSessionBtn" class="btn btn--small btn--danger">Завершить сессию</button>
       </div>
-      <pre id="devSessionsOutput" class="round-info" style="white-space: pre-wrap;"></pre>
+      <pre id="devSessionsOutput" class="round-info dev-pre"></pre>
     </section>
 
     <section class="panel">
@@ -62,7 +95,7 @@
       <div class="host-actions">
         <button type="button" id="devPlayerIdsBtn" class="btn btn--small">Показать ID всех игроков</button>
       </div>
-      <pre id="devPlayerIdsOutput" class="round-info" style="white-space: pre-wrap;"></pre>
+      <pre id="devPlayerIdsOutput" class="round-info dev-pre"></pre>
     </section>
   </div>
 
@@ -73,6 +106,8 @@
   <script src="/notifications.js"></script>
   <script src="/premium-modal.js"></script>
   <script src="/site-auth.js"></script>
+  <script src="/dev-panel.js"></script>
+  <script src="/scenario-editor.js"></script>
   <script src="/dev-page.js"></script>
 </body>
 </html>
