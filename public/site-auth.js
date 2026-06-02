@@ -108,30 +108,9 @@
     modal.classList.remove("hidden");
   }
 
-  function renderMobileDock(user) {
+  function removeMobileDock() {
     const old = document.querySelector("[data-mobile-dock]");
     old?.remove();
-    if (!user || document.body.classList.contains("host")) return;
-
-    const dock = document.createElement("nav");
-    dock.className = "mobile-dock";
-    dock.setAttribute("data-mobile-dock", "1");
-    dock.setAttribute("aria-label", "Быстрое меню");
-    const friendsUrl = BunkerAuth.pageUrl("friends.html");
-    const playUrl = BunkerAuth.pageUrl("player.html");
-    dock.innerHTML = `
-      <a href="${friendsUrl}" class="mobile-dock__btn" title="Друзья" aria-label="Друзья">${ICONS.friends}</a>
-      <button type="button" class="mobile-dock__btn" data-mobile-premium title="Премиум" aria-label="Премиум">${ICONS.premium}</button>
-      <a href="${playUrl}" class="mobile-dock__btn mobile-dock__btn--play" title="Играть" aria-label="Играть">▶</a>
-      <button type="button" class="mobile-dock__btn" data-mobile-chat title="Чат" aria-label="Чат">${ICONS.chat}</button>
-    `;
-    document.body.appendChild(dock);
-    dock.querySelector("[data-mobile-premium]")?.addEventListener("click", () => {
-      window.BunkerPremiumModal?.open(user);
-    });
-    dock.querySelector("[data-mobile-chat]")?.addEventListener("click", () => {
-      window.BunkerChatWidget?.openMessenger?.();
-    });
   }
 
   function renderGuest() {
@@ -156,7 +135,7 @@
       el.addEventListener("click", () => window.BunkerPremiumModal?.open(null))
     );
     bindCompactMenu();
-    renderMobileDock(null);
+    removeMobileDock();
   }
 
   function renderUser(user) {
@@ -175,7 +154,7 @@
       showBadges: true,
     });
     const devBtn = user.dev
-      ? `<button type="button" class="site-topbar__dev-btn" data-dev-panel title="Служебные настройки">&lt;/&gt;</button>`
+      ? `<a href="${BunkerAuth.pageUrl("dev.html")}" class="site-topbar__dev-btn" title="Dev">&lt;/&gt;</a>`
       : "";
     const premiumBtn = `<button type="button" class="site-topbar__premium-btn" data-premium-modal title="Премиум">${ICONS.premium}</button>`;
 
@@ -209,7 +188,7 @@
         <button type="button" class="site-topbar__menu-btn" data-topbar-menu-toggle aria-expanded="false" aria-label="Меню">${ICONS.menu}</button>
         <div class="site-topbar__menu hidden" data-topbar-menu>
           <div class="site-topbar__menu-user">${menuUserChip}</div>
-          ${user.dev ? `<button type="button" class="site-topbar__menu-item" data-dev-panel>${ICONS.news}<span>Панель разработчика</span></button>` : ""}
+          ${user.dev ? `<a href="${BunkerAuth.pageUrl("dev.html")}" class="site-topbar__menu-item">${ICONS.news}<span>Панель разработчика</span></a>` : ""}
           <button type="button" class="site-topbar__menu-item" data-mobile-settings>${ICONS.menu}<span>Настройки приложения</span></button>
           <button type="button" class="site-topbar__menu-item" data-premium-modal>${ICONS.premium}<span>Премиум</span></button>
           <a href="${friendsUrl}" class="site-topbar__menu-item">${ICONS.friends}<span>Друзья</span></a>
@@ -219,9 +198,6 @@
         </div>
       </div>`;
 
-    mount.querySelector("[data-dev-panel]")?.addEventListener("click", () => {
-      window.BunkerDevPanel?.open();
-    });
     mount.querySelectorAll("[data-premium-modal]").forEach((el) =>
       el.addEventListener("click", () => window.BunkerPremiumModal?.open(user))
     );
@@ -250,7 +226,7 @@
     }
 
     if (window.BunkerChatWidget) BunkerChatWidget.showForLoggedIn();
-    renderMobileDock(user);
+    removeMobileDock();
     bindCompactMenu();
   }
 

@@ -35,6 +35,15 @@ async function grantAchievement(userId, achievementId) {
   return rowCount > 0;
 }
 
+async function revokeAchievement(userId, achievementId) {
+  if (!ACHIEVEMENTS[achievementId]) return false;
+  const { rowCount } = await getPool().query(
+    `DELETE FROM user_achievements WHERE user_id = $1 AND achievement_id = $2`,
+    [userId, achievementId]
+  );
+  return rowCount > 0;
+}
+
 async function countFriends(userId) {
   const { rows } = await getPool().query(
     `SELECT COUNT(*)::int AS c FROM friend_pairs
@@ -339,6 +348,7 @@ module.exports = {
   getDisplayedAchievementsPublic,
   setDisplayedAchievements,
   grantAchievement,
+  revokeAchievement,
   getUnlockedCount,
   MAX_DISPLAYED_ACHIEVEMENTS,
 };

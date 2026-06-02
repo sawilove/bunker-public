@@ -391,6 +391,20 @@ body.has-scenario-bg .waiting-modal__card {
   border-color: var(--green);
 }
 
+.role-btn--disabled,
+.role-btn--disabled:hover {
+  opacity: 0.55;
+  border-color: var(--border);
+  box-shadow: none;
+  transform: none;
+  cursor: not-allowed;
+}
+
+.role-btn--disabled::after,
+.role-btn--disabled:hover::after {
+  opacity: 0;
+}
+
 .role-btn__label {
   font-family: var(--font-display);
   font-size: 1.25rem;

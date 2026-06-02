@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="/page-base.js"></script>
+  <title>Бункер — Dev</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="page page--with-topbar">
+    <div data-site-topbar class="site-topbar"></div>
+    <a href="/" class="back-link">← Назад</a>
+    <header class="site-header">
+      <div class="site-header__badge">Dev</div>
+      <h1>Панель разработчика</h1>
+      <p class="site-header__tagline">Служебные инструменты для тестов и администрирования.</p>
+      <p class="site-header__status" id="devStatus">Проверка доступа…</p>
+    </header>
+
+    <section class="panel">
+      <p class="panel__title">Пользователи и флаги</p>
+      <div class="field">
+        <label class="field__label" for="devUserQuery">Пользователь (id/profileId/nickname/email)</label>
+        <input id="devUserQuery" class="input" type="text" placeholder="Введите идентификатор">
+      </div>
+      <div class="host-actions">
+        <button type="button" id="devUserLoadBtn" class="btn btn--amber">Найти</button>
+      </div>
+      <p id="devUserInfo" class="round-info"></p>
+      <div class="host-actions">
+        <button type="button" id="devToggleDevBtn" class="btn btn--small">Переключить dev</button>
+        <button type="button" id="devTogglePremiumBtn" class="btn btn--small">Переключить premium</button>
+        <button type="button" id="devRotateProfileBtn" class="btn btn--small">Сменить profileId</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <p class="panel__title">Достижения</p>
+      <div class="field">
+        <label class="field__label" for="devAchievementId">ID достижения</label>
+        <input id="devAchievementId" class="input" type="text" placeholder="например: bunker_dev">
+      </div>
+      <div class="host-actions">
+        <button type="button" id="devGrantAchievementBtn" class="btn btn--small btn--amber">Выдать</button>
+        <button type="button" id="devRevokeAchievementBtn" class="btn btn--small btn--danger">Забрать</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <p class="panel__title">Сессии и отладка</p>
+      <div class="host-actions">
+        <button type="button" id="devSessionsBtn" class="btn btn--small">Активная сессия</button>
+        <button type="button" id="devResetLobbyBtn" class="btn btn--small">Сброс в лобби</button>
+        <button type="button" id="devEndSessionBtn" class="btn btn--small btn--danger">Завершить сессию</button>
+      </div>
+      <pre id="devSessionsOutput" class="round-info" style="white-space: pre-wrap;"></pre>
+    </section>
+
+    <section class="panel">
+      <p class="panel__title">ID игроков</p>
+      <div class="host-actions">
+        <button type="button" id="devPlayerIdsBtn" class="btn btn--small">Показать ID всех игроков</button>
+      </div>
+      <pre id="devPlayerIdsOutput" class="round-info" style="white-space: pre-wrap;"></pre>
+    </section>
+  </div>
+
+  <script src="/config.js"></script>
+  <script src="/auth.js"></script>
+  <script src="/user-badges.js"></script>
+  <script src="/social-client.js"></script>
+  <script src="/notifications.js"></script>
+  <script src="/premium-modal.js"></script>
+  <script src="/site-auth.js"></script>
+  <script src="/dev-page.js"></script>
+</body>
+</html>

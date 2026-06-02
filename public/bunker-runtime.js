@@ -10,13 +10,14 @@
     "news.html": "/news",
     "friends.html": "/friends",
     "achievements.html": "/achievements",
+    "dev.html": "/dev",
     "host.html": "/host",
     "player.html": "/player",
     "profile.html": "/profile",
   };
 
   const ROOT_PATH_RE =
-    /^\/(?:user\/[^/]+|account|auth|news|friends|achievements|host|player|profile|game\/[^/]+)\/?$/i;
+    /^\/(?:user\/[^/]+|account|auth|news|friends|achievements|dev|host|player|profile|game\/[^/]+)\/?$/i;
 
   function detectBasePath() {
     const meta = document.querySelector('meta[name="bunker-base"]');
