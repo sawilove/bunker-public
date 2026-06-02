@@ -53,8 +53,7 @@ const bunkerHint = document.getElementById("bunkerHint");
 const hostRoundInfo = document.getElementById("hostRoundInfo");
 const hostVotingInfo = document.getElementById("hostVotingInfo");
 const hostEndedInfo = document.getElementById("hostEndedInfo");
-const openedCardsPanelSection = document.getElementById("openedCardsPanelSection");
-const hostOpenedCardsPanel = document.getElementById("hostOpenedCardsPanel");
+const hostLastVoteStatsSection = document.getElementById("hostLastVoteStatsSection");
 const hostLastVoteStats = document.getElementById("hostLastVoteStats");
 const hostBunkerSurvivalPanel = document.getElementById("hostBunkerSurvivalPanel");
 const currentTurnName = document.getElementById("currentTurnName");
@@ -697,14 +696,6 @@ function applyState(state) {
   votingPanel.classList.toggle("hidden", !inVoting);
   endedPanel.classList.toggle("hidden", !inEnded);
   turnPanel.classList.toggle("hidden", !inPlaying && !inVoting);
-  openedCardsPanelSection?.classList.toggle("hidden", !inGame);
-  if (inGame && hostOpenedCardsPanel) {
-    window.BunkerGameUiExtras?.renderOpenedCardsPanel(
-      hostOpenedCardsPanel,
-      state.openedCardsOverview || []
-    );
-  }
-
   if (inSetup) {
     hostBadge.textContent = "Настройка";
     hostTagline.textContent =
@@ -769,19 +760,22 @@ function applyState(state) {
     }
   }
 
+  const lastVote = state.lastVoteResult;
+  const showLastVote = inGame && !!lastVote?.tallies?.length;
+  hostLastVoteStatsSection?.classList.toggle("hidden", !showLastVote);
+  if (hostLastVoteStats) {
+    window.BunkerGameUiExtras?.renderLastVoteStats(hostLastVoteStats, lastVote, {
+      alwaysShow: true,
+    });
+  }
+
   if (inVoting && state.voting) {
     hostTagline.textContent = state.voting.tieRevote
       ? `Ничья — переголосование #${state.voting.revoteRound || 1} только среди спорных.`
       : "Игроки голосуют, кого исключить.";
     hostVotingInfo.textContent = `Голосов: ${state.voting.votesCast} / ${state.voting.votersNeeded}.${state.voting.lastExcludedName ? ` Последний исключённый: ${state.voting.lastExcludedName}.` : ""}`;
-    window.BunkerGameUiExtras?.renderLastVoteStats(
-      hostLastVoteStats,
-      state.lastVoteResult || state.voting?.lastVoteResult
-    );
     currentTurnName.textContent = "ГОЛОСОВАНИЕ";
     currentTurnName.className = "turn-banner__name turn-banner__name--voting";
-  } else if (hostLastVoteStats) {
-    window.BunkerGameUiExtras?.renderLastVoteStats(hostLastVoteStats, state.lastVoteResult);
   }
 
   if (inEnded) {
@@ -791,7 +785,6 @@ function applyState(state) {
       hostBunkerSurvivalPanel,
       state.bunkerSurvival
     );
-    window.BunkerGameUiExtras?.renderLastVoteStats(hostLastVoteStats, state.lastVoteResult);
     currentTurnName.textContent = "—";
   }
 

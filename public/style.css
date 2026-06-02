@@ -6358,6 +6358,10 @@ body.mobile-compact-ui .mobile-dock__btn--play {
   background: rgba(0, 0, 0, 0.25);
 }
 
+.vote-stat--panel {
+  margin: 0;
+}
+
 .vote-stat__title {
   margin: 0 0 0.35rem;
   font-family: var(--font-mono);
@@ -6517,6 +6521,69 @@ body.mobile-compact-ui .mobile-dock__btn--play {
   font-size: 0.78rem;
   color: var(--text-dim);
   margin-top: 0.15rem;
+}
+
+.survival-score__demo {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.food-stay-analysis {
+  margin: 0 0 1rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.food-stay-analysis__title {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.food-stay-analysis__metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.food-stay-metric {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.food-stay-metric strong {
+  color: var(--text);
+}
+
+.food-stay-analysis__list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.food-stay--comfortable {
+  border-color: rgba(107, 158, 74, 0.5);
+}
+
+.food-stay--balanced {
+  border-color: rgba(107, 158, 74, 0.35);
+}
+
+.food-stay--tight {
+  border-color: rgba(232, 168, 56, 0.45);
+}
+
+.food-stay--critical {
+  border-color: rgba(248, 113, 113, 0.45);
 }
 
 @media (max-width: 600px) {

@@ -446,7 +446,7 @@ function buildVoteTallies() {
   return { tallies, maxVotes, candidates };
 }
 
-function snapshotLastVote({ tie, candidates, excludedId }) {
+function snapshotLastVote({ tie, candidates, excludedId, revoteRound }) {
   const { tallies } = buildVoteTallies();
   const rows = Object.entries(tallies)
     .map(([id, votes]) => ({
@@ -460,7 +460,7 @@ function snapshotLastVote({ tie, candidates, excludedId }) {
     totalVotes: Object.keys(game.votes).length,
     votersNeeded: activePlayerIds().filter((id) => !game.players[id].excluded).length,
     tie: !!tie,
-    revoteRound: game.voteRevoteRound,
+    revoteRound: revoteRound ?? game.voteRevoteRound,
     tieCandidateNames: tie
       ? candidates.map((id) => game.players[id]?.name).filter(Boolean)
       : [],
@@ -474,7 +474,8 @@ function resolveVoting() {
   const { tallies, maxVotes, candidates } = buildVoteTallies();
 
   if (candidates.length > 1 && maxVotes > 0) {
-    snapshotLastVote({ tie: true, candidates });
+    const completedRevote = game.voteRevoteRound;
+    snapshotLastVote({ tie: true, candidates, revoteRound: completedRevote || 1 });
     game.voteTieCandidates = [...candidates];
     game.voteRevoteRound += 1;
     game.votes = {};
