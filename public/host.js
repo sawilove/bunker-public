@@ -48,6 +48,7 @@ const scenarioGrid = document.getElementById("scenarioGrid");
 const createSessionBtn = document.getElementById("createSessionBtn");
 const setupBunkerHint = document.getElementById("setupBunkerHint");
 const startBtn = document.getElementById("startBtn");
+const addBotBtn = document.getElementById("addBotBtn");
 const bunkerHint = document.getElementById("bunkerHint");
 const hostRoundInfo = document.getElementById("hostRoundInfo");
 const hostVotingInfo = document.getElementById("hostVotingInfo");
@@ -533,6 +534,7 @@ function fillCatalog(catalog, settings) {
       socket.emit("createSession", currentSettingsPayload());
     });
     startBtn.addEventListener("click", () => socket.emit("startGame"));
+    addBotBtn?.addEventListener("click", () => socket.emit("addBotPlayer"));
     newSessionBtn.addEventListener("click", () => {
       BunkerRuntime.saveHostId("");
       socket.emit("newSession");
@@ -716,6 +718,7 @@ function applyState(state) {
       ? `${state.scenario.locationLabel || "В бункере"}: ${state.scenario.bunkerParamsNote || "параметры бункера — при старте"} · мест: ${state.bunkerSpots}`
       : formatBunkerHint(state.scenario, state.bunkerSpots);
     startBtn.disabled = !state.canStart;
+    addBotBtn?.classList.toggle("hidden", !hostAccess.dev);
     updateHostScenarioTheme(state.scenario);
     if (state.sessionCode) {
       if (state.sessionCode !== sessionCodeDisplay.textContent) {

@@ -105,6 +105,10 @@ app.get("/player", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "player.html"));
 });
 
+app.get("/dev", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "dev.html"));
+});
+
 app.get("/game/:code", (req, res) => {
   const code = String(req.params.code || "").trim().toUpperCase();
   const safeCode = code.slice(0, 16);
@@ -124,6 +128,17 @@ let sessionCode = null;
 const socketToPlayer = new Map();
 
 const SESSION_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const BOT_NAMES = [
+  "Бот-Альфа",
+  "Бот-Бета",
+  "Бот-Гамма",
+  "Бот-Дельта",
+  "Бот-Омега",
+  "Бот-Сигма",
+  "Бот-Нова",
+  "Бот-Вектор",
+];
+let botTickTimer = null;
 
 function generateSessionCode() {
   let code = "";
@@ -139,6 +154,21 @@ function generatePersistentId() {
 
 function normalizeCode(code) {
   return (code || "").trim().toUpperCase().slice(0, 6);
+}
+
+async function requireDevUser(req, res) {
+  const header = req.headers.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  const user = token ? await verifyToken(token) : null;
+  if (!user) {
+    res.status(401).json({ error: "Требуется вход в аккаунт." });
+    return null;
+  }
+  if (!user.dev) {
+    res.status(403).json({ error: "Только для разработчиков." });
+    return null;
+  }
+  return user;
 }
 
 const game = {
@@ -167,6 +197,48 @@ function playerIds() {
 
 function playerCount() {
   return playerIds().length;
+}
+
+function clearBotTick() {
+  if (!botTickTimer) return;
+  clearTimeout(botTickTimer);
+  botTickTimer = null;
+}
+
+function isBotPlayer(playerId) {
+  return !!game.players[playerId]?.isBot;
+}
+
+function randomBotName() {
+  const used = new Set(playerIds().map((id) => game.players[id].name.toLowerCase()));
+  for (let i = 0; i < BOT_NAMES.length; i++) {
+    const base = BOT_NAMES[i];
+    if (!used.has(base.toLowerCase())) return base;
+  }
+  for (let i = 1; i <= 999; i++) {
+    const candidate = `Бот-${i}`;
+    if (!used.has(candidate.toLowerCase())) return candidate;
+  }
+  return `Бот-${Math.floor(Math.random() * 10000)}`;
+}
+
+function addBotPlayer() {
+  const playerId = generatePersistentId();
+  game.players[playerId] = {
+    id: playerId,
+    name: randomBotName(),
+    userId: null,
+    isGuest: true,
+    nickname: null,
+    avatarUrl: "/icons/guest-avatar.svg",
+    nameMode: "bot",
+    cards: [],
+    excluded: false,
+    socketId: null,
+    isBot: true,
+  };
+  syncInGameFromPlayers(game.players, game.phase);
+  return playerId;
 }
 
 function activePlayerIds() {
@@ -404,6 +476,72 @@ function finishPlayerTurn(playerId) {
   }
 }
 
+function randomBotVoteTarget(botId) {
+  const targets = activePlayerIds().filter(
+    (id) => id !== botId && game.players[id] && !game.players[id].excluded
+  );
+  if (!targets.length) return null;
+  return pickRandom(targets);
+}
+
+function randomBotCardIndex(botId) {
+  const bot = game.players[botId];
+  if (!bot || !Array.isArray(bot.cards)) return -1;
+  const done = game.revealsThisRound[botId] || 0;
+  const unopened = bot.cards
+    .map((card, index) => ({ card, index }))
+    .filter((entry) => !entry.card.opened);
+  if (!unopened.length) return -1;
+  if (game.round === 1 && done === 0) {
+    const profession = unopened.find((entry) => entry.card.type === "profession");
+    if (profession) return profession.index;
+  }
+  return pickRandom(unopened).index;
+}
+
+function runBotTick() {
+  botTickTimer = null;
+  if (game.phase === "playing") {
+    const turnId = game.currentTurn;
+    if (!turnId || !isBotPlayer(turnId)) return;
+    const bot = game.players[turnId];
+    if (!bot || bot.excluded) return;
+    const quota = roundQuota();
+    const done = game.revealsThisRound[turnId] || 0;
+    if (done >= quota) {
+      finishPlayerTurn(turnId);
+      broadcast();
+      return;
+    }
+    const cardIndex = randomBotCardIndex(turnId);
+    if (cardIndex < 0) return;
+    const card = bot.cards[cardIndex];
+    if (!card || card.opened) return;
+    card.opened = true;
+    game.revealsThisRound[turnId] = done + 1;
+    finishPlayerTurn(turnId);
+    broadcast();
+    return;
+  }
+
+  if (game.phase === "voting") {
+    let changed = false;
+    for (const botId of activePlayerIds().filter((id) => isBotPlayer(id))) {
+      if (game.votes[botId]) continue;
+      const targetId = randomBotVoteTarget(botId);
+      if (!targetId) continue;
+      game.votes[botId] = targetId;
+      changed = true;
+    }
+    if (!changed) return;
+    const votersNeeded = activePlayerIds().length;
+    if (Object.keys(game.votes).length >= votersNeeded) {
+      resolveVoting();
+    }
+    broadcast();
+  }
+}
+
 function buildVotingInfo(forPlayerId) {
   const active = activePlayerIds();
   const targets = active
@@ -433,6 +571,7 @@ function mapPlayerBrief(id) {
     excluded: !!p.excluded,
     connected: !!p.socketId,
     isGuest: !!p.isGuest,
+    isBot: !!p.isBot,
     nickname: p.nickname || null,
     avatarUrl: p.avatarUrl,
   };
@@ -446,6 +585,7 @@ function sanitizePlayerForHost(id, p) {
     excluded: !!p.excluded,
     connected: !!p.socketId,
     isGuest: !!p.isGuest,
+    isBot: !!p.isBot,
     nickname: p.nickname || null,
     avatarUrl: p.avatarUrl,
     revealsThisRound: game.revealsThisRound[id] || 0,
@@ -483,6 +623,7 @@ function endHostSession() {
 }
 
 function resetToSetup() {
+  clearBotTick();
   game.phase = "setup";
   sessionCode = null;
   hostId = null;
@@ -537,7 +678,7 @@ function buildHostState(hostUser = null) {
     voting: game.phase === "voting" ? buildVotingInfo(null) : null,
     players: playerIds().map((id) => sanitizePlayerForHost(id, game.players[id])),
     currentTurn: game.currentTurn,
-    canStart: game.phase === "lobby" && n >= 1,
+    canStart: game.phase === "lobby" && n >= 6,
     minPlayersRecommended: 6,
   };
 }
@@ -584,6 +725,7 @@ function buildPlayerState(playerId) {
         name: p.name,
         userId: p.userId || null,
         isGuest: !!p.isGuest,
+        isBot: !!p.isBot,
         nickname: p.nickname || null,
         avatarUrl: p.avatarUrl || null,
         excluded: !!p.excluded,
@@ -611,6 +753,10 @@ function emitAllPlayersState() {
 function broadcast() {
   emitHostState();
   emitAllPlayersState();
+  clearBotTick();
+  if (game.phase === "playing" || game.phase === "voting") {
+    botTickTimer = setTimeout(runBotTick, 700);
+  }
 }
 
 function resetToLobby() {
@@ -624,7 +770,7 @@ function resetToLobby() {
   game.votes = {};
   game.lastExcludedName = null;
   for (const id of playerIds()) {
-    const { name, socketId, userId, isGuest, nickname, avatarUrl, nameMode } =
+    const { name, socketId, userId, isGuest, nickname, avatarUrl, nameMode, isBot } =
       game.players[id];
     game.players[id] = {
       id,
@@ -637,6 +783,7 @@ function resetToLobby() {
       nickname: nickname || null,
       avatarUrl,
       nameMode: nameMode || null,
+      isBot: !!isBot,
     };
   }
 }
@@ -671,6 +818,28 @@ function getHostSessionInvitePayload() {
   return { code: sessionCode, nickname: "Ведущий" };
 }
 
+function sessionDebugPayload() {
+  return {
+    phase: game.phase,
+    sessionCode,
+    hostId,
+    hostConnected: !!hostSocketId,
+    playerCount: playerIds().length,
+    activeCount: activeCount(),
+    currentTurn: game.currentTurn,
+    round: game.round,
+    votes: game.votes,
+    players: playerIds().map((id) => ({
+      id,
+      name: game.players[id].name,
+      excluded: !!game.players[id].excluded,
+      isBot: !!game.players[id].isBot,
+      connected: !!game.players[id].socketId,
+      userId: game.players[id].userId || null,
+    })),
+  };
+}
+
 function resolveSessionInvite(userId, socket) {
   const fromPlayer = getSessionInvitePayload(userId);
   if (fromPlayer.code) return fromPlayer;
@@ -680,6 +849,48 @@ function resolveSessionInvite(userId, socket) {
 
 mountSocialSockets(io, {
   getSessionInvitePayload: resolveSessionInvite,
+});
+
+app.get("/api/dev/session-state", async (req, res) => {
+  const devUser = await requireDevUser(req, res);
+  if (!devUser) return;
+  res.json(sessionDebugPayload());
+});
+
+app.get("/api/dev/session-player-ids", async (req, res) => {
+  const devUser = await requireDevUser(req, res);
+  if (!devUser) return;
+  res.json({
+    sessionCode,
+    players: playerIds().map((id) => ({
+      id,
+      name: game.players[id].name,
+      isBot: !!game.players[id].isBot,
+      userId: game.players[id].userId || null,
+    })),
+  });
+});
+
+app.post("/api/dev/session/end", async (req, res) => {
+  const devUser = await requireDevUser(req, res);
+  if (!devUser) return;
+  if (game.phase !== "setup") {
+    endHostSession();
+  }
+  broadcast();
+  res.json({ ok: true, state: sessionDebugPayload() });
+});
+
+app.post("/api/dev/session/reset-lobby", async (req, res) => {
+  const devUser = await requireDevUser(req, res);
+  if (!devUser) return;
+  if (!["playing", "voting", "ended"].includes(game.phase)) {
+    res.status(400).json({ error: "Сброс доступен только во время активной/завершенной игры." });
+    return;
+  }
+  resetToLobby();
+  broadcast();
+  res.json({ ok: true, state: sessionDebugPayload() });
 });
 
 async function resolveHostUser(payload) {
@@ -900,9 +1111,22 @@ io.on("connection", (socket) => {
     broadcast();
   });
 
+  socket.on("addBotPlayer", () => {
+    if (!isHostSocket(socket) || game.phase !== "lobby") return;
+    if (!hostAuthUser?.dev) {
+      socket.emit("hostError", "Добавление ботов доступно только разработчикам.");
+      return;
+    }
+    addBotPlayer();
+    broadcast();
+  });
+
   socket.on("startGame", () => {
     if (!isHostSocket(socket) || game.phase !== "lobby") return;
-    if (playerIds().length < 1) return;
+    if (playerIds().length < 6) {
+      socket.emit("hostError", "Для старта нужно минимум 6 игроков (включая ботов).");
+      return;
+    }
 
     const n = playerCount();
     game.initialPlayerCount = n;

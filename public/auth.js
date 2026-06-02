@@ -560,6 +560,53 @@
     });
   }
 
+  async function devFindUser(query) {
+    return api(`/api/dev/users/find?query=${encodeURIComponent(query)}`);
+  }
+
+  async function devSetUserFlags(userId, flags) {
+    return api(`/api/dev/users/${encodeURIComponent(userId)}/flags`, {
+      method: "POST",
+      body: JSON.stringify(flags || {}),
+    });
+  }
+
+  async function devRotateProfileId(userId) {
+    return api(`/api/dev/users/${encodeURIComponent(userId)}/rotate-profile-id`, {
+      method: "POST",
+    });
+  }
+
+  async function devGrantAchievement(userId, achievementId) {
+    return api("/api/dev/achievements/grant", {
+      method: "POST",
+      body: JSON.stringify({ userId, achievementId }),
+    });
+  }
+
+  async function devRevokeAchievement(userId, achievementId) {
+    return api("/api/dev/achievements/revoke", {
+      method: "POST",
+      body: JSON.stringify({ userId, achievementId }),
+    });
+  }
+
+  async function devGetSessionState() {
+    return api("/api/dev/session-state");
+  }
+
+  async function devListSessionPlayerIds() {
+    return api("/api/dev/session-player-ids");
+  }
+
+  async function devEndSession() {
+    return api("/api/dev/session/end", { method: "POST" });
+  }
+
+  async function devResetToLobby() {
+    return api("/api/dev/session/reset-lobby", { method: "POST" });
+  }
+
   window.BunkerAuth = {
     apiBase,
     assetUrl,
@@ -641,5 +688,14 @@
     resolveDevReport,
     getDevPayments,
     grantDevPremium,
+    devFindUser,
+    devSetUserFlags,
+    devRotateProfileId,
+    devGrantAchievement,
+    devRevokeAchievement,
+    devGetSessionState,
+    devListSessionPlayerIds,
+    devEndSession,
+    devResetToLobby,
   };
 })();

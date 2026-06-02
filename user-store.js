@@ -79,6 +79,10 @@ function normalizeProfileId(value) {
   return (value || "").trim().toLowerCase();
 }
 
+function randomProfileId() {
+  return `p_${crypto.randomBytes(4).toString("hex")}`;
+}
+
 function validateProfileId(value) {
   const id = normalizeProfileId(value);
   if (id.length < 3 || id.length > 32) {
@@ -120,6 +124,22 @@ async function getUserByPublicId(userIdOrProfileId) {
   const exact = await getUserById(userIdOrProfileId);
   if (exact) return exact;
   return getUserByProfileId(userIdOrProfileId);
+}
+
+async function findUserForDev(query) {
+  const q = String(query || "").trim();
+  if (!q) return null;
+  const qLower = q.toLowerCase();
+  const { rows } = await getPool().query(
+    `SELECT * FROM users
+     WHERE id = $1
+        OR profile_id = $2
+        OR nickname_lower = $2
+        OR email_lower = $2
+     LIMIT 1`,
+    [q, qLower]
+  );
+  return rowToUser(rows[0]);
 }
 
 async function findByNickname(nickname) {
@@ -399,6 +419,40 @@ async function setCustomBackstory(userId, data) {
   return getUserById(userId);
 }
 
+async function setUserFlagsForDev(targetUserId, flags = {}) {
+  const user = await getUserById(targetUserId);
+  if (!user) return { ok: false, error: "Пользователь не найден." };
+  const nextDev = typeof flags.dev === "boolean" ? flags.dev : !!user.dev;
+  const nextPremium = typeof flags.premium === "boolean" ? flags.premium : !!user.premium;
+  await getPool().query(`UPDATE users SET dev = $2, premium = $3 WHERE id = $1`, [
+    targetUserId,
+    nextDev,
+    nextPremium,
+  ]);
+  const updated = await getUserById(targetUserId);
+  return { ok: true, user: publicUser(updated) };
+}
+
+async function rotateProfileIdForDev(targetUserId) {
+  const user = await getUserById(targetUserId);
+  if (!user) return { ok: false, error: "Пользователь не найден." };
+  let nextId = "";
+  for (let i = 0; i < 8; i++) {
+    const candidate = randomProfileId();
+    const { rows } = await getPool().query(`SELECT 1 FROM users WHERE profile_id = $1 LIMIT 1`, [
+      candidate,
+    ]);
+    if (!rows.length) {
+      nextId = candidate;
+      break;
+    }
+  }
+  if (!nextId) return { ok: false, error: "Не удалось подобрать новый profileId." };
+  await getPool().query(`UPDATE users SET profile_id = $2 WHERE id = $1`, [targetUserId, nextId]);
+  const updated = await getUserById(targetUserId);
+  return { ok: true, user: publicUser(updated) };
+}
+
 module.exports = {
   initDatabase,
   register,
@@ -419,4 +473,7 @@ module.exports = {
   createToken,
   getCustomBackstory,
   setCustomBackstory,
+  findUserForDev,
+  setUserFlagsForDev,
+  rotateProfileIdForDev,
 };

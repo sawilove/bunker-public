@@ -4,6 +4,8 @@ const {
   getDisplayedAchievementsPublic,
   setDisplayedAchievements,
   syncAndGetNewUnlocks,
+  grantAchievement,
+  revokeAchievement,
 } = require("./achievement-store");
 const { requireUser } = require("./auth-routes");
 
@@ -67,6 +69,58 @@ function mountAchievementRoutes(app) {
       res.json({ displayed });
     } catch (err) {
       console.error("displayed achievements error", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
+  app.post("/api/dev/achievements/grant", async (req, res) => {
+    try {
+      const devUser = await requireUser(req, res);
+      if (!devUser) return;
+      if (!devUser.dev) {
+        res.status(403).json({ error: "Только для разработчиков." });
+        return;
+      }
+      const userId = String(req.body?.userId || "").trim();
+      const achievementId = String(req.body?.achievementId || "").trim();
+      if (!userId || !achievementId) {
+        res.status(400).json({ error: "Укажите userId и achievementId." });
+        return;
+      }
+      const ok = await grantAchievement(userId, achievementId);
+      if (!ok) {
+        res.status(400).json({ error: "Не удалось выдать достижение." });
+        return;
+      }
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("dev grant achievement error", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
+  app.post("/api/dev/achievements/revoke", async (req, res) => {
+    try {
+      const devUser = await requireUser(req, res);
+      if (!devUser) return;
+      if (!devUser.dev) {
+        res.status(403).json({ error: "Только для разработчиков." });
+        return;
+      }
+      const userId = String(req.body?.userId || "").trim();
+      const achievementId = String(req.body?.achievementId || "").trim();
+      if (!userId || !achievementId) {
+        res.status(400).json({ error: "Укажите userId и achievementId." });
+        return;
+      }
+      const ok = await revokeAchievement(userId, achievementId);
+      if (!ok) {
+        res.status(400).json({ error: "Не удалось удалить достижение." });
+        return;
+      }
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("dev revoke achievement error", err);
       res.status(500).json({ error: "Ошибка сервера." });
     }
   });

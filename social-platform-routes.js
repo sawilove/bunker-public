@@ -29,6 +29,11 @@ const {
   getGroupMessages,
 } = require("./group-store");
 const { setLookingForGame, getLookingForGame } = require("./presence");
+const {
+  findUserForDev,
+  setUserFlagsForDev,
+  rotateProfileIdForDev,
+} = require("./user-store");
 
 function mountSocialPlatformRoutes(app, io) {
   setNotificationEmitter((userId, event, payload) => {
@@ -252,6 +257,81 @@ function mountSocialPlatformRoutes(app, io) {
       res.json(result);
     } catch (err) {
       console.error("dev premium grant", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
+  app.get("/api/dev/users/find", async (req, res) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      if (!user.dev) {
+        res.status(403).json({ error: "Только для разработчиков." });
+        return;
+      }
+      const query = String(req.query.query || "").trim();
+      if (!query) {
+        res.status(400).json({ error: "Укажите query." });
+        return;
+      }
+      const found = await findUserForDev(query);
+      if (!found) {
+        res.status(404).json({ error: "Пользователь не найден." });
+        return;
+      }
+      res.json({
+        user: {
+          id: found.id,
+          profileId: found.profileId || found.id,
+          nickname: found.nickname,
+          email: found.email || null,
+          dev: !!found.dev,
+          premium: !!found.premium,
+          premiumUntil: found.premiumUntil || null,
+        },
+      });
+    } catch (err) {
+      console.error("dev user find", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
+  app.post("/api/dev/users/:userId/flags", async (req, res) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      if (!user.dev) {
+        res.status(403).json({ error: "Только для разработчиков." });
+        return;
+      }
+      const result = await setUserFlagsForDev(req.params.userId, req.body || {});
+      if (!result.ok) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+      res.json({ ok: true, user: result.user });
+    } catch (err) {
+      console.error("dev set user flags", err);
+      res.status(500).json({ error: "Ошибка сервера." });
+    }
+  });
+
+  app.post("/api/dev/users/:userId/rotate-profile-id", async (req, res) => {
+    try {
+      const user = await requireUser(req, res);
+      if (!user) return;
+      if (!user.dev) {
+        res.status(403).json({ error: "Только для разработчиков." });
+        return;
+      }
+      const result = await rotateProfileIdForDev(req.params.userId);
+      if (!result.ok) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+      res.json({ ok: true, user: result.user });
+    } catch (err) {
+      console.error("dev rotate profile id", err);
       res.status(500).json({ error: "Ошибка сервера." });
     }
   });
